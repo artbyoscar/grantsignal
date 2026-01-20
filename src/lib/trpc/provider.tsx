@@ -29,6 +29,13 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
               'x-organization-id': orgId || '',
             }
           },
+          // CRITICAL: Include credentials so Clerk auth cookies are sent
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: 'include',
+            })
+          },
         }),
       ],
     })

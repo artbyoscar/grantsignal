@@ -8,6 +8,9 @@ import { prisma } from '@/lib/prisma'
 export async function createContext(opts?: { headers?: Headers }) {
   const { userId } = await auth()
 
+  // Debug: Log the userId being received
+  console.log('[tRPC Context] userId:', userId)
+
   let organizationId: string | null = null
 
   if (userId) {
@@ -16,6 +19,7 @@ export async function createContext(opts?: { headers?: Headers }) {
       select: { organizationId: true },
     })
     organizationId = membership?.organizationId ?? null
+    console.log('[tRPC Context] organizationId:', organizationId)
   }
 
   return {
