@@ -4,7 +4,8 @@
       "Bash(if [ ! -d \"c:\\\\Users\\\\OscarNuñez\\\\Desktop\\\\grantsignal\\\\prisma\" ])",
       "Bash(then mkdir \"c:\\\\Users\\\\OscarNuñez\\\\Desktop\\\\grantsignal\\\\prisma\")",
       "Bash(fi:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
