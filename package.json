@@ -27,6 +27,7 @@
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
     "inngest": "^3.49.3",
     "lucide-react": "^0.562.0",
     "mammoth": "^1.11.0",
