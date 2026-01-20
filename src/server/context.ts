@@ -6,12 +6,22 @@ import { prisma } from '@/lib/prisma'
  * @link https://trpc.io/docs/context
  */
 export async function createContext(opts?: { headers?: Headers }) {
-  const { userId, orgId } = await auth()
+  const { userId } = await auth()
+
+  let organizationId: string | null = null
+
+  if (userId) {
+    const membership = await prisma.organizationUser.findFirst({
+      where: { clerkUserId: userId },
+      select: { organizationId: true },
+    })
+    organizationId = membership?.organizationId ?? null
+  }
 
   return {
-    prisma,
-    userId,
-    orgId,
+    auth: { userId },
+    organizationId,
+    db: prisma,
   }
 }
 
