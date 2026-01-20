@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
+import { TRPCProvider } from '@/lib/trpc/provider'
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,9 @@ export default function RootLayout({
     <ClerkProvider appearance={{ baseTheme: dark }}>
       <html lang="en" className="dark">
         <body className="bg-slate-900 text-slate-100 antialiased">
-          {children}
+          <TRPCProvider>
+            {children}
+          </TRPCProvider>
         </body>
       </html>
     </ClerkProvider>
