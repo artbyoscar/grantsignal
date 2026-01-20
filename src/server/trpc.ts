@@ -21,7 +21,10 @@ export const router = t.router
 export const publicProcedure = t.procedure
 
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
-  if (!ctx.userId) {
+  console.log('[protectedProcedure] ctx.auth:', ctx.auth)
+
+  if (!ctx.auth?.userId) {
+    console.log('[protectedProcedure] No userId - throwing UNAUTHORIZED')
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'You must be logged in to access this resource',
@@ -31,54 +34,37 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   return next({
     ctx: {
       ...ctx,
-      userId: ctx.userId,
+      auth: ctx.auth,
     },
   })
 })
 
-export const orgProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  if (!ctx.orgId) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: 'Organization ID is required',
-    })
+const enforceOrg = t.middleware(async ({ ctx, next }) => {
+  console.log('[orgProcedure] ctx.auth:', ctx.auth)
+  console.log('[orgProcedure] ctx.organizationId:', ctx.organizationId)
+
+  if (!ctx.auth?.userId) {
+    console.log('[orgProcedure] No userId - throwing UNAUTHORIZED')
+    throw new TRPCError({ code: 'UNAUTHORIZED' })
   }
 
-  // Find the organization by Clerk org ID
-  const organization = await ctx.prisma.organization.findUnique({
-    where: { clerkOrgId: ctx.orgId },
-  })
-
-  if (!organization) {
-    throw new TRPCError({
-      code: 'NOT_FOUND',
-      message: 'Organization not found',
-    })
-  }
-
-  // Verify user has access to this organization
-  const organizationUser = await ctx.prisma.organizationUser.findUnique({
-    where: {
-      organizationId_clerkUserId: {
-        organizationId: organization.id,
-        clerkUserId: ctx.userId,
-      },
-    },
-  })
-
-  if (!organizationUser) {
+  if (!ctx.organizationId) {
+    console.log('[orgProcedure] No organizationId - throwing FORBIDDEN')
     throw new TRPCError({
       code: 'FORBIDDEN',
-      message: 'You do not have access to this organization',
+      message: 'Organization required'
     })
   }
+
+  console.log('[orgProcedure] ✅ All checks passed, proceeding with organizationId:', ctx.organizationId)
 
   return next({
     ctx: {
       ...ctx,
-      organizationId: organization.id,
-      organization,
-      organizationUser,
+      auth: ctx.auth,
+      organizationId: ctx.organizationId,
     },
   })
 })
+
+export const orgProcedure = protectedProcedure.use(enforceOrg)
