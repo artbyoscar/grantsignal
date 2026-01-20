@@ -1,5 +1,6 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { Sidebar } from './components/Sidebar'
 
 export default async function DashboardLayout({
   children,
@@ -12,20 +13,19 @@ export default async function DashboardLayout({
     redirect('/sign-in')
   }
 
+  const user = await currentUser()
+  const userName = user?.firstName || user?.username || 'User'
+  const userEmail = user?.emailAddresses[0]?.emailAddress || ''
+  const userInitial = userName.charAt(0).toUpperCase()
+
   return (
     <div className="min-h-screen bg-slate-900">
       <div className="flex">
-        {/* Sidebar will go here */}
-        <aside className="w-64 min-h-screen bg-slate-800 border-r border-slate-700 p-4">
-          <div className="text-xl font-bold text-white mb-8">GrantSignal</div>
-          <nav className="space-y-2">
-            <a href="/dashboard" className="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded">Dashboard</a>
-            <a href="/opportunities" className="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded">Opportunities</a>
-            <a href="/pipeline" className="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded">Pipeline</a>
-            <a href="/documents" className="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded">Documents</a>
-            <a href="/compliance" className="block px-4 py-2 text-slate-300 hover:bg-slate-700 rounded">Compliance</a>
-          </nav>
-        </aside>
+        <Sidebar
+          userName={userName}
+          userEmail={userEmail}
+          userInitial={userInitial}
+        />
 
         {/* Main content */}
         <main className="flex-1 p-8">
