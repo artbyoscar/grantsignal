@@ -16,56 +16,73 @@ export const grantsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { cursor, limit, status, programId } = input
+      try {
+        console.log('[grants.list] Starting query with organizationId:', ctx.organizationId);
+        console.log('[grants.list] Input:', input);
 
-      const grants = await ctx.prisma.grant.findMany({
-        where: {
+        const { cursor, limit, status, programId } = input
+
+        const grants = await ctx.db.grant.findMany({
+          where: {
+            organizationId: ctx.organizationId,
+            ...(status && { status }),
+            ...(programId && { programId }),
+          },
+          take: limit + 1,
+          cursor: cursor ? { id: cursor } : undefined,
+          orderBy: { updatedAt: 'desc' },
+          include: {
+            funder: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
+            opportunity: {
+              select: {
+                id: true,
+                title: true,
+                deadline: true,
+              },
+            },
+            program: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            _count: {
+              select: {
+                documents: true,
+                commitments: true,
+              },
+            },
+          },
+        })
+
+        console.log('[grants.list] Found grants:', grants.length);
+
+        let nextCursor: string | undefined = undefined
+        if (grants.length > limit) {
+          const nextItem = grants.pop()
+          nextCursor = nextItem?.id
+        }
+
+        console.log('[grants.list] Returning grants:', grants.length, 'nextCursor:', nextCursor);
+        return {
+          grants,
+          nextCursor,
+        }
+      } catch (error) {
+        console.error('[grants.list] Error details:', {
+          error,
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined,
           organizationId: ctx.organizationId,
-          ...(status && { status }),
-          ...(programId && { programId }),
-        },
-        take: limit + 1,
-        cursor: cursor ? { id: cursor } : undefined,
-        orderBy: { updatedAt: 'desc' },
-        include: {
-          funder: {
-            select: {
-              id: true,
-              name: true,
-              type: true,
-            },
-          },
-          opportunity: {
-            select: {
-              id: true,
-              title: true,
-              deadline: true,
-            },
-          },
-          program: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              documents: true,
-              commitments: true,
-            },
-          },
-        },
-      })
-
-      let nextCursor: string | undefined = undefined
-      if (grants.length > limit) {
-        const nextItem = grants.pop()
-        nextCursor = nextItem?.id
-      }
-
-      return {
-        grants,
-        nextCursor,
+          input,
+        });
+        throw error;
       }
     }),
 
@@ -75,7 +92,7 @@ export const grantsRouter = router({
   byId: orgProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const grant = await ctx.prisma.grant.findFirst({
+      const grant = await ctx.db.grant.findFirst({
         where: {
           id: input.id,
           organizationId: ctx.organizationId,
@@ -125,7 +142,7 @@ export const grantsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const grant = await ctx.prisma.grant.create({
+      const grant = await ctx.db.grant.create({
         data: {
           ...input,
           organizationId: ctx.organizationId,
@@ -163,7 +180,7 @@ export const grantsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input
 
-      const grant = await ctx.prisma.grant.updateMany({
+      const grant = await ctx.db.grant.updateMany({
         where: {
           id,
           organizationId: ctx.organizationId,
@@ -175,7 +192,7 @@ export const grantsRouter = router({
         throw new Error('Grant not found or access denied')
       }
 
-      return ctx.prisma.grant.findUnique({
+      return ctx.db.grant.findUnique({
         where: { id },
         include: {
           funder: true,
@@ -196,7 +213,7 @@ export const grantsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const grant = await ctx.prisma.grant.updateMany({
+      const grant = await ctx.db.grant.updateMany({
         where: {
           id: input.id,
           organizationId: ctx.organizationId,
@@ -210,7 +227,7 @@ export const grantsRouter = router({
         throw new Error('Grant not found or access denied')
       }
 
-      return ctx.prisma.grant.findUnique({
+      return ctx.db.grant.findUnique({
         where: { id: input.id },
       })
     }),
@@ -222,7 +239,7 @@ export const grantsRouter = router({
   delete: orgProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const grant = await ctx.prisma.grant.deleteMany({
+      const grant = await ctx.db.grant.deleteMany({
         where: {
           id: input.id,
           organizationId: ctx.organizationId,
