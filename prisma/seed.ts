@@ -36,13 +36,13 @@ async function main() {
     where: {
       organizationId_clerkUserId: {
         organizationId: organization.id,
-        clerkUserId: 'user_test_123',
+        clerkUserId: 'user_38Uyjpgu0Aw8cyrVQQ1hrm0Q99w',
       },
     },
     update: {},
     create: {
       organizationId: organization.id,
-      clerkUserId: 'user_test_123',
+      clerkUserId: 'user_38Uyjpgu0Aw8cyrVQQ1hrm0Q99w',
       role: UserRole.OWNER,
     },
   });
@@ -361,7 +361,7 @@ async function main() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('📋 Organization:');
   console.log('   • Global Relief Initiative (EIN: 12-3456789)');
-  console.log('   • 1 test user linked (user_test_123)');
+  console.log('   • 1 test user linked (user_38Uyjpgu0Aw8cyrVQQ1hrm0Q99w)');
   console.log('\n🎯 Programs (3):');
   console.log('   • Youth Development - $500,000');
   console.log('   • Community Health - $750,000');
