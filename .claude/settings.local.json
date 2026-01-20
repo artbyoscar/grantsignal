@@ -9,7 +9,12 @@
       "Bash(npx prisma generate:*)",
       "Bash(npx prisma db push)",
       "Bash(npx tsx:*)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm prisma db seed:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
