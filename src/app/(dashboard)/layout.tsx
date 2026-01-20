@@ -1,6 +1,6 @@
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
-import { Sidebar } from './components/Sidebar'
+import { Sidebar } from '@/components/layout/sidebar'
 
 export default async function DashboardLayout({
   children,
@@ -13,21 +13,10 @@ export default async function DashboardLayout({
     redirect('/sign-in')
   }
 
-  const user = await currentUser()
-  const userName = user?.firstName || user?.username || 'User'
-  const userEmail = user?.emailAddresses[0]?.emailAddress || ''
-  const userInitial = userName.charAt(0).toUpperCase()
-
   return (
     <div className="min-h-screen bg-slate-900">
       <div className="flex">
-        <Sidebar
-          userName={userName}
-          userEmail={userEmail}
-          userInitial={userInitial}
-        />
-
-        {/* Main content */}
+        <Sidebar />
         <main className="flex-1 p-8">
           {children}
         </main>
