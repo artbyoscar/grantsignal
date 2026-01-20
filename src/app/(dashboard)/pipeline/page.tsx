@@ -303,7 +303,12 @@ export default function PipelinePage() {
   }, {} as Record<GrantStatus, Grant[]>)
 
   // Calculate stats
-  const totalValue = grants.reduce((sum, grant) => sum + (grant.amountRequested || 0), 0)
+  const totalValue = grants.reduce((sum, grant) => {
+    const amount = grant.amountRequested
+      ? Number(grant.amountRequested)
+      : 0;
+    return sum + amount;
+  }, 0)
 
   // Drag and drop sensors
   const sensors = useSensors(
