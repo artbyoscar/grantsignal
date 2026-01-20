@@ -40,6 +40,8 @@ export default function DocumentsPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
   const [selectedDocument, setSelectedDocument] = useState<any>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchMode, setSearchMode] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch documents
@@ -49,6 +51,19 @@ export default function DocumentsPage() {
 
   // Fetch document health stats
   const { data: health } = api.documents.health.useQuery()
+
+  // Search query (debounced)
+  const { data: searchResults, isLoading: isSearching } = api.documents.search.useQuery(
+    {
+      query: searchQuery,
+      type: selectedType,
+      limit: 20,
+      minScore: 0.6,
+    },
+    {
+      enabled: searchMode && searchQuery.length >= 3,
+    }
+  )
 
   // Upload mutation
   const createUploadUrlMutation = api.documents.createUploadUrl.useMutation()
@@ -250,6 +265,32 @@ export default function DocumentsPage() {
     }
   }
 
+  // Handle search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    setSearchMode(value.length >= 3)
+  }
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('')
+    setSearchMode(false)
+  }
+
+  // Highlight search terms in text
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text
+    const parts = text.split(new RegExp(`(${query})`, 'gi'))
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ?
+        <mark key={i} className="bg-yellow-400/30 text-yellow-200">{part}</mark> : part
+    )
+  }
+
+  // Display documents or search results
+  const displayDocuments = searchMode && searchResults ? searchResults.results.map(r => r.document) : documents
+
   return (
     <div className="space-y-6">
       {/* Hidden file input */}
@@ -346,10 +387,42 @@ export default function DocumentsPage() {
           <input
             type="text"
             placeholder="Search documents by content, name, or funder..."
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-10 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-700 rounded transition-colors"
+            >
+              <X className="w-4 h-4 text-slate-400" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Search Status */}
+      {searchMode && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-sm text-blue-300">
+            {isSearching ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Searching documents...</span>
+              </>
+            ) : searchResults ? (
+              <>
+                <Search className="w-4 h-4" />
+                <span>
+                  Found {searchResults.totalDocuments} {searchResults.totalDocuments === 1 ? 'document' : 'documents'}
+                  {searchResults.totalChunks > 0 && ` with ${searchResults.totalChunks} relevant ${searchResults.totalChunks === 1 ? 'section' : 'sections'}`}
+                </span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-6">
         {/* Sidebar - Document Types */}
@@ -474,27 +547,102 @@ export default function DocumentsPage() {
           )}
 
           {/* Empty State */}
-          {!isLoading && documents && documents.length === 0 && (
+          {!isLoading && !isSearching && displayDocuments && displayDocuments.length === 0 && (
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
               <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">No documents yet</h3>
-              <p className="text-slate-400 max-w-md mx-auto mb-6">
-                Upload your first grant proposal to build your organizational memory.
-              </p>
-              <button
-                onClick={openFilePicker}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                Upload Your First Document
-              </button>
+              {searchMode ? (
+                <>
+                  <h3 className="text-xl font-semibold text-white mb-2">No results found</h3>
+                  <p className="text-slate-400 max-w-md mx-auto mb-6">
+                    Try adjusting your search query or check if documents have been processed.
+                  </p>
+                  <button
+                    onClick={clearSearch}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
+                  >
+                    Clear Search
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xl font-semibold text-white mb-2">No documents yet</h3>
+                  <p className="text-slate-400 max-w-md mx-auto mb-6">
+                    Upload your first grant proposal to build your organizational memory.
+                  </p>
+                  <button
+                    onClick={openFilePicker}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Your First Document
+                  </button>
+                </>
+              )}
             </div>
           )}
 
-          {/* Document Grid */}
-          {!isLoading && documents && documents.length > 0 && (
+          {/* Search Results with Snippets */}
+          {searchMode && searchResults && searchResults.results.length > 0 && (
+            <div className="space-y-4">
+              {searchResults.results.map((result) => (
+                <div
+                  key={result.document.id}
+                  className="bg-slate-800 border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (result.document.status === ProcessingStatus.NEEDS_REVIEW) {
+                      handleReviewDocument(result.document)
+                    } else {
+                      toast.info('Document preview coming soon')
+                    }
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        {result.document.name}
+                      </h3>
+                      {result.document.grant?.funder && (
+                        <p className="text-sm text-slate-400">
+                          {result.document.grant.funder.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="px-2.5 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-xs font-medium text-blue-300">
+                        {result.relevanceScore}% match
+                      </div>
+                      {result.document.status === ProcessingStatus.NEEDS_REVIEW && (
+                        <div className="px-2.5 py-1 bg-amber-500/20 border border-amber-500/30 rounded text-xs font-medium text-amber-300">
+                          Needs Review
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Matching Text Snippets */}
+                  {result.matchingChunks && result.matchingChunks.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {result.matchingChunks.slice(0, 2).map((chunk, idx) => (
+                        <div key={idx} className="bg-slate-900 border border-slate-700 rounded p-3">
+                          <p className="text-sm text-slate-300 line-clamp-3">
+                            {highlightText(chunk.text.slice(0, 300) + (chunk.text.length > 300 ? '...' : ''), searchQuery)}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+                            <span>{Math.round(chunk.score * 100)}% relevance</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Document Grid (Normal View) */}
+          {!isLoading && !searchMode && displayDocuments && displayDocuments.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {documents.map((document) => (
+              {displayDocuments.map((document) => (
                 <DocumentCard
                   key={document.id}
                   document={document}

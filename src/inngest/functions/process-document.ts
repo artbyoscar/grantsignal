@@ -3,6 +3,9 @@ import { db } from '@/lib/prisma'
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 import { parseDocument } from '@/server/services/documents/parser'
 import { ProcessingStatus } from '@prisma/client'
+import { chunkText } from '@/server/services/documents/chunker'
+import { generateEmbeddings } from '@/server/services/ai/embeddings'
+import { getIndex, isPineconeConfigured } from '@/lib/pinecone'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -73,7 +76,7 @@ export const processDocument = inngest.createFunction(
     })
 
     // Step 3: Update database with extracted text and confidence
-    await step.run('update-database', async () => {
+    const documentData = await step.run('update-database', async () => {
       console.log(`Updating database for document ${documentId}`)
 
       try {
@@ -85,7 +88,7 @@ export const processDocument = inngest.createFunction(
           status = ProcessingStatus.NEEDS_REVIEW
         }
 
-        await db.document.update({
+        const updatedDoc = await db.document.update({
           where: {
             id: documentId,
             organizationId, // Security: ensure org ownership
@@ -104,6 +107,7 @@ export const processDocument = inngest.createFunction(
 
         return {
           documentId,
+          documentName: updatedDoc.name,
           status,
           confidence: parseResult.confidence,
           wordCount: parseResult.metadata.wordCount,
@@ -128,6 +132,93 @@ export const processDocument = inngest.createFunction(
           })
 
         throw error
+      }
+    })
+
+    // Step 4: Vectorize document and upload to Pinecone (if configured)
+    await step.run('vectorize-document', async () => {
+      // Skip vectorization if Pinecone is not configured
+      if (!isPineconeConfigured()) {
+        console.log('Pinecone not configured. Skipping vectorization.')
+        return { skipped: true, reason: 'Pinecone not configured' }
+      }
+
+      // Skip vectorization if text is too short
+      if (!parseResult.text || parseResult.text.length < 100) {
+        console.log('Document text too short. Skipping vectorization.')
+        return { skipped: true, reason: 'Text too short' }
+      }
+
+      try {
+        console.log(`Chunking document ${documentId}`)
+        const chunks = chunkText(parseResult.text)
+
+        if (chunks.length === 0) {
+          console.log('No chunks generated. Skipping vectorization.')
+          return { skipped: true, reason: 'No chunks generated' }
+        }
+
+        console.log(`Generated ${chunks.length} chunks for document ${documentId}`)
+
+        // Generate embeddings for all chunks
+        console.log(`Generating embeddings for ${chunks.length} chunks`)
+        const embeddings = await generateEmbeddings(chunks.map(chunk => chunk.text))
+
+        console.log(`Generated ${embeddings.length} embeddings`)
+
+        // Prepare vectors for Pinecone
+        const vectors = chunks.map((chunk, index) => ({
+          id: `${documentId}-${chunk.index}`,
+          values: embeddings[index],
+          metadata: {
+            organizationId,
+            documentId,
+            documentName: documentData.documentName,
+            documentType: mimeType,
+            chunkIndex: chunk.index,
+            text: chunk.text,
+          },
+        }))
+
+        // Upload to Pinecone
+        const index = getIndex()
+        if (!index) {
+          throw new Error('Failed to get Pinecone index')
+        }
+
+        console.log(`Upserting ${vectors.length} vectors to Pinecone`)
+        await index.namespace(organizationId).upsert(vectors)
+
+        console.log(`Successfully vectorized document ${documentId}`)
+
+        // Store Pinecone IDs in database
+        const pineconeIds = vectors.map(v => v.id)
+        await db.document.update({
+          where: { id: documentId },
+          data: {
+            metadata: {
+              ...(parseResult.metadata as any),
+              pineconeIds,
+              vectorized: true,
+              chunkCount: chunks.length,
+            },
+          },
+        })
+
+        return {
+          success: true,
+          chunkCount: chunks.length,
+          vectorCount: vectors.length,
+        }
+      } catch (error) {
+        console.error('Vectorization failed:', error)
+        // Don't fail the entire job if vectorization fails
+        // The document is still processed and searchable by name
+        return {
+          skipped: true,
+          reason: 'Vectorization error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
       }
     })
 

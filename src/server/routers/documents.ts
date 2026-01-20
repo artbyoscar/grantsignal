@@ -4,6 +4,7 @@ import { DocumentType, ProcessingStatus } from '@prisma/client'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { inngest } from '@/inngest/client'
+import { queryOrganizationMemory } from '../services/ai/rag'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -284,5 +285,105 @@ export const documentsRouter = router({
       return ctx.db.document.findUnique({
         where: { id: input.documentId },
       })
+    }),
+
+  /**
+   * Semantic search across organization documents
+   */
+  search: orgProcedure
+    .input(
+      z.object({
+        query: z.string().min(1, 'Query cannot be empty'),
+        type: z.nativeEnum(DocumentType).optional(),
+        limit: z.number().min(1).max(50).optional().default(10),
+        minScore: z.number().min(0).max(1).optional().default(0.7),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { query, type, limit, minScore } = input
+
+      try {
+        // Query organization memory using RAG
+        const contexts = await queryOrganizationMemory({
+          query,
+          organizationId: ctx.organizationId,
+          topK: limit,
+          minScore,
+        })
+
+        // Group contexts by document
+        const documentMap = new Map<string, {
+          document: any
+          chunks: Array<{ text: string; score: number; chunkIndex: number }>
+          maxScore: number
+        }>()
+
+        for (const context of contexts) {
+          if (!documentMap.has(context.documentId)) {
+            // Fetch document details
+            const document = await ctx.db.document.findFirst({
+              where: {
+                id: context.documentId,
+                organizationId: ctx.organizationId,
+                ...(type && { type }),
+              },
+              include: {
+                grant: {
+                  select: {
+                    id: true,
+                    funder: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            })
+
+            if (document) {
+              documentMap.set(context.documentId, {
+                document,
+                chunks: [],
+                maxScore: 0,
+              })
+            }
+          }
+
+          const docData = documentMap.get(context.documentId)
+          if (docData) {
+            docData.chunks.push({
+              text: context.text,
+              score: context.score,
+              chunkIndex: context.chunkIndex,
+            })
+            docData.maxScore = Math.max(docData.maxScore, context.score)
+          }
+        }
+
+        // Convert to array and sort by relevance
+        const results = Array.from(documentMap.values())
+          .sort((a, b) => b.maxScore - a.maxScore)
+          .map(({ document, chunks, maxScore }) => ({
+            document,
+            relevanceScore: Math.round(maxScore * 100),
+            matchingChunks: chunks.sort((a, b) => b.score - a.score).slice(0, 3), // Top 3 chunks per document
+          }))
+
+        return {
+          results,
+          totalDocuments: results.length,
+          totalChunks: contexts.length,
+        }
+      } catch (error) {
+        console.error('Search error:', error)
+        // If search fails (e.g., Pinecone not configured), return empty results
+        return {
+          results: [],
+          totalDocuments: 0,
+          totalChunks: 0,
+          error: error instanceof Error ? error.message : 'Search failed',
+        }
+      }
     }),
 })
