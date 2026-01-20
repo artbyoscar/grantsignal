@@ -1,4 +1,4 @@
-import { FileText, FileSpreadsheet, File, Download, MoreVertical } from 'lucide-react'
+import { FileText, FileSpreadsheet, File, Download, MoreVertical, Eye } from 'lucide-react'
 import { DocumentType, ProcessingStatus } from '@prisma/client'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -21,6 +21,7 @@ type Document = {
 type DocumentCardProps = {
   document: Document
   onClick?: () => void
+  onReview?: () => void
 }
 
 // Get icon based on mime type
@@ -73,7 +74,7 @@ function getStatusBadge(status: ProcessingStatus) {
   return badges[status] || badges.PENDING
 }
 
-export function DocumentCard({ document, onClick }: DocumentCardProps) {
+export function DocumentCard({ document, onClick, onReview }: DocumentCardProps) {
   const Icon = getFileIcon(document.mimeType)
   const statusBadge = getStatusBadge(document.status)
   const timeAgo = formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })
@@ -133,16 +134,29 @@ export function DocumentCard({ document, onClick }: DocumentCardProps) {
 
       {/* Action Button (visible on hover) */}
       <div className="mt-3 pt-3 border-t border-slate-700/50 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5"
-          onClick={(e) => {
-            e.stopPropagation()
-            // TODO: Download document
-          }}
-        >
-          <Download className="w-3.5 h-3.5" />
-          Download
-        </button>
+        {document.status === ProcessingStatus.NEEDS_REVIEW && onReview ? (
+          <button
+            className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation()
+              onReview()
+            }}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Review
+          </button>
+        ) : (
+          <button
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5"
+            onClick={(e) => {
+              e.stopPropagation()
+              // TODO: Download document
+            }}
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download
+          </button>
+        )}
       </div>
     </div>
   )

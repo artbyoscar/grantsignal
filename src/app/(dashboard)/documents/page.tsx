@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useRef, DragEvent, ChangeEvent } from 'react'
-import { FileText, Upload, Search, FolderOpen, File, X, Loader2 } from 'lucide-react'
+import { FileText, Upload, Search, FolderOpen, File, X, Loader2, AlertCircle, CheckCircle, Clock, XCircle, Eye } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
-import { DocumentType } from '@prisma/client'
+import { DocumentType, ProcessingStatus } from '@prisma/client'
 import { DocumentCard, DocumentCardSkeleton } from '@/components/documents/document-card'
 import { toast } from 'sonner'
 
@@ -38,6 +38,8 @@ export default function DocumentsPage() {
   const [selectedType, setSelectedType] = useState<DocumentType | undefined>(undefined)
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch documents
@@ -45,9 +47,15 @@ export default function DocumentsPage() {
     type: selectedType,
   })
 
+  // Fetch document health stats
+  const { data: health } = api.documents.health.useQuery()
+
   // Upload mutation
   const createUploadUrlMutation = api.documents.createUploadUrl.useMutation()
   const confirmUploadMutation = api.documents.confirmUpload.useMutation()
+
+  // Approve document mutation
+  const approveDocumentMutation = api.documents.approveDocument.useMutation()
 
   // Handle file selection
   const handleFileSelect = async (files: FileList | null) => {
@@ -221,6 +229,27 @@ export default function DocumentsPage() {
       : documents?.filter((doc: { type: DocumentType }) => doc.type === type.value).length || 0,
   }))
 
+  // Handle reviewing a document
+  const handleReviewDocument = (document: any) => {
+    setSelectedDocument(document)
+    setReviewModalOpen(true)
+  }
+
+  // Handle approving a document
+  const handleApproveDocument = async () => {
+    if (!selectedDocument) return
+
+    try {
+      await approveDocumentMutation.mutateAsync({ documentId: selectedDocument.id })
+      toast.success('Document approved and marked as completed')
+      setReviewModalOpen(false)
+      setSelectedDocument(null)
+      refetch()
+    } catch (error) {
+      toast.error('Failed to approve document')
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Hidden file input */}
@@ -247,6 +276,68 @@ export default function DocumentsPage() {
           Upload Documents
         </button>
       </div>
+
+      {/* Document Health Section */}
+      {health && health.total > 0 && (
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+          <h3 className="text-sm font-medium text-slate-400 mb-4">Document Health</h3>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-green-500/10 rounded-lg border border-green-500/20">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-white">{health.completed}</div>
+                <div className="text-xs text-slate-400">Completed</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <Clock className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-white">{health.processing}</div>
+                <div className="text-xs text-slate-400">Processing</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-white">{health.needsReview}</div>
+                <div className="text-xs text-slate-400">Needs Review</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-500/10 rounded-lg border border-red-500/20">
+                <XCircle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <div className="text-2xl font-semibold text-white">{health.failed}</div>
+                <div className="text-xs text-slate-400">Failed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alert Banner for Documents Needing Review */}
+      {health && health.needsReview > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-amber-300 mb-1">
+                {health.needsReview} {health.needsReview === 1 ? 'document needs' : 'documents need'} review
+              </h4>
+              <p className="text-sm text-amber-200/80">
+                Documents needing review have low extraction confidence. You may need to manually verify the content.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="flex gap-4">
@@ -408,15 +499,155 @@ export default function DocumentsPage() {
                   key={document.id}
                   document={document}
                   onClick={() => {
-                    // TODO: Open document preview/details
-                    toast.info('Document preview coming soon')
+                    if (document.status === ProcessingStatus.NEEDS_REVIEW) {
+                      handleReviewDocument(document)
+                    } else {
+                      toast.info('Document preview coming soon')
+                    }
                   }}
+                  onReview={document.status === ProcessingStatus.NEEDS_REVIEW ? () => handleReviewDocument(document) : undefined}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Review Modal */}
+      {reviewModalOpen && selectedDocument && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setReviewModalOpen(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-3xl max-h-[80vh] bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-700">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Review Document</h2>
+                <p className="text-sm text-slate-400 mt-1">{selectedDocument.name}</p>
+              </div>
+              <button
+                onClick={() => setReviewModalOpen(false)}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Confidence Score */}
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-medium text-amber-300">Low Confidence Score</h3>
+                    <p className="text-sm text-amber-200/80 mt-1">
+                      Extraction confidence: {selectedDocument.confidenceScore || 0}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warnings */}
+              {selectedDocument.parseWarnings && Array.isArray(selectedDocument.parseWarnings) && selectedDocument.parseWarnings.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-slate-300 mb-2">Warnings</h3>
+                  <ul className="space-y-2">
+                    {selectedDocument.parseWarnings.map((warning: string, index: number) => (
+                      <li key={index} className="text-sm text-slate-400 flex items-start gap-2">
+                        <span className="text-amber-400 mt-0.5">•</span>
+                        <span>{warning}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Extracted Text Preview */}
+              <div>
+                <h3 className="text-sm font-medium text-slate-300 mb-2">Extracted Text Preview</h3>
+                <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-h-64 overflow-y-auto">
+                  {selectedDocument.extractedText ? (
+                    <pre className="text-sm text-slate-300 whitespace-pre-wrap font-mono">
+                      {selectedDocument.extractedText.slice(0, 2000)}
+                      {selectedDocument.extractedText.length > 2000 && '\n\n... (truncated)'}
+                    </pre>
+                  ) : (
+                    <p className="text-sm text-slate-500">No extracted text available</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Metadata */}
+              {selectedDocument.metadata && (
+                <div>
+                  <h3 className="text-sm font-medium text-slate-300 mb-2">Document Metadata</h3>
+                  <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      {selectedDocument.metadata.wordCount && (
+                        <>
+                          <dt className="text-slate-500">Word Count:</dt>
+                          <dd className="text-slate-300">{selectedDocument.metadata.wordCount}</dd>
+                        </>
+                      )}
+                      {selectedDocument.metadata.pageCount && (
+                        <>
+                          <dt className="text-slate-500">Pages:</dt>
+                          <dd className="text-slate-300">{selectedDocument.metadata.pageCount}</dd>
+                        </>
+                      )}
+                      {selectedDocument.metadata.detectedType && (
+                        <>
+                          <dt className="text-slate-500">Detected Type:</dt>
+                          <dd className="text-slate-300">{selectedDocument.metadata.detectedType}</dd>
+                        </>
+                      )}
+                    </dl>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-700 bg-slate-800/50">
+              <button
+                onClick={() => setReviewModalOpen(false)}
+                className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={openFilePicker}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Re-upload
+              </button>
+              <button
+                onClick={handleApproveDocument}
+                disabled={approveDocumentMutation.isPending}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                {approveDocumentMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Approving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Approve
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

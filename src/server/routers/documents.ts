@@ -3,6 +3,7 @@ import { router, orgProcedure } from '../trpc'
 import { DocumentType, ProcessingStatus } from '@prisma/client'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { inngest } from '@/inngest/client'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -25,7 +26,7 @@ export const documentsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const documents = await ctx.prisma.document.findMany({
+      const documents = await ctx.db.document.findMany({
         where: {
           organizationId: ctx.organizationId,
           ...(input.type && { type: input.type }),
@@ -56,7 +57,7 @@ export const documentsRouter = router({
   byId: orgProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const document = await ctx.prisma.document.findFirst({
+      const document = await ctx.db.document.findFirst({
         where: {
           id: input.id,
           organizationId: ctx.organizationId,
@@ -97,7 +98,7 @@ export const documentsRouter = router({
       const s3Key = `${ctx.organizationId}/${timestamp}-${sanitizedFileName}`
 
       // Create document record
-      const document = await ctx.prisma.document.create({
+      const document = await ctx.db.document.create({
         data: {
           organizationId: ctx.organizationId,
           grantId: input.grantId,
@@ -138,29 +139,40 @@ export const documentsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const document = await ctx.prisma.document.updateMany({
+      // Get document details first
+      const doc = await ctx.db.document.findFirst({
         where: {
           id: input.documentId,
           organizationId: ctx.organizationId,
+        },
+      })
+
+      if (!doc) {
+        throw new Error('Document not found or access denied')
+      }
+
+      // Update status to PROCESSING
+      await ctx.db.document.update({
+        where: {
+          id: input.documentId,
         },
         data: {
           status: ProcessingStatus.PROCESSING,
         },
       })
 
-      if (document.count === 0) {
-        throw new Error('Document not found or access denied')
-      }
+      // Trigger Inngest document processing job
+      await inngest.send({
+        name: 'document/uploaded',
+        data: {
+          documentId: doc.id,
+          organizationId: doc.organizationId,
+          s3Key: doc.s3Key,
+          mimeType: doc.mimeType,
+        },
+      })
 
-      // TODO: Trigger document processing job (Inngest/background job)
-      // This would typically:
-      // 1. Extract text from document
-      // 2. Parse for commitments
-      // 3. Generate embeddings
-      // 4. Store in Pinecone
-      // 5. Update status to COMPLETED or NEEDS_REVIEW
-
-      return ctx.prisma.document.findUnique({
+      return ctx.db.document.findUnique({
         where: { id: input.documentId },
       })
     }),
@@ -180,7 +192,7 @@ export const documentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { documentId, ...data } = input
 
-      const document = await ctx.prisma.document.updateMany({
+      const document = await ctx.db.document.updateMany({
         where: {
           id: documentId,
           organizationId: ctx.organizationId,
@@ -199,8 +211,78 @@ export const documentsRouter = router({
         throw new Error('Document not found or access denied')
       }
 
-      return ctx.prisma.document.findUnique({
+      return ctx.db.document.findUnique({
         where: { id: documentId },
+      })
+    }),
+
+  /**
+   * Get document health statistics
+   */
+  health: orgProcedure.query(async ({ ctx }) => {
+    const [completed, processing, needsReview, failed] = await Promise.all([
+      ctx.db.document.count({
+        where: {
+          organizationId: ctx.organizationId,
+          status: ProcessingStatus.COMPLETED,
+        },
+      }),
+      ctx.db.document.count({
+        where: {
+          organizationId: ctx.organizationId,
+          status: ProcessingStatus.PROCESSING,
+        },
+      }),
+      ctx.db.document.count({
+        where: {
+          organizationId: ctx.organizationId,
+          status: ProcessingStatus.NEEDS_REVIEW,
+        },
+      }),
+      ctx.db.document.count({
+        where: {
+          organizationId: ctx.organizationId,
+          status: ProcessingStatus.FAILED,
+        },
+      }),
+    ])
+
+    return {
+      completed,
+      processing,
+      needsReview,
+      failed,
+      total: completed + processing + needsReview + failed,
+    }
+  }),
+
+  /**
+   * Approve a document that needs review
+   */
+  approveDocument: orgProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const document = await ctx.db.document.updateMany({
+        where: {
+          id: input.documentId,
+          organizationId: ctx.organizationId,
+          status: ProcessingStatus.NEEDS_REVIEW,
+        },
+        data: {
+          status: ProcessingStatus.COMPLETED,
+        },
+      })
+
+      if (document.count === 0) {
+        throw new Error('Document not found or not in NEEDS_REVIEW status')
+      }
+
+      return ctx.db.document.findUnique({
+        where: { id: input.documentId },
       })
     }),
 })
