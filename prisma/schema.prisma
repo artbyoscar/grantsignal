@@ -1,14 +1,342 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum FunderType {
+  PRIVATE_FOUNDATION
+  COMMUNITY_FOUNDATION
+  CORPORATE
+  FEDERAL
+  STATE
+  LOCAL
+  OTHER
+}
+
+enum OpportunitySource {
+  FEDERAL_API
+  USER_INGESTED
+  FOUNDATION_990
+}
+
+enum DocumentType {
+  PROPOSAL
+  REPORT
+  BUDGET
+  LOI
+  AWARD_LETTER
+  AGREEMENT
+  ANNUAL_REPORT
+  STRATEGIC_PLAN
+  EVALUATION
+  OTHER
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  NEEDS_REVIEW
+  FAILED
+}
+
+enum GrantStatus {
+  PROSPECT
+  RESEARCHING
+  WRITING
+  REVIEW
+  SUBMITTED
+  PENDING
+  AWARDED
+  DECLINED
+  ACTIVE
+  CLOSEOUT
+  COMPLETED
+}
+
+enum CommitmentType {
+  DELIVERABLE
+  OUTCOME_METRIC
+  REPORT_DUE
+  BUDGET_SPEND
+  STAFFING
+  TIMELINE
+}
+
+enum CommitmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum ConflictType {
+  METRIC_MISMATCH
+  TIMELINE_OVERLAP
+  BUDGET_DISCREPANCY
+  CAPACITY_OVERCOMMIT
+}
+
+enum ConflictSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ConflictStatus {
+  UNRESOLVED
+  UNDER_REVIEW
+  RESOLVED
+  IGNORED
+}
+
+// ============================================================================
+// MODELS
+// ============================================================================
+
+model Organization {
+  id               String             @id @default(cuid())
+  clerkOrgId       String?            @unique
+  name             String
+  ein              String?            @unique
+  mission          String?            @db.Text
+  voiceProfile     Json?
+  voiceUpdatedAt   DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  // Relations
+  users            OrganizationUser[]
+  programs         Program[]
+  documents        Document[]
+  grants           Grant[]
+  commitments      Commitment[]
+  fitScores        FitScore[]
+}
+
+model OrganizationUser {
+  id             String       @id @default(cuid())
+  organizationId String
+  clerkUserId    String
+  role           UserRole
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, clerkUserId])
+}
+
+model Program {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?       @db.Text
+  outcomes       Json?
+  budget         Decimal?      @db.Decimal(15, 2)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grants         Grant[]
+}
+
+model Funder {
+  id               String         @id @default(cuid())
+  name             String
+  ein              String?        @unique
+  type             FunderType
+  totalAssets      Decimal?       @db.Decimal(15, 2)
+  totalGiving      Decimal?       @db.Decimal(15, 2)
+  grantSizeMin     Decimal?       @db.Decimal(15, 2)
+  grantSizeMax     Decimal?       @db.Decimal(15, 2)
+  grantSizeMedian  Decimal?       @db.Decimal(15, 2)
+  website          String?
+  lastSyncedAt     DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Relations
+  opportunities    Opportunity[]
+  pastGrantees     PastGrantee[]
+  grants           Grant[]
+}
+
+model PastGrantee {
+  id            String   @id @default(cuid())
+  funderId      String
+  recipientName String
+  recipientEin  String?
+  amount        Decimal  @db.Decimal(15, 2)
+  purpose       String?
+  year          Int
+
+  // Relations
+  funder        Funder   @relation(fields: [funderId], references: [id], onDelete: Cascade)
+
+  @@index([funderId])
+}
+
+model Opportunity {
+  id           String              @id @default(cuid())
+  funderId     String?
+  title        String
+  description  String?             @db.Text
+  deadline     DateTime?
+  amountMin    Decimal?            @db.Decimal(15, 2)
+  amountMax    Decimal?            @db.Decimal(15, 2)
+  source       OpportunitySource
+  sourceUrl    String?
+  requirements Json?
+  eligibility  Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  // Relations
+  funder       Funder?             @relation(fields: [funderId], references: [id], onDelete: SetNull)
+  fitScores    FitScore[]
+  grants       Grant[]
+
+  @@index([deadline])
+}
+
+model FitScore {
+  id               String       @id @default(cuid())
+  opportunityId    String
+  organizationId   String
+  overallScore     Int
+  missionScore     Int
+  capacityScore    Int
+  geographicScore  Int
+  historyScore     Int
+  reusableContent  Json?
+  estimatedHours   Int?
+
+  // Relations
+  opportunity      Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, organizationId])
+}
+
+model Document {
+  id               String           @id @default(cuid())
+  organizationId   String
+  grantId          String?
+  name             String
+  type             DocumentType
+  mimeType         String
+  size             Int
+  s3Key            String
+  status           ProcessingStatus @default(PENDING)
+  confidenceScore  Int?
+  parseWarnings    Json?
+  extractedText    String?          @db.Text
+  metadata         Json?
+  pineconeIds      String[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  processedAt      DateTime?
+
+  // Relations
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grant            Grant?           @relation(fields: [grantId], references: [id], onDelete: SetNull)
+  sourceCommitments Commitment[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Grant {
+  id              String       @id @default(cuid())
+  organizationId  String
+  funderId        String?
+  opportunityId   String?
+  programId       String?
+  status          GrantStatus  @default(PROSPECT)
+  amountRequested Decimal?     @db.Decimal(15, 2)
+  amountAwarded   Decimal?     @db.Decimal(15, 2)
+  deadline        DateTime?
+  submittedAt     DateTime?
+  awardedAt       DateTime?
+  startDate       DateTime?
+  endDate         DateTime?
+  notes           String?      @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  funder          Funder?      @relation(fields: [funderId], references: [id], onDelete: SetNull)
+  opportunity     Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  program         Program?     @relation(fields: [programId], references: [id], onDelete: SetNull)
+  documents       Document[]
+  commitments     Commitment[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([deadline])
+}
+
+model Commitment {
+  id                 String             @id @default(cuid())
+  organizationId     String
+  grantId            String
+  type               CommitmentType
+  description        String
+  metricName         String?
+  metricValue        String?
+  dueDate            DateTime?
+  status             CommitmentStatus   @default(PENDING)
+  sourceDocumentId   String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  // Relations
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grant              Grant              @relation(fields: [grantId], references: [id], onDelete: Cascade)
+  sourceDocument     Document?          @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  conflicts          CommitmentConflict[]
+
+  @@index([organizationId])
+  @@index([grantId])
+}
+
+model CommitmentConflict {
+  id            String           @id @default(cuid())
+  commitmentId  String
+  conflictType  ConflictType
+  description   String
+  severity      ConflictSeverity
+  status        ConflictStatus   @default(UNRESOLVED)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Relations
+  commitment    Commitment       @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+
+  @@index([commitmentId])
 }
