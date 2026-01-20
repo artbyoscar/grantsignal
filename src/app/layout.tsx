@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import { TRPCProvider } from '@/lib/trpc/provider'
+import { Toaster } from 'sonner'
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({
         <body className="bg-slate-900 text-slate-100 antialiased">
           <TRPCProvider>
             {children}
+            <Toaster position="bottom-right" theme="dark" />
           </TRPCProvider>
         </body>
       </html>
