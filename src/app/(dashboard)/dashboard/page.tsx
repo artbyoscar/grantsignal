@@ -154,7 +154,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Pipeline Summary */}
-      <PipelineSummary />
+      <PipelineSummary grants={data?.grants || []} isLoading={isLoading} />
 
       {/* Urgent Actions and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
