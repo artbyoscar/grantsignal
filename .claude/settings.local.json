@@ -5,7 +5,11 @@
       "Bash(then mkdir \"c:\\\\Users\\\\OscarNuñez\\\\Desktop\\\\grantsignal\\\\prisma\")",
       "Bash(fi:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx prisma db push)",
+      "Bash(npx tsx:*)",
+      "Bash(del:*)"
     ]
   }
 }
