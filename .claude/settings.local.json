@@ -28,7 +28,8 @@
       "Bash(npx prisma migrate dev:*)",
       "Bash(dir:*)",
       "Bash(head:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(pnpm prisma migrate dev:*)"
     ]
   }
 }

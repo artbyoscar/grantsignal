@@ -13,6 +13,7 @@ export const grantsRouter = router({
         statuses: z.array(z.nativeEnum(GrantStatus)).optional(),
         programId: z.string().optional(),
         funderType: z.nativeEnum(FunderType).optional(),
+        assignedToId: z.string().optional(),
         deadlineFrom: z.date().optional(),
         deadlineTo: z.date().optional(),
         cursor: z.string().optional(),
@@ -24,7 +25,7 @@ export const grantsRouter = router({
         console.log('[grants.list] Starting query with organizationId:', ctx.organizationId);
         console.log('[grants.list] Input:', input);
 
-        const { cursor, limit, status, statuses, programId, funderType, deadlineFrom, deadlineTo } = input
+        const { cursor, limit, status, statuses, programId, funderType, assignedToId, deadlineFrom, deadlineTo } = input
 
         const grants = await ctx.db.grant.findMany({
           where: {
@@ -32,6 +33,7 @@ export const grantsRouter = router({
             ...(status && { status }),
             ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
             ...(programId && { programId }),
+            ...(assignedToId && { assignedToId }),
             ...(funderType && {
               funder: {
                 type: funderType,
@@ -68,6 +70,14 @@ export const grantsRouter = router({
               select: {
                 id: true,
                 name: true,
+              },
+            },
+            assignedTo: {
+              select: {
+                id: true,
+                displayName: true,
+                avatarUrl: true,
+                clerkUserId: true,
               },
             },
             _count: {
@@ -269,5 +279,144 @@ export const grantsRouter = router({
       }
 
       return { success: true }
+    }),
+
+  /**
+   * Assign a grant to a team member
+   */
+  assignGrant: orgProcedure
+    .input(
+      z.object({
+        grantId: z.string(),
+        userId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify the grant belongs to the organization
+      const grant = await ctx.db.grant.findFirst({
+        where: {
+          id: input.grantId,
+          organizationId: ctx.organizationId,
+        },
+        include: {
+          assignedTo: {
+            select: {
+              id: true,
+              displayName: true,
+            },
+          },
+        },
+      })
+
+      if (!grant) {
+        throw new Error('Grant not found or access denied')
+      }
+
+      // Verify the user is a member of the organization
+      const user = await ctx.db.organizationUser.findFirst({
+        where: {
+          id: input.userId,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      if (!user) {
+        throw new Error('User not found in organization')
+      }
+
+      // Update the grant
+      const updatedGrant = await ctx.db.grant.update({
+        where: { id: input.grantId },
+        data: {
+          assignedToId: input.userId,
+          assignedAt: new Date(),
+        },
+        include: {
+          assignedTo: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+              clerkUserId: true,
+            },
+          },
+        },
+      })
+
+      // Log activity
+      await ctx.db.complianceAudit.create({
+        data: {
+          organizationId: ctx.organizationId,
+          actionType: 'GRANT_ASSIGNED',
+          description: `Assigned grant to ${user.displayName || 'team member'}`,
+          performedBy: ctx.auth.userId!,
+          metadata: {
+            grantId: input.grantId,
+            previousAssigneeId: grant.assignedToId,
+            previousAssigneeName: grant.assignedTo?.displayName,
+            newAssigneeId: input.userId,
+            newAssigneeName: user.displayName,
+          },
+        },
+      })
+
+      return updatedGrant
+    }),
+
+  /**
+   * Unassign a grant from a team member
+   */
+  unassignGrant: orgProcedure
+    .input(
+      z.object({
+        grantId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify the grant belongs to the organization
+      const grant = await ctx.db.grant.findFirst({
+        where: {
+          id: input.grantId,
+          organizationId: ctx.organizationId,
+        },
+        include: {
+          assignedTo: {
+            select: {
+              id: true,
+              displayName: true,
+            },
+          },
+        },
+      })
+
+      if (!grant) {
+        throw new Error('Grant not found or access denied')
+      }
+
+      // Update the grant
+      const updatedGrant = await ctx.db.grant.update({
+        where: { id: input.grantId },
+        data: {
+          assignedToId: null,
+          assignedAt: null,
+        },
+      })
+
+      // Log activity
+      await ctx.db.complianceAudit.create({
+        data: {
+          organizationId: ctx.organizationId,
+          actionType: 'GRANT_UNASSIGNED',
+          description: `Unassigned grant from ${grant.assignedTo?.displayName || 'team member'}`,
+          performedBy: ctx.auth.userId!,
+          metadata: {
+            grantId: input.grantId,
+            previousAssigneeId: grant.assignedToId,
+            previousAssigneeName: grant.assignedTo?.displayName,
+          },
+        },
+      })
+
+      return updatedGrant
     }),
 })

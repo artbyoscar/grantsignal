@@ -10,6 +10,7 @@ import { writingRouter } from './writing'
 import { discoveryRouter } from './discovery'
 import { fundersRouter } from './funders'
 import { onboardingRouter } from './onboarding'
+import { notificationsRouter } from './notifications'
 
 /**
  * Main tRPC router combining all sub-routers
@@ -26,6 +27,7 @@ export const appRouter = router({
   discovery: discoveryRouter,
   funders: fundersRouter,
   onboarding: onboardingRouter,
+  notifications: notificationsRouter,
 })
 
 export type AppRouter = typeof appRouter

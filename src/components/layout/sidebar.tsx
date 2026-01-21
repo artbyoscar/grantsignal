@@ -10,6 +10,7 @@ import {
   Shield,
   BarChart3,
   Settings,
+  Users,
   User
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -38,6 +39,7 @@ export function Sidebar() {
       badgeColor: 'bg-red-500'
     },
     { href: '/reports', label: 'Reports', icon: BarChart3 },
+    { href: '/team', label: 'Team', icon: Users },
   ]
 
   return (

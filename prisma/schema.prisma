@@ -116,6 +116,10 @@ enum ComplianceActionType {
   CONFLICT_IGNORED
   COMMITMENT_UPDATED
   SCAN_COMPLETED
+  TEAM_MEMBER_INVITED
+  TEAM_MEMBER_JOINED
+  GRANT_ASSIGNED
+  GRANT_UNASSIGNED
 }
 
 enum FunderRequirementType {
@@ -125,6 +129,21 @@ enum FunderRequirementType {
   FORMAT_REQUIREMENT
   MATCH_REQUIREMENT
   OTHER
+}
+
+enum NotificationType {
+  DEADLINE_REMINDER
+  WEEKLY_DIGEST
+  COMPLIANCE_ALERT
+  DOCUMENT_PROCESSED
+  CONFLICT_DETECTED
+  COMMITMENT_DUE
+}
+
+enum DigestFrequency {
+  DAILY
+  WEEKLY
+  NONE
 }
 
 // ============================================================================
@@ -158,6 +177,7 @@ model Organization {
   fitScores        FitScore[]
   auditLogs        ComplianceAudit[]
   funderRequirements FunderRequirement[]
+  invitations      TeamInvitation[]
 }
 
 model OrganizationUser {
@@ -165,11 +185,16 @@ model OrganizationUser {
   organizationId String
   clerkUserId    String
   role           UserRole
+  displayName    String?      // For @mentions and display
+  avatarUrl      String?      // Cached from Clerk
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   // Relations
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  notificationPreferences NotificationPreferences?
+  notificationLogs        NotificationLog[]
+  assignedGrants Grant[]      // Grants assigned to this user
 
   @@unique([organizationId, clerkUserId])
 }
@@ -324,6 +349,8 @@ model Grant {
   startDate       DateTime?
   endDate         DateTime?
   notes           String?      @db.Text
+  assignedToId    String?      // Assigned team member
+  assignedAt      DateTime?    // When assigned
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -336,12 +363,14 @@ model Grant {
   funder          Funder?      @relation(fields: [funderId], references: [id], onDelete: SetNull)
   opportunity     Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
   program         Program?     @relation(fields: [programId], references: [id], onDelete: SetNull)
+  assignedTo      OrganizationUser? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   documents       Document[]
   commitments     Commitment[]
 
   @@index([organizationId])
   @@index([status])
   @@index([deadline])
+  @@index([assignedToId])
 }
 
 model Commitment {
@@ -435,5 +464,68 @@ model FunderRequirement {
   organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([funderId])
+  @@index([organizationId])
+}
+
+model NotificationPreferences {
+  id                        String          @id @default(cuid())
+  userId                    String          @unique
+  email                     String          // User's email address from Clerk
+
+  // Notification toggles
+  deadlineRemindersEnabled  Boolean         @default(true)
+  weeklyDigestEnabled       Boolean         @default(true)
+  complianceAlertsEnabled   Boolean         @default(true)
+  documentProcessedEnabled  Boolean         @default(false)
+
+  // Deadline reminder thresholds (days before deadline)
+  reminderThresholds        Int[]           @default([7, 3, 1])
+
+  // Digest frequency
+  digestFrequency           DigestFrequency @default(WEEKLY)
+
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  // Relations
+  user                      OrganizationUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+model NotificationLog {
+  id                String           @id @default(cuid())
+  userId            String
+  type              NotificationType
+  subject           String
+  sentAt            DateTime         @default(now())
+  metadata          Json?            // Additional context (grantId, conflictId, etc.)
+  success           Boolean          @default(true)
+  errorMessage      String?
+
+  // Relations
+  user              OrganizationUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([sentAt])
+}
+
+model TeamInvitation {
+  id             String       @id @default(cuid())
+  organizationId String
+  email          String
+  role           UserRole
+  token          String       @unique // JWT token for invitation link
+  invitedBy      String       // Clerk user ID
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
   @@index([organizationId])
 }

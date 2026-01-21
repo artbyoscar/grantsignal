@@ -13,18 +13,20 @@ import {
   Search,
   Sparkles,
   Eye,
-  Settings,
   Building2,
   Award,
   Lightbulb,
   Download,
   AlertCircle,
+  Volume2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { MemorySearch } from '@/components/writing/memory-search'
 import { AIGenerationPanel, type Source } from '@/components/writing/ai-generation-panel'
 import { Button } from '@/components/ui/button'
 import { FitScoreCard } from '@/components/discovery/fit-score-card'
+import { VoiceConsistencyIndicator } from '@/components/writing/voice-consistency-indicator'
+import { ApplyVoiceModal } from '@/components/writing/apply-voice-modal'
 
 interface PageProps {
   params: Promise<{
@@ -68,6 +70,8 @@ export default function WritingStudioPage({ params }: PageProps) {
   const [aiPrompt, setAiPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [showAiPanel, setShowAiPanel] = useState(false)
+  const [showApplyVoiceModal, setShowApplyVoiceModal] = useState(false)
+  const [selectedText, setSelectedText] = useState('')
 
   // Panel states
   const [leftPanelWidth, setLeftPanelWidth] = useState(40) // percentage
@@ -256,6 +260,59 @@ export default function WritingStudioPage({ params }: PageProps) {
     }
     setAiPrompt(prompts[action])
     setShowAiPanel(true)
+  }
+
+  const handleApplyVoice = () => {
+    if (!currentSection) {
+      toast.error('Please select a section first')
+      return
+    }
+
+    // Get selected text from textarea
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const text = textarea.value.substring(start, end)
+
+    if (!text || text.trim().length < 10) {
+      toast.error('Please select at least 10 characters of text to apply voice')
+      return
+    }
+
+    setSelectedText(text)
+    setShowApplyVoiceModal(true)
+  }
+
+  const handleVoiceApplied = (rewrittenText: string) => {
+    if (!currentSection || !textareaRef.current) return
+
+    const textarea = textareaRef.current
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const currentContent = textarea.value
+
+    // Replace selected text with rewritten text
+    const newContent =
+      currentContent.substring(0, start) + rewrittenText + currentContent.substring(end)
+
+    setSectionContents(prev => ({
+      ...prev,
+      [currentSection]: {
+        ...prev[currentSection],
+        content: newContent,
+        lastModified: new Date().toISOString(),
+      },
+    }))
+
+    setHasUnsavedChanges(true)
+
+    // Set cursor position after rewritten text
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + rewrittenText.length, start + rewrittenText.length)
+    }, 0)
   }
 
   const handleMemoryInsert = (
@@ -494,6 +551,14 @@ export default function WritingStudioPage({ params }: PageProps) {
               {saveStatus === 'error' && 'Error'}
             </span>
           </div>
+
+          {/* Voice Consistency Indicator */}
+          {currentSection && currentSectionData?.content && (
+            <VoiceConsistencyIndicator
+              text={currentSectionData.content}
+              className="ml-2"
+            />
+          )}
 
           {/* Word Count */}
           <div className="text-sm text-slate-400">
@@ -880,6 +945,18 @@ export default function WritingStudioPage({ params }: PageProps) {
               Check Consistency
             </Button>
 
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleApplyVoice}
+              disabled={!currentSection}
+              className="gap-2 bg-blue-600/10 border-blue-500/30 hover:bg-blue-600/20"
+              title="Apply your organization's voice to selected text"
+            >
+              <Volume2 className="w-4 h-4" />
+              Apply Voice
+            </Button>
+
             <button
               onClick={handleOpenAiPanel}
               className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700 rounded transition-colors"
@@ -898,6 +975,18 @@ export default function WritingStudioPage({ params }: PageProps) {
           sectionName={currentSection}
           onAccept={handleAcceptAiContent}
           onClose={() => setShowAiPanel(false)}
+        />
+      )}
+
+      {/* Apply Voice Modal */}
+      {showApplyVoiceModal && selectedText && (
+        <ApplyVoiceModal
+          selectedText={selectedText}
+          onApply={handleVoiceApplied}
+          onClose={() => {
+            setShowApplyVoiceModal(false)
+            setSelectedText('')
+          }}
         />
       )}
     </div>

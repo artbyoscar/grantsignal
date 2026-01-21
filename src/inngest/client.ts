@@ -32,4 +32,34 @@ export type Events = {
       ein: string
     }
   }
+  'notification/deadline-reminder': {
+    data: {
+      grantId: string
+      userId: string
+      email: string
+    }
+  }
+  'notification/compliance-alert': {
+    data: {
+      conflictId: string
+      userId: string
+      email: string
+      severity: string
+    }
+  }
+  'notification/document-processed': {
+    data: {
+      documentId: string
+      userId: string
+      email: string
+      status: string
+    }
+  }
+  'notification/test': {
+    data: {
+      userId: string
+      type: string
+      email: string
+    }
+  }
 }

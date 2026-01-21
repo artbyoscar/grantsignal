@@ -272,6 +272,44 @@ export const processDocument = inngest.createFunction(
       }
     })
 
+    // Step 6: Send document processed notifications
+    await step.run('send-notifications', async () => {
+      try {
+        // Get all users for this organization with document notifications enabled
+        const orgUsers = await db.organizationUser.findMany({
+          where: { organizationId },
+          include: { notificationPreferences: true },
+        })
+
+        const finalStatus = parseResult.confidence >= 70
+          ? ProcessingStatus.COMPLETED
+          : ProcessingStatus.NEEDS_REVIEW
+
+        for (const orgUser of orgUsers) {
+          const prefs = orgUser.notificationPreferences
+
+          if (prefs && prefs.documentProcessedEnabled) {
+            // Trigger document processed notification
+            await inngest.send({
+              name: 'notification/document-processed',
+              data: {
+                documentId,
+                userId: orgUser.id,
+                email: prefs.email,
+                status: finalStatus,
+              },
+            })
+          }
+        }
+
+        return { notificationsSent: orgUsers.filter((u) => u.notificationPreferences?.documentProcessedEnabled).length }
+      } catch (error) {
+        console.error('Failed to send document processed notifications:', error)
+        // Don't fail the entire job if notification fails
+        return { error: error instanceof Error ? error.message : 'Unknown error' }
+      }
+    })
+
     return {
       success: true,
       documentId,
