@@ -8,6 +8,7 @@ import {
   Kanban,
   FileText,
   Shield,
+  BarChart3,
   Settings,
   User
 } from 'lucide-react'
@@ -19,6 +20,7 @@ const navItems = [
   { href: '/pipeline', label: 'Pipeline', icon: Kanban },
   { href: '/documents', label: 'Documents', icon: FileText },
   { href: '/compliance', label: 'Compliance', icon: Shield },
+  { href: '/reports', label: 'Reports', icon: BarChart3 },
 ]
 
 export function Sidebar() {

@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs'
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { PipelineSummary } from '@/components/dashboard/pipeline-summary'
+import { ReportsWidget } from '@/components/dashboard/reports-widget'
 import { Skeleton } from '@/components/ui/skeleton'
 import { api } from '@/lib/trpc/client'
 
@@ -156,8 +157,8 @@ export default function DashboardPage() {
       {/* Pipeline Summary */}
       <PipelineSummary grants={data?.grants || []} isLoading={isLoading} />
 
-      {/* Urgent Actions and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Urgent Actions, Recent Activity, and Reports */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Urgent Actions */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Urgent Actions</h2>
@@ -214,6 +215,9 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500 mt-1">Activity will appear here as you work</p>
           </div>
         </div>
+
+        {/* Monthly Summary Widget */}
+        <ReportsWidget />
       </div>
     </div>
   )

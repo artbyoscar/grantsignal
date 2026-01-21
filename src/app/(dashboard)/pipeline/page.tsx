@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Plus, MoreHorizontal, Edit3 } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Plus, MoreHorizontal, Edit3, LayoutGrid, Table2, Filter, X } from 'lucide-react'
 import {
   DndContext,
   DragEndEvent,
@@ -15,8 +15,9 @@ import {
   useDraggable,
 } from '@dnd-kit/core'
 import { api } from '@/lib/trpc/client'
-import { GrantStatus } from '@prisma/client'
+import { GrantStatus, FunderType } from '@prisma/client'
 import { toast } from 'sonner'
+import { PipelineTable } from '@/components/pipeline/pipeline-table'
 
 // Column configuration with colors
 const COLUMNS = [
@@ -289,11 +290,59 @@ function DroppableColumn({
 }
 
 export default function PipelinePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [activeGrant, setActiveGrant] = useState<Grant | null>(null)
+  const [view, setView] = useState<'kanban' | 'table'>('kanban')
+  const [showFilters, setShowFilters] = useState(false)
 
-  // Fetch grants
-  const { data, isLoading, refetch } = api.grants.list.useQuery({})
+  // Filter state from URL
+  const [programId, setProgramId] = useState<string | undefined>(searchParams.get('program') || undefined)
+  const [selectedStatuses, setSelectedStatuses] = useState<GrantStatus[]>(() => {
+    const statusParam = searchParams.get('statuses')
+    return statusParam ? (statusParam.split(',') as GrantStatus[]) : []
+  })
+  const [funderType, setFunderType] = useState<FunderType | undefined>(() => {
+    const typeParam = searchParams.get('funderType')
+    return typeParam ? (typeParam as FunderType) : undefined
+  })
+
+  // Load view preference from localStorage
+  useEffect(() => {
+    const savedView = localStorage.getItem('pipeline-view')
+    if (savedView === 'kanban' || savedView === 'table') {
+      setView(savedView)
+    }
+  }, [])
+
+  // Save view preference to localStorage
+  const handleViewChange = (newView: 'kanban' | 'table') => {
+    setView(newView)
+    localStorage.setItem('pipeline-view', newView)
+  }
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (programId) params.set('program', programId)
+    if (selectedStatuses.length > 0) params.set('statuses', selectedStatuses.join(','))
+    if (funderType) params.set('funderType', funderType)
+
+    const newUrl = params.toString() ? `/pipeline?${params.toString()}` : '/pipeline'
+    router.replace(newUrl, { scroll: false })
+  }, [programId, selectedStatuses, funderType, router])
+
+  // Fetch grants with filters
+  const { data, isLoading, refetch } = api.grants.list.useQuery({
+    programId,
+    statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+    funderType,
+  })
   const grants = data?.grants || []
+
+  // Fetch programs for filter
+  const { data: programsData } = api.programs.list.useQuery()
+  const programs = programsData || []
 
   // Update status mutation
   const updateStatusMutation = api.grants.updateStatus.useMutation({
@@ -374,6 +423,16 @@ export default function PipelinePage() {
     )
   }
 
+  // Clear all filters
+  const handleClearFilters = () => {
+    setProgramId(undefined)
+    setSelectedStatuses([])
+    setFunderType(undefined)
+  }
+
+  // Check if any filters are active
+  const hasActiveFilters = programId || selectedStatuses.length > 0 || funderType
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -387,6 +446,125 @@ export default function PipelinePage() {
           Add Grant
         </button>
       </div>
+
+      {/* Toolbar: View Toggle + Filters */}
+      <div className="flex items-center justify-between gap-4">
+        {/* View Toggle */}
+        <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg p-1">
+          <button
+            onClick={() => handleViewChange('kanban')}
+            className={`
+              px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors
+              ${view === 'kanban' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'}
+            `}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Kanban
+          </button>
+          <button
+            onClick={() => handleViewChange('table')}
+            className={`
+              px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors
+              ${view === 'table' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'}
+            `}
+          >
+            <Table2 className="w-4 h-4" />
+            Table
+          </button>
+        </div>
+
+        {/* Filter Toggle */}
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`
+            px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2
+            ${showFilters || hasActiveFilters ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-slate-800 text-slate-400 hover:text-slate-300 border border-slate-700'}
+          `}
+        >
+          <Filter className="w-4 h-4" />
+          Filters
+          {hasActiveFilters && (
+            <span className="px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+              {[programId, selectedStatuses.length > 0, funderType].filter(Boolean).length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Filter Controls */}
+      {showFilters && (
+        <div className="p-4 bg-slate-800 border border-slate-700 rounded-lg space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-white">Filter Grants</h3>
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearFilters}
+                className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+              >
+                <X className="w-3 h-3" />
+                Clear All
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Program Filter */}
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">Program</label>
+              <select
+                value={programId || ''}
+                onChange={(e) => setProgramId(e.target.value || undefined)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="">All Programs</option>
+                {programs.map((program) => (
+                  <option key={program.id} value={program.id}>
+                    {program.name} ({program._count.grants})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">Status</label>
+              <select
+                multiple
+                value={selectedStatuses}
+                onChange={(e) => {
+                  const options = Array.from(e.target.selectedOptions, option => option.value as GrantStatus)
+                  setSelectedStatuses(options)
+                }}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500 min-h-[80px]"
+              >
+                {Object.values(GrantStatus).map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+            </div>
+
+            {/* Funder Type Filter */}
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">Funder Type</label>
+              <select
+                value={funderType || ''}
+                onChange={(e) => setFunderType(e.target.value ? (e.target.value as FunderType) : undefined)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="">All Types</option>
+                {Object.values(FunderType).map((type) => (
+                  <option key={type} value={type}>
+                    {type.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pipeline Stats */}
       <div className="flex items-center gap-6 text-sm">
@@ -404,35 +582,40 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {COLUMNS.map((column) => (
-            <DroppableColumn
-              key={column.id}
-              column={column}
-              grants={grantsByStatus[column.id] || []}
-              isLoading={isLoading}
-            />
-          ))}
-        </div>
-
-        {/* Drag Overlay */}
-        <DragOverlay>
-          {activeGrant && (
-            <div className="w-72">
-              <GrantCard
-                grant={activeGrant}
-                color={COLUMNS.find(c => c.id === activeGrant.status)?.color || 'slate'}
+      {/* Conditional View Rendering */}
+      {view === 'table' ? (
+        <PipelineTable grants={grants} />
+      ) : (
+        /* Kanban Board */
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {COLUMNS.map((column) => (
+              <DroppableColumn
+                key={column.id}
+                column={column}
+                grants={grantsByStatus[column.id] || []}
+                isLoading={isLoading}
               />
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+            ))}
+          </div>
+
+          {/* Drag Overlay */}
+          <DragOverlay>
+            {activeGrant && (
+              <div className="w-72">
+                <GrantCard
+                  grant={activeGrant}
+                  color={COLUMNS.find(c => c.id === activeGrant.status)?.color || 'slate'}
+                />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      )}
     </div>
   )
 }

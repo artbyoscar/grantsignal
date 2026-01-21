@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
-import { GrantStatus } from '@prisma/client'
+import { GrantStatus, FunderType } from '@prisma/client'
 
 export const grantsRouter = router({
   /**
@@ -10,7 +10,11 @@ export const grantsRouter = router({
     .input(
       z.object({
         status: z.nativeEnum(GrantStatus).optional(),
+        statuses: z.array(z.nativeEnum(GrantStatus)).optional(),
         programId: z.string().optional(),
+        funderType: z.nativeEnum(FunderType).optional(),
+        deadlineFrom: z.date().optional(),
+        deadlineTo: z.date().optional(),
         cursor: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
       })
@@ -20,13 +24,27 @@ export const grantsRouter = router({
         console.log('[grants.list] Starting query with organizationId:', ctx.organizationId);
         console.log('[grants.list] Input:', input);
 
-        const { cursor, limit, status, programId } = input
+        const { cursor, limit, status, statuses, programId, funderType, deadlineFrom, deadlineTo } = input
 
         const grants = await ctx.db.grant.findMany({
           where: {
             organizationId: ctx.organizationId,
             ...(status && { status }),
+            ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
             ...(programId && { programId }),
+            ...(funderType && {
+              funder: {
+                type: funderType,
+              },
+            }),
+            ...(deadlineFrom || deadlineTo
+              ? {
+                  deadline: {
+                    ...(deadlineFrom && { gte: deadlineFrom }),
+                    ...(deadlineTo && { lte: deadlineTo }),
+                  },
+                }
+              : {}),
           },
           take: limit + 1,
           cursor: cursor ? { id: cursor } : undefined,

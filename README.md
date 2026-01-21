@@ -33,27 +33,47 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 
 ## Features
 
-### Implemented (v0.1)
+### Core Platform (Implemented)
 
-- [x] **Dashboard** - Command center with key metrics and urgent actions
-- [x] **Pipeline Kanban** - Drag-and-drop grant workflow management
-- [x] **Smart Discovery** - RFP parsing with fit scoring (mock implementation)
+- [x] **Dashboard** - Command center with key metrics, urgent actions, and pipeline summary
+- [x] **Pipeline Kanban** - Drag-and-drop grant workflow management across 8 stages
+- [x] **Smart Discovery** - RFP parsing with fit scoring against organizational profile
+- [x] **Document Library** - Upload, process, and search organizational documents
+- [x] **Document Processing** - Text extraction with confidence scoring and human review queue
+- [x] **RAG Integration** - Semantic search across organizational memory via Pinecone
+- [x] **AI Writing Studio** - Memory-assisted content generation with source attribution
 - [x] **Multi-tenant Architecture** - Organization-scoped data isolation
 - [x] **Authentication** - Clerk integration with SSO support
 
+### AI Writing Studio Features
+
+- [x] **Memory Assist** - Search and insert content from past proposals
+- [x] **AI Generation** - Draft, refine, and expand content with Claude
+- [x] **V3 Trust Architecture** - Confidence thresholds prevent hallucinations
+- [x] **Source Attribution** - Every AI output shows its sources
+- [x] **Auto-save** - Content saved automatically with status indicators
+
+### Document Processing Pipeline
+
+- [x] **S3 Upload** - Presigned URLs for secure direct upload
+- [x] **Multi-format Support** - PDF, DOCX, DOC, TXT
+- [x] **Confidence Scoring** - Automatic quality assessment (0-100)
+- [x] **Human Review Queue** - Low-confidence documents flagged for review
+- [x] **Vectorization** - Automatic embedding and Pinecone indexing
+
 ### In Progress
 
-- [ ] **Document Upload** - S3 integration with presigned URLs
-- [ ] **Document Processing** - Text extraction with confidence scoring
-- [ ] **RAG Integration** - Pinecone vector search for organizational memory
+- [ ] **Pipeline Table View** - Spreadsheet view with sorting and filtering
+- [ ] **Program-based Filtering** - Organize grants by program area
+- [ ] **Executive Reports** - Monthly summaries for leadership
 - [ ] **Compliance Guardian** - Commitment tracking and conflict detection
 
 ### Planned
 
-- [ ] **AI Writing Studio** - Voice-preserving content generation
 - [ ] **Voice Analysis** - Style fingerprinting and tone matching
 - [ ] **Funder Intelligence** - 990 data analysis via ProPublica API
 - [ ] **Clipboard Formatting** - One-click copy with rich text preservation
+- [ ] **Export Functions** - CSV, PDF, and DOCX export
 
 ---
 
@@ -71,7 +91,7 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 | Auth | Clerk | SSO, MFA, user management |
 | Storage | AWS S3 + CloudFront | Document storage |
 | AI/LLM | Claude API (Anthropic) | Content generation |
-| Embeddings | text-embedding-3-large | Document vectorization |
+| Embeddings | OpenAI text-embedding-3-large | Document vectorization |
 | Background Jobs | Inngest | Document processing |
 
 ---
@@ -85,6 +105,9 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 - PostgreSQL (or Neon account)
 - Clerk account
 - AWS account (for S3)
+- OpenAI API key (for embeddings)
+- Anthropic API key (for AI generation)
+- Pinecone account (for vector search)
 
 ### Installation
 
@@ -140,6 +163,10 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_REGION=us-west-2
 AWS_S3_BUCKET=grantsignal-documents
+
+# Background Jobs (Inngest)
+INNGEST_EVENT_KEY=...
+INNGEST_SIGNING_KEY=...
 ```
 
 ---
@@ -149,34 +176,97 @@ AWS_S3_BUCKET=grantsignal-documents
 ```
 grantsignal/
 ├── prisma/
-│   ├── schema.prisma      # Database schema
-│   └── seed.ts            # Seed data script
+│   ├── schema.prisma          # Database schema
+│   └── seed.ts                # Seed data script
 ├── src/
-│   ├── app/               # Next.js App Router
-│   │   ├── (auth)/        # Authentication pages
-│   │   ├── (dashboard)/   # Protected routes
-│   │   │   ├── dashboard/
-│   │   │   ├── opportunities/
-│   │   │   ├── pipeline/
-│   │   │   ├── documents/
-│   │   │   └── compliance/
+│   ├── app/                   # Next.js App Router
+│   │   ├── (auth)/            # Authentication pages
+│   │   ├── (dashboard)/       # Protected routes
+│   │   │   ├── dashboard/     # Main dashboard
+│   │   │   ├── opportunities/ # Smart Discovery
+│   │   │   ├── pipeline/      # Grant pipeline (Kanban)
+│   │   │   ├── documents/     # Document library
+│   │   │   ├── write/[grantId]/ # AI Writing Studio
+│   │   │   ├── compliance/    # Compliance Guardian
+│   │   │   └── reports/       # Analytics & Reports
 │   │   └── api/
-│   │       └── trpc/      # tRPC API handler
+│   │       ├── trpc/          # tRPC API handler
+│   │       └── inngest/       # Background job handler
 │   ├── components/
-│   │   ├── ui/            # shadcn/ui components
-│   │   ├── layout/        # Shell, sidebar, header
-│   │   ├── dashboard/     # Dashboard widgets
-│   │   └── pipeline/      # Kanban components
+│   │   ├── ui/                # shadcn/ui components
+│   │   ├── layout/            # Shell, sidebar, header
+│   │   ├── dashboard/         # Dashboard widgets
+│   │   ├── pipeline/          # Kanban components
+│   │   ├── documents/         # Document components
+│   │   ├── writing/           # Writing Studio components
+│   │   └── shared/            # Shared components (MemorySearch)
 │   ├── server/
-│   │   ├── routers/       # tRPC routers
-│   │   ├── context.ts     # Request context
-│   │   └── services/      # Business logic
+│   │   ├── routers/           # tRPC routers
+│   │   │   ├── grants.ts
+│   │   │   ├── documents.ts
+│   │   │   ├── discovery.ts
+│   │   │   ├── ai.ts
+│   │   │   └── compliance.ts
+│   │   ├── services/          # Business logic
+│   │   │   ├── ai/
+│   │   │   │   ├── embeddings.ts
+│   │   │   │   ├── rag.ts
+│   │   │   │   └── writer.ts
+│   │   │   └── documents/
+│   │   │       ├── parser.ts
+│   │   │       └── chunker.ts
+│   │   └── context.ts         # Request context
+│   ├── inngest/
+│   │   ├── client.ts          # Inngest client
+│   │   └── functions/         # Background jobs
+│   │       └── process-document.ts
 │   ├── lib/
-│   │   ├── trpc/          # tRPC client setup
-│   │   └── utils.ts       # Utilities
-│   └── types/             # TypeScript definitions
-└── public/                # Static assets
+│   │   ├── trpc/              # tRPC client setup
+│   │   ├── pinecone.ts        # Pinecone client
+│   │   ├── anthropic.ts       # Anthropic client
+│   │   └── utils.ts           # Utilities
+│   └── types/                 # TypeScript definitions
+└── public/                    # Static assets
 ```
+
+---
+
+## Key Workflows
+
+### Document Upload & Processing
+
+1. User uploads document via drag-and-drop
+2. System generates presigned S3 URL
+3. File uploads directly to S3
+4. Inngest job triggered for processing:
+   - Downloads from S3
+   - Extracts text (PDF/DOCX/TXT)
+   - Calculates confidence score
+   - Chunks text for RAG
+   - Generates embeddings
+   - Stores in Pinecone
+5. Document marked as COMPLETED or NEEDS_REVIEW
+
+### AI Writing with Memory
+
+1. User opens Writing Studio for a grant
+2. Enters prompt (e.g., "Write a project narrative about youth programs")
+3. System queries organizational memory via RAG
+4. If relevant content found (confidence ≥60%):
+   - Claude generates content using context
+   - Sources displayed with relevance scores
+   - User can accept, edit, or regenerate
+5. If low confidence (<60%):
+   - Sources shown for manual reference
+   - No AI content generated (prevents hallucination)
+
+### Grant Pipeline Management
+
+1. Grants flow through 8 stages: Prospect → Researching → Writing → Review → Submitted → Pending → Awarded → Completed
+2. Drag-and-drop updates status
+3. Each card shows funder, amount, deadline
+4. Deadline badges color-coded by urgency
+5. Click "Open in Writer" to draft content
 
 ---
 
@@ -190,6 +280,7 @@ grantsignal/
 | `pnpm prisma studio` | Open Prisma Studio |
 | `pnpm prisma db push` | Push schema changes |
 | `pnpm prisma db seed` | Seed database |
+| `pnpm inngest dev` | Run Inngest dev server |
 
 ---
 
@@ -207,11 +298,43 @@ grantsignal/
 - Separate Pinecone namespaces per organization
 - S3 object keys prefixed by organization
 
-### AI Safety
+### AI Safety (V3 Trust Architecture)
 
-- Confidence thresholds prevent low-quality generation
-- Source attribution required on all AI outputs
+- **High Confidence (≥80%)**: Content shown normally with green indicator
+- **Medium Confidence (60-79%)**: Amber warning, user should verify
+- **Low Confidence (<60%)**: Content NOT generated, sources shown instead
+- All AI outputs include source attribution
 - Audit mode tracks all AI involvement for compliance
+
+---
+
+## Roadmap
+
+### Phase 1: Foundation (Complete)
+- [x] Authentication and multi-tenancy
+- [x] Dashboard with real-time data
+- [x] Pipeline Kanban with drag-and-drop
+- [x] Document upload and processing
+- [x] RAG integration with semantic search
+- [x] AI Writing Studio with Memory Assist
+
+### Phase 2: Organization (In Progress)
+- [ ] Pipeline Table View with tabs (Active/Awarded/Declined/Completed)
+- [ ] Program-based filtering and organization
+- [ ] Executive Summary Reports
+- [ ] CSV/PDF export functionality
+
+### Phase 3: Compliance & Intelligence
+- [ ] Compliance Guardian with commitment tracking
+- [ ] Conflict detection across applications
+- [ ] Funder Intelligence via 990 analysis
+- [ ] Voice Analysis and preservation
+
+### Phase 4: Scale
+- [ ] Team collaboration features
+- [ ] Email notifications and digests
+- [ ] API access for integrations
+- [ ] Mobile-responsive optimizations
 
 ---
 
@@ -230,5 +353,5 @@ Copyright © 2026 GrantSignal. All rights reserved.
 ## Contact
 
 - **Developer**: Oscar Nuñez
-- **Email**: art.by.oscar.n@gmail.com
 - **Repository**: github.com/artbyoscar/grantsignal
+- **Local Path**: C:\Users\OscarNuñez\Desktop\grantsignal
