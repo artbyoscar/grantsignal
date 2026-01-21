@@ -12,6 +12,7 @@ Transform grant writing from 20 hours to 2 hours by capturing institutional know
 - [The Solution](#the-solution)
 - [Screenshots](#screenshots)
 - [Features](#features)
+- [V3 Trust Architecture](#v3-trust-architecture)
 - [Key Workflows](#key-workflows)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
@@ -19,6 +20,7 @@ Transform grant writing from 20 hours to 2 hours by capturing institutional know
 - [Environment Variables](#environment-variables)
 - [Project Structure](#project-structure)
 - [Development Commands](#development-commands)
+- [Testing](#testing)
 - [Roadmap](#roadmap)
 - [License](#license)
 
@@ -78,6 +80,10 @@ By ingesting an organization's complete grant history, GrantSignal creates a liv
 ![Voice fingerprint radar chart](public/screenshots/voice-analysis.png)
 *6-axis radar visualization: Formal/Casual, Direct/Indirect, Data-Driven/Narrative, and more.*
 
+### Document Health Dashboard (NEW)
+![Document Health Dashboard](public/screenshots/document-health.png)
+*Parse confidence monitoring with issue tracking, review queue, and correction interface.*
+
 ---
 
 ## Features
@@ -93,8 +99,120 @@ These four capabilities define GrantSignal's competitive moat:
 | **AI Writing Studio** | RAG-powered drafting with mandatory source attribution | 60-70% time reduction with traceable content |
 | **Voice Analysis** | Preserve your organization's authentic tone across all content | Funders never know AI was involved |
 
+---
+
+## V3 Trust Architecture
+
+GrantSignal implements a comprehensive Trust Architecture that ensures AI outputs are always reliable, traceable, and safe for grant applications.
+
+### Confidence Threshold System
+
+| Score Range | UI Behavior | User Message | Actions Available |
+|-------------|-------------|--------------|-------------------|
+| **80-100% (High)** | Green indicator, content displayed normally | "High confidence - based on N relevant documents" | Accept, Edit, Regenerate, View Sources |
+| **60-79% (Medium)** | Amber indicator, warning banner above content | "Medium confidence - verify accuracy before use" | Accept with Warning, Edit, Regenerate, View Sources |
+| **0-59% (Low)** | Red indicator, content NOT generated | "Cannot confidently generate. Review sources manually." | View Sources Only, Manual Write |
+
+### Trust Architecture Components
+
+#### ConfidenceBadge
+Reusable component displaying confidence scores with appropriate visual indicators:
+- Three-tier color system (green/amber/red)
+- Icon indicators (checkmark/alert/x-circle)
+- Interactive tooltips explaining thresholds
+- Optional "View Sources" button
+- Available in sm/md/lg sizes
+
+#### SourceAttributionPanel
+Mandatory source attribution on ALL AI outputs:
+- Collapsible source list with "View N Sources" toggle
+- Document type badges (Proposal, Report, Agreement, Budget)
+- Relevance bars with percentage scores
+- Click-to-open document navigation
+- "Copy with Attribution" functionality
+- Timestamp with smart formatting
+
+#### AIContentWrapper
+Unified wrapper enforcing Trust Architecture rules:
+- Automatically blocks content below 60% confidence
+- Displays appropriate warning banners
+- Provides consistent action buttons (Accept/Edit/Regenerate)
+- Handles streaming state during generation
+- Ensures source attribution is always visible
+
+### Document Health Dashboard
+
+Monitor document parsing quality across your organization:
+
+**Route:** `/documents/health`
+
+**Features:**
+- Overall Health Score with circular progress indicator
+- Document categorization by parse confidence
+- Expandable issue lists with severity badges
+- Side-by-side document review modal
+- Editable extracted text and metadata
+- Reprocess and delete actions
+
+**Parse Confidence Calculation:**
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| Text Completeness | 40% | Percentage of text successfully extracted |
+| Structure Preservation | 20% | Tables, headers, lists preserved |
+| Date Extraction | 25% | Deadline and date accuracy |
+| Entity Extraction | 15% | Names, amounts, organizations identified |
+
+### Audit Trail System
+
+Complete audit logging for compliance and transparency:
+
+```typescript
+// Every AI generation is logged with:
+{
+  id: string;
+  organizationId: string;
+  grantId: string;
+  userId: string;
+  prompt: string;
+  content: string;
+  confidence: number;
+  sources: Source[];
+  writingMode: 'memory_assist' | 'ai_draft' | 'human_first' | 'audit';
+  model: string;
+  tokensUsed: number;
+  createdAt: Date;
+}
+```
+
+**Audit Procedures:**
+- `audit.logGeneration` - Log AI generations with full context
+- `audit.getGenerationHistory` - Retrieve history for specific grant
+- `audit.getOrganizationHistory` - Organization-wide compliance reporting
+- `audit.getUsageAnalytics` - Analytics dashboard data
+
+### Confidence Scoring Service
+
+Centralized service calculating confidence across all AI operations:
+
+```typescript
+// Parse Confidence (document upload)
+confidenceScoring.calculateParseConfidence(metadata)
+
+// Retrieval Confidence (memory search)
+confidenceScoring.calculateRetrievalConfidence(sources)
+
+// Generation Confidence (AI output)
+confidenceScoring.calculateGenerationConfidence(content, sources, query)
+
+// Threshold checks
+confidenceScoring.shouldAllowGeneration(retrievalConfidence) // ≥60%
+confidenceScoring.getConfidenceLevel(score) // 'high' | 'medium' | 'low'
+```
+
+---
+
 <details>
-<summary><strong>View all 45+ features</strong></summary>
+<summary><strong>View all 50+ features</strong></summary>
 
 ### Smart Discovery
 - [x] RFP Parser with AI-powered requirement extraction
@@ -123,6 +241,8 @@ These four capabilities define GrantSignal's competitive moat:
 - [x] Automatic commitment extraction for Compliance Guardian
 - [x] S3 storage with presigned URLs
 - [x] Background processing via Inngest
+- [x] **Document Health Dashboard with parse monitoring** (NEW)
+- [x] **Side-by-side document review and correction** (NEW)
 
 ### RAG Integration
 - [x] Pinecone vector database with organization namespaces
@@ -130,6 +250,8 @@ These four capabilities define GrantSignal's competitive moat:
 - [x] Hybrid retrieval (vector + keyword)
 - [x] Confidence thresholds gating generation
 - [x] Source attribution on all AI outputs
+- [x] **Similarity threshold enforcement (≥0.7 cosine)** (NEW)
+- [x] **Confidence-aware retrieval with scoring** (NEW)
 
 ### AI Writing Studio
 - [x] Split-pane layout (RFP requirements + editor)
@@ -141,9 +263,24 @@ These four capabilities define GrantSignal's competitive moat:
 - [x] Word/character counters per section
 - [x] Voice consistency indicator
 - [x] Apply Voice button for tone matching
+- [x] **ConfidenceBadge on all search results** (NEW)
+- [x] **AIContentWrapper with threshold enforcement** (NEW)
+- [x] **Low-confidence content blocking** (NEW)
+- [x] **Voice confidence comparison** (NEW)
+
+### Trust Architecture (NEW)
+- [x] Three-tier confidence system (high/medium/low)
+- [x] ConfidenceBadge component with visual indicators
+- [x] SourceAttributionPanel with mandatory attribution
+- [x] AIContentWrapper enforcing thresholds
+- [x] Document Health Dashboard
+- [x] Confidence Scoring Service
+- [x] Complete audit trail logging
+- [x] Generation history retrieval
+- [x] Usage analytics
 
 ### Compliance Guardian
-- [x] Commitment extraction from documents
+- [x] Commitment extraction from documents with confidence scoring
 - [x] Central commitment registry
 - [x] Gantt-style timeline visualization
 - [x] Cross-application conflict detection
@@ -221,7 +358,7 @@ This is the multi-million dollar feature that justifies premium pricing and sell
 
 **Value Delivered:** A single avoided audit finding is worth $100K+. Zero compliance incidents for active users.
 
-### 2. AI Writing with Organizational Memory
+### 2. AI Writing with Trust Architecture (NEW)
 
 ```
 1. User uploads RFP or pastes URL
@@ -231,21 +368,50 @@ This is the multi-million dollar feature that justifies premium pricing and sell
    - Calculates fit score against org profile
 3. User opens AI Writing Studio
 4. System queries organizational memory for relevant content
-5. If confidence ≥80%:
-   - Content generated with green indicator
-   - Sources displayed with relevance scores
-6. If confidence 60-79%:
-   - Content shown with amber warning
-   - User prompted to verify accuracy
-7. If confidence <60%:
-   - Content NOT generated
-   - Sources shown for manual reference
-8. All AI outputs include mandatory source attribution
+5. Confidence scoring applied:
+   - Retrieval confidence calculated from source quality
+   - If retrieval confidence < 60%: BLOCK generation, show sources only
+6. If confidence ≥ 60%, content generated:
+   - Generation confidence calculated
+   - ≥80%: Green indicator, content displayed normally
+   - 60-79%: Amber warning, user prompted to verify
+   - <60%: Content blocked, sources shown for manual review
+7. All AI outputs wrapped in AIContentWrapper with:
+   - Mandatory source attribution panel
+   - Confidence badge
+   - Action buttons (Accept/Edit/Regenerate)
+8. Every generation logged to audit trail
 ```
 
-**Value Delivered:** First draft in 2 hours instead of 20 hours, with traceable provenance.
+**Value Delivered:** First draft in 2 hours instead of 20 hours, with traceable provenance and zero hallucinations.
 
-### 3. Voice Analysis Workflow
+### 3. Document Health Monitoring (NEW)
+
+```
+1. User uploads documents to knowledge base
+2. System processes with confidence scoring:
+   - Text extraction completeness (40%)
+   - Structure preservation (20%)
+   - Date extraction accuracy (25%)
+   - Entity extraction success (15%)
+3. Documents categorized:
+   - ≥80%: Successfully Parsed (green)
+   - 60-79%: Needs Review (amber)
+   - <60%: Failed/Manual Required (red)
+4. Document Health Dashboard shows:
+   - Overall health score
+   - Issue counts by severity
+   - Specific problems per document
+5. For amber/red documents:
+   - Side-by-side review modal
+   - Editable extracted text
+   - Metadata correction
+   - Save corrections to improve confidence
+```
+
+**Value Delivered:** Visibility into knowledge base quality, proactive issue resolution, continuous improvement.
+
+### 4. Voice Analysis Workflow
 
 ```
 1. System analyzes uploaded documents (proposals, reports)
@@ -259,12 +425,13 @@ This is the multi-million dollar feature that justifies premium pricing and sell
 5. When generating content:
    - System applies voice constraints
    - "Apply Voice" button rewrites to match profile
+   - Confidence comparison shows improvement
 6. Side-by-side comparison shows original vs. voice-matched
 ```
 
 **Value Delivered:** Funders never detect AI involvement. Authentic organizational voice preserved.
 
-### 4. Funder Intelligence Workflow
+### 5. Funder Intelligence Workflow
 
 ```
 1. User searches for funder or clicks from opportunity
@@ -278,7 +445,7 @@ This is the multi-million dollar feature that justifies premium pricing and sell
 5. Peer intelligence: "Organization X received $500K for similar work"
 ```
 
-### 5. Grant Pipeline Management
+### 6. Grant Pipeline Management
 
 ```
 1. Grants flow through 8 stages:
@@ -315,6 +482,7 @@ This is the multi-million dollar feature that justifies premium pricing and sell
 | Background Jobs | Inngest | Serverless, durable document processing |
 | Charts | Recharts | Data visualization for analytics |
 | Drag-and-Drop | @dnd-kit | Accessible pipeline interactions |
+| Testing | Vitest + React Testing Library | Fast unit and integration tests |
 | Hosting | Vercel | Edge functions, excellent Next.js support |
 | Monitoring | Sentry + Axiom | Error tracking + structured logging |
 
@@ -322,13 +490,22 @@ This is the multi-million dollar feature that justifies premium pricing and sell
 
 ## Architecture
 
-### V3 Risk Mitigations
+### V3 Trust Architecture
 
-GrantSignal V3 addresses three critical risks with architectural solutions:
+GrantSignal V3 implements a comprehensive trust system ensuring AI outputs are always reliable:
+
+| Component | Purpose | Implementation |
+|-----------|---------|----------------|
+| **Confidence Scoring** | Calculate reliability of AI outputs | ConfidenceScoringService with weighted components |
+| **Source Attribution** | Trace every claim to source documents | SourceAttributionPanel, mandatory on all AI outputs |
+| **Threshold Enforcement** | Prevent low-confidence content | AIContentWrapper blocks <60% confidence |
+| **Audit Trail** | Complete logging for compliance | AIGeneration model with full context |
+
+### Risk Mitigations
 
 | Risk | Problem | Solution |
 |------|---------|----------|
-| **Ingestion Friction** | Users upload messy scanned PDFs, system chokes, they leave before seeing value | Progressive value delivery, confidence scoring, human review queue, graceful degradation |
+| **Ingestion Friction** | Users upload messy scanned PDFs, system chokes | Progressive value delivery, confidence scoring, human review queue, Document Health Dashboard |
 | **Integration Heaviness** | Word/Salesforce plugins require heavy maintenance | Clipboard-first approach before native integrations |
 | **Trust/Hallucination** | One fabricated statistic could cost an organization their award | Mandatory source attribution, confidence thresholds, constrained RAG, audit mode |
 
@@ -353,8 +530,8 @@ GrantSignal V3 addresses three critical risks with architectural solutions:
 
 ```
 Upload → Virus Scan → S3 Storage → Parsing Fallback Chain → 
-Entity Extraction → Chunking → Embedding → Pinecone Upsert → 
-Commitment Extraction → Knowledge Graph Update
+Confidence Scoring → Entity Extraction → Chunking → Embedding → 
+Pinecone Upsert → Commitment Extraction → Knowledge Graph Update
 ```
 
 **Parsing Fallback Chain:**
@@ -470,6 +647,7 @@ grantsignal/
 │   │   │   ├── opportunities/
 │   │   │   ├── pipeline/
 │   │   │   ├── documents/
+│   │   │   │   └── health/    # Document Health Dashboard (NEW)
 │   │   │   ├── compliance/
 │   │   │   ├── reports/
 │   │   │   ├── funders/
@@ -480,19 +658,32 @@ grantsignal/
 │   │       └── inngest/   # Background job handler
 │   ├── components/
 │   │   ├── ui/            # shadcn/ui components
+│   │   │   ├── confidence-badge.tsx      # NEW
+│   │   │   └── source-attribution-panel.tsx  # NEW
+│   │   ├── ai/            # AI-specific components (NEW)
+│   │   │   └── ai-content-wrapper.tsx    # NEW
 │   │   ├── layout/        # Shell, sidebar, header
 │   │   ├── dashboard/     # Dashboard widgets
 │   │   ├── pipeline/      # Kanban components
 │   │   ├── writing/       # AI Writing Studio
 │   │   ├── compliance/    # Compliance Guardian
+│   │   ├── documents/     # Document components (NEW)
+│   │   │   ├── document-health-stats.tsx
+│   │   │   ├── document-health-table.tsx
+│   │   │   └── document-review-modal.tsx
 │   │   ├── funders/       # Funder Intelligence
 │   │   └── voice/         # Voice Analysis
 │   ├── server/
 │   │   ├── routers/       # tRPC routers
+│   │   │   ├── audit.ts   # Audit trail router (NEW)
+│   │   │   └── ai.ts      # Enhanced with source attribution (NEW)
 │   │   ├── context.ts     # Request context
 │   │   └── services/      # Business logic
 │   │       ├── ai/        # RAG, voice, embeddings
+│   │       │   ├── confidence-scoring.ts  # NEW
+│   │       │   └── rag.ts                 # Enhanced (NEW)
 │   │       ├── documents/ # Parsing, processing
+│   │       │   └── parser.ts              # Enhanced (NEW)
 │   │       ├── compliance/# Commitment tracking
 │   │       └── discovery/ # Fit scoring, 990 intel
 │   ├── lib/
@@ -500,7 +691,30 @@ grantsignal/
 │   │   ├── pinecone.ts    # Vector DB client
 │   │   ├── s3.ts          # Storage utilities
 │   │   └── utils.ts       # Utilities
-│   └── types/             # TypeScript definitions
+│   ├── types/             # TypeScript definitions
+│   │   ├── source.ts      # Source attribution types (NEW)
+│   │   ├── confidence.ts  # Confidence scoring types (NEW)
+│   │   └── document-health.ts  # Document health types (NEW)
+│   └── test/              # Test suite (NEW)
+│       ├── trust-architecture/
+│       │   ├── confidence-scoring.test.ts
+│       │   ├── source-attribution.test.ts
+│       │   ├── rag-retrieval.test.ts
+│       │   └── audit-trail.test.ts
+│       ├── components/
+│       │   ├── confidence-badge.test.tsx
+│       │   ├── source-attribution-panel.test.tsx
+│       │   └── ai-content-wrapper.test.tsx
+│       ├── fixtures/
+│       │   └── documents.ts
+│       ├── mocks/
+│       │   ├── pinecone.ts
+│       │   └── anthropic.ts
+│       ├── setup.ts
+│       └── vitest.config.ts
+├── docs/                  # Documentation (NEW)
+│   ├── SOURCE_ATTRIBUTION_INTEGRATION.md
+│   └── SOURCE_ATTRIBUTION_API.md
 └── public/
     └── screenshots/       # UI screenshots
 ```
@@ -515,10 +729,56 @@ grantsignal/
 | `pnpm build` | Build for production |
 | `pnpm lint` | Run ESLint |
 | `pnpm test` | Run unit tests |
+| `pnpm test:ui` | Run tests with Vitest UI |
+| `pnpm test:coverage` | Run tests with coverage report |
+| `pnpm test:watch` | Run tests in watch mode |
 | `pnpm prisma studio` | Open Prisma Studio |
 | `pnpm prisma db push` | Push schema changes |
 | `pnpm prisma db seed` | Seed database |
 | `pnpm inngest dev` | Run Inngest dev server |
+
+---
+
+## Testing
+
+GrantSignal includes a comprehensive test suite validating the Trust Architecture:
+
+### Test Categories
+
+| Category | Files | Coverage |
+|----------|-------|----------|
+| Confidence Scoring | `confidence-scoring.test.ts` | Threshold enforcement, calculation accuracy |
+| Source Attribution | `source-attribution.test.ts` | Mandatory attribution, metadata completeness |
+| RAG Retrieval | `rag-retrieval.test.ts` | Similarity filtering, namespace isolation |
+| Audit Trail | `audit-trail.test.ts` | Logging completeness, retrieval accuracy |
+| UI Components | `*.test.tsx` | Rendering, interactions, accessibility |
+
+### Running Tests
+
+```bash
+# Run all tests
+pnpm test
+
+# Run specific test file
+pnpm test confidence-scoring
+
+# Run with coverage
+pnpm test:coverage
+
+# Run in watch mode
+pnpm test:watch
+
+# Run with UI
+pnpm test:ui
+```
+
+### Key Test Scenarios
+
+- **High Confidence (≥80%)**: Content displays normally with green indicator
+- **Medium Confidence (60-79%)**: Amber warning banner shown
+- **Low Confidence (<60%)**: Content blocked, sources shown for manual review
+- **RAG Threshold**: Only chunks with ≥0.7 cosine similarity used
+- **Audit Trail**: All generations logged with timestamp, user, sources, confidence
 
 ---
 
@@ -544,11 +804,20 @@ grantsignal/
 - [x] Funder Intelligence via 990 analysis
 - [x] Voice Analysis and preservation
 
-### Phase 4: Scale (In Progress)
+### Phase 4: Scale (In Progress - ~75% Complete)
+- [x] **V3 Trust Architecture implementation**
+- [x] **Confidence Scoring UI (ConfidenceBadge, SourceAttributionPanel)**
+- [x] **AIContentWrapper with threshold enforcement**
+- [x] **Document Health Dashboard**
+- [x] **Writing Studio Trust integration**
+- [x] **Audit trail system with tRPC procedures**
+- [x] **Confidence Scoring Service**
+- [x] **Comprehensive test suite (250+ tests)**
+- [ ] Stress testing with real document corpus
+- [ ] Production deployment to Vercel
 - [ ] Team collaboration features
 - [ ] Email notifications and digests
 - [ ] API access for integrations
-- [ ] Mobile-responsive optimizations
 - [ ] Browser extension for clipboard formatting
 
 ---
