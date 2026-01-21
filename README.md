@@ -33,43 +33,74 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 
 ## Features
 
-### Core Platform (Implemented)
+### Core Platform
 
-- [x] **Dashboard** - Command center with key metrics, urgent actions, pipeline summary, and fit recommendations
+- [x] **Dashboard** - Command center with key metrics, urgent actions, pipeline summary, grants by program, and fit recommendations
 - [x] **Pipeline Kanban** - Drag-and-drop grant workflow management across 8 stages
-- [x] **Pipeline Table View** - Spreadsheet view with tabs (Active/Awarded/Declined/Completed), sorting, and CSV export
+- [x] **Pipeline Table View** - Spreadsheet view with tabs (Active/Awarded/Declined/Completed), sorting, search, and CSV export
 - [x] **Smart Discovery** - RFP parsing with AI-powered fit scoring against organizational profile
 - [x] **Document Library** - Upload, process, and search organizational documents with health monitoring
 - [x] **Document Processing** - Text extraction with confidence scoring and human review queue
 - [x] **RAG Integration** - Semantic search across organizational memory via Pinecone
 - [x] **AI Writing Studio** - Memory-assisted content generation with source attribution
-- [x] **Reports & Analytics** - Monthly summary reports with PDF export
+- [x] **Reports & Analytics** - Executive summary, monthly summary, pipeline reports with PDF export
 - [x] **User Onboarding** - 4-step guided setup with tour overlay
 - [x] **Multi-tenant Architecture** - Organization-scoped data isolation
 - [x] **Authentication** - Clerk integration with SSO support
 
-### Fit Scoring Engine (Implemented)
+### Compliance Guardian (NEW)
+
+- [x] **Commitment Extraction** - Automatic extraction from award letters and agreements
+- [x] **Commitment Registry** - Central registry of all promises to funders with status tracking
+- [x] **Conflict Detection** - Scheduled daily scans for metric mismatches and timeline overlaps
+- [x] **Conflict Resolution Modal** - Professional workflow with severity indicators and audit trail
+- [x] **Compliance Dashboard** - Timeline visualization, at-risk commitments, conflict alerts
+- [x] **Batch Extraction** - Process multiple grants/documents in sequence
+- [x] **CSV Export** - Export commitments with all key fields
+- [x] **Audit Logging** - Complete trail of all compliance actions
+
+### Funder Intelligence (NEW)
+
+- [x] **ProPublica 990 Integration** - Automatic sync of foundation data
+- [x] **Research Funder Modal** - Search by name or EIN, auto-create with 990 sync
+- [x] **Funder Profile Pages** - 5 comprehensive tabs (Overview, Giving History, Past Grantees, Application, Your History)
+- [x] **Giving History Visualizations** - Trends, YoY growth rates, assets vs. giving comparison
+- [x] **Peer Intelligence** - Shows similar organizations that received grants
+- [x] **Key Metrics Cards** - Latest giving, average growth rate, 5-year totals, payout rates
+
+### Voice Analysis (NEW)
+
+- [x] **Voice Profile Extraction** - Analyzes documents for sentence patterns, vocabulary, tone
+- [x] **Style Fingerprinting** - Formality, directness, optimism, data emphasis metrics
+- [x] **Terminology Mapping** - Preferred terms and avoided terms detection
+- [x] **Voice Settings Page** - Radar chart visualization with pattern toggles
+- [x] **Apply Voice** - Rewrite content to match organizational voice
+- [x] **Writing Studio Integration** - Voice consistency indicator and apply button
+
+### Fit Scoring Engine
 
 - [x] **5-Dimension Analysis** - Mission alignment, capacity match, geographic fit, funder history, reusable content
-- [x] **AI-Powered Mission Scoring** - Claude 3.5 Sonnet analyzes mission compatibility
+- [x] **AI-Powered Mission Scoring** - Claude analyzes mission compatibility
 - [x] **RAG Content Discovery** - Identifies reusable content from organizational memory
 - [x] **Time Estimation** - Calculates estimated hours based on content reusability
 - [x] **Smart Caching** - 24-hour cache with automatic refresh
 - [x] **Batch Processing** - Calculate fit scores for multiple opportunities in parallel
 
-### FitScoreCard Component
+### Reports & Analytics
 
-- [x] **Mini Variant** - 64px circular progress for grid cards
-- [x] **Compact Variant** - Inline badges for list rows
-- [x] **Full Variant** - Detailed breakdown with recommendations for detail pages
-- [x] **Color Coding** - Green (85+), Blue (70-84), Amber (50-69), Red (<50)
-- [x] **Interactive Tooltips** - Hover to see score breakdown
+- [x] **Executive Summary Report** - One-page overview with key metrics, pipeline, wins, deadlines
+- [x] **Monthly Summary Report** - Executive overview with program breakdown
+- [x] **Pipeline Report** - All grants grouped by status with full details
+- [x] **Win/Loss Analysis** - Success metrics by funder type and program area
+- [x] **PDF Export** - Professional layout with GrantSignal branding
+- [x] **Copy to Clipboard** - Quick sharing of report data
 
 ### Dashboard Widgets
 
 - [x] **Quick Stats Row** - Active grants, pending decisions, YTD awarded, win rate
 - [x] **Urgent Actions Panel** - Deadlines and compliance alerts
 - [x] **Pipeline Summary** - Visual bar by stage with totals
+- [x] **Grants by Program** - Visual breakdown with clickable segments
 - [x] **Recent Activity Feed** - Document uploads, status changes, AI generations
 - [x] **Fit Opportunities Widget** - Top 5 personalized recommendations
 - [x] **Monthly Summary Widget** - Quick metrics with link to full report
@@ -80,6 +111,8 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 - [x] **AI Generation** - Draft, refine, and expand content with Claude
 - [x] **V3 Trust Architecture** - Confidence thresholds prevent hallucinations
 - [x] **Source Attribution** - Every AI output shows its sources
+- [x] **Voice Consistency** - Indicator shows match with organizational voice
+- [x] **Apply Voice Button** - Rewrite selected text to match voice profile
 - [x] **Auto-save** - Content saved automatically with status indicators
 
 ### Document Processing Pipeline
@@ -90,23 +123,20 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 - [x] **Human Review Queue** - Low-confidence documents flagged for review
 - [x] **Vectorization** - Automatic embedding and Pinecone indexing
 - [x] **Document Health Dashboard** - Visual stats for processing status
+- [x] **Automatic Commitment Extraction** - Award documents trigger extraction
 
-### Pipeline Table View
+### Pipeline Features
 
-- [x] **Status Tabs** - Active, Awarded, Declined, Completed
-- [x] **Sortable Columns** - Sort by any column with visual indicators
+- [x] **Kanban View** - Drag-and-drop across 8 stages
+- [x] **Table View** - Sortable columns with visual indicators
+- [x] **Status Tabs** - Active, Awarded, Declined, Completed with counts
+- [x] **Search** - Filter by grant title or funder name
+- [x] **Program Filter** - Filter by program area
+- [x] **Funder Type Filter** - Filter by funder type
 - [x] **Checkbox Selection** - Select multiple grants for bulk operations
 - [x] **CSV Export** - Export selected or all grants
 - [x] **Fit Score Column** - Optional column with color-coded scores
 - [x] **URL-persisted Filters** - Shareable filtered views
-
-### Reports & Analytics
-
-- [x] **Monthly Summary Report** - Executive overview with key metrics
-- [x] **Pipeline Breakdown** - Counts and totals by status
-- [x] **Upcoming Deadlines** - Sorted list with urgency indicators
-- [x] **Program Breakdown** - Metrics grouped by program area
-- [x] **PDF Export** - Print-optimized layout
 
 ### Onboarding Flow
 
@@ -117,14 +147,13 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 - [x] **Tour Overlay** - 4-step guided tour highlighting key features
 - [x] **Onboarding Guard** - Automatic redirect for incomplete users
 
-### Planned Features
+### Planned Features (Phase 4: Scale)
 
-- [ ] **Compliance Guardian** - Commitment tracking and conflict detection
-- [ ] **Voice Analysis** - Style fingerprinting and tone matching
-- [ ] **Funder Intelligence** - 990 data analysis via ProPublica API
-- [ ] **Clipboard Formatting** - One-click copy with rich text preservation
-- [ ] **Team Collaboration** - Real-time editing and comments
-- [ ] **Email Notifications** - Deadline reminders and digest emails
+- [ ] **Team Collaboration** - Multi-user features, assignments, @mentions
+- [ ] **Email Notifications** - Deadline reminders, weekly digest, compliance alerts
+- [ ] **API Access** - Public API for integrations
+- [ ] **Mobile Optimization** - Responsive improvements for mobile devices
+- [ ] **Browser Extension** - Clipboard formatting for Word/Google Docs
 
 ---
 
@@ -141,9 +170,11 @@ GrantSignal is not another grant database or AI writing tool. It is the organiza
 | Vector DB | Pinecone | RAG infrastructure |
 | Auth | Clerk | SSO, MFA, user management |
 | Storage | AWS S3 + CloudFront | Document storage |
-| AI/LLM | Claude API (Anthropic) | Content generation, mission analysis |
+| AI/LLM | Claude API (Anthropic) | Content generation, analysis |
 | Embeddings | OpenAI text-embedding-3-large | Document vectorization |
-| Background Jobs | Inngest | Document processing |
+| Background Jobs | Inngest | Document processing, scheduled tasks |
+| PDF Export | @react-pdf/renderer | Report generation |
+| CSV Export | papaparse | Data export |
 
 ---
 
@@ -182,6 +213,9 @@ pnpm prisma db seed
 
 # Start development server
 pnpm dev
+
+# In a separate terminal, start Inngest dev server
+pnpm inngest dev
 ```
 
 ### Environment Variables
@@ -234,14 +268,14 @@ grantsignal/
 │   │   ├── (auth)/            # Authentication pages
 │   │   ├── (dashboard)/       # Protected routes
 │   │   │   ├── dashboard/     # Main dashboard
-│   │   │   ├── opportunities/ # Smart Discovery
+│   │   │   ├── opportunities/ # Smart Discovery + Funder Intelligence
 │   │   │   ├── pipeline/      # Grant pipeline (Kanban + Table)
 │   │   │   ├── documents/     # Document library
 │   │   │   ├── write/[grantId]/ # AI Writing Studio
 │   │   │   ├── compliance/    # Compliance Guardian
 │   │   │   ├── reports/       # Analytics & Reports
 │   │   │   ├── onboarding/    # User onboarding flow
-│   │   │   └── settings/      # Organization settings
+│   │   │   └── settings/      # Organization + Voice settings
 │   │   └── api/
 │   │       ├── trpc/          # tRPC API handler
 │   │       └── inngest/       # Background job handler
@@ -253,14 +287,18 @@ grantsignal/
 │   │   ├── discovery/         # FitScoreCard, opportunity cards
 │   │   ├── documents/         # Document cards, upload
 │   │   ├── writing/           # Writing Studio components
-│   │   ├── reports/           # Report components
+│   │   ├── reports/           # Report components + PDF
+│   │   ├── compliance/        # Compliance components
+│   │   ├── funders/           # Funder intelligence components
 │   │   └── shared/            # MemorySearch, TourOverlay
 │   ├── server/
 │   │   ├── routers/           # tRPC routers
 │   │   │   ├── grants.ts      # Grant CRUD and filtering
 │   │   │   ├── documents.ts   # Document management
 │   │   │   ├── discovery.ts   # Smart Discovery + Fit Scoring
+│   │   │   ├── funders.ts     # Funder intelligence
 │   │   │   ├── ai.ts          # AI writing procedures
+│   │   │   ├── voice.ts       # Voice analysis
 │   │   │   ├── reports.ts     # Report generation
 │   │   │   ├── programs.ts    # Program management
 │   │   │   ├── onboarding.ts  # Onboarding procedures
@@ -269,7 +307,13 @@ grantsignal/
 │   │   │   ├── ai/
 │   │   │   │   ├── embeddings.ts
 │   │   │   │   ├── rag.ts
-│   │   │   │   └── writer.ts
+│   │   │   │   ├── writer.ts
+│   │   │   │   └── voice.ts
+│   │   │   ├── discovery/
+│   │   │   │   └── propublica.ts
+│   │   │   ├── compliance/
+│   │   │   │   ├── commitments.ts
+│   │   │   │   └── conflicts.ts
 │   │   │   └── documents/
 │   │   │       ├── parser.ts
 │   │   │       └── chunker.ts
@@ -277,7 +321,8 @@ grantsignal/
 │   ├── inngest/
 │   │   ├── client.ts          # Inngest client
 │   │   └── functions/         # Background jobs
-│   │       └── process-document.ts
+│   │       ├── process-document.ts
+│   │       └── detect-conflicts.ts
 │   ├── lib/
 │   │   ├── trpc/              # tRPC client setup
 │   │   ├── pinecone.ts        # Pinecone client
@@ -292,6 +337,35 @@ grantsignal/
 ---
 
 ## Key Workflows
+
+### Compliance Guardian
+
+1. User uploads award letter or grant agreement
+2. System automatically extracts commitments (deliverables, metrics, deadlines)
+3. Commitments stored in registry with grant linkage
+4. Daily scheduled job scans for conflicts across all commitments
+5. Conflicts flagged with severity (Low/Medium/High/Critical)
+6. User resolves via modal with required notes for audit trail
+7. All actions logged for compliance reporting
+
+### Funder Intelligence
+
+1. User clicks "Research Funder" in Opportunities page
+2. Search by foundation name or EIN
+3. If found, view existing funder profile
+4. If not found, enter EIN to auto-create with 990 sync
+5. ProPublica API fetches: assets, giving, board composition
+6. Giving History tab shows trends, growth rates, payout analysis
+7. Past Grantees tab shows organizations that received grants
+
+### Voice Analysis
+
+1. System analyzes uploaded documents for writing patterns
+2. Extracts: sentence length, vocabulary preferences, tone metrics
+3. Voice profile stored with organization
+4. Writing Studio shows voice consistency indicator
+5. User can click "Apply Voice" to rewrite text matching their style
+6. Settings page allows toggling detected patterns on/off
 
 ### Fit Scoring Analysis
 
@@ -318,6 +392,7 @@ grantsignal/
    - Chunks text for RAG
    - Generates embeddings
    - Stores in Pinecone
+   - Extracts commitments (if award document)
 5. Document marked as COMPLETED or NEEDS_REVIEW
 
 ### AI Writing with Memory
@@ -328,7 +403,8 @@ grantsignal/
 4. If relevant content found (confidence ≥60%):
    - Claude generates content using context
    - Sources displayed with relevance scores
-   - User can accept, edit, or regenerate
+   - Voice consistency indicator shown
+   - User can accept, edit, apply voice, or regenerate
 5. If low confidence (<60%):
    - Sources shown for manual reference
    - No AI content generated (prevents hallucination)
@@ -337,18 +413,10 @@ grantsignal/
 
 1. Grants flow through 8 stages: Prospect → Researching → Writing → Review → Submitted → Pending → Awarded → Completed
 2. Kanban view: Drag-and-drop updates status
-3. Table view: Sort, filter, select, and export
-4. Each card shows funder, amount, deadline, fit score
-5. Deadline badges color-coded by urgency
-
-### User Onboarding
-
-1. New user redirected to /onboarding
-2. Step 1: Welcome with product overview
-3. Step 2: Organization setup (name, mission, programs)
-4. Step 3: Connect documents (upload or cloud storage)
-5. Step 4: Processing status with progress tracking
-6. Tour overlay highlights key features on first dashboard visit
+3. Table view: Sort, filter, search, select, and export
+4. Filter by: Status tabs, program, funder type, search
+5. Each card shows funder, amount, deadline, fit score
+6. Deadline badges color-coded by urgency
 
 ---
 
@@ -392,7 +460,7 @@ grantsignal/
 
 ## Development Phases
 
-### Phase 1: Foundation (Complete)
+### Phase 1: Foundation ✅ Complete
 - [x] Authentication and multi-tenancy
 - [x] Dashboard with real-time data
 - [x] Pipeline Kanban with drag-and-drop
@@ -400,27 +468,32 @@ grantsignal/
 - [x] RAG integration with semantic search
 - [x] AI Writing Studio with Memory Assist
 
-### Phase 2: Intelligence (Complete)
+### Phase 2: Organization ✅ Complete
 - [x] Fit Scoring Engine with 5-dimension analysis
 - [x] FitScoreCard component (mini, compact, full variants)
 - [x] Dashboard Fit Opportunities widget
-- [x] Pipeline integration (cards, table, detail pages)
-- [x] Pipeline Table View with tabs, sorting, export
-- [x] Reports page with Monthly Summary
+- [x] Pipeline Table View with tabs, sorting, search, export
+- [x] Program-based filtering with Dashboard widget
+- [x] Executive Summary Reports with PDF export
 - [x] User onboarding flow with tour overlay
 
-### Phase 3: Compliance & Scale (In Progress)
-- [ ] Compliance Guardian with commitment tracking
-- [ ] Conflict detection across applications
-- [ ] Voice Analysis and preservation
-- [ ] Funder Intelligence via 990 analysis
+### Phase 3: Compliance & Intelligence ✅ Complete
+- [x] Compliance Guardian with commitment tracking
+- [x] Automatic commitment extraction from award documents
+- [x] Conflict detection with scheduled daily scans
+- [x] Conflict resolution modal with audit trail
+- [x] Funder Intelligence via ProPublica 990 API
+- [x] Research Funder modal with auto-create
+- [x] Enhanced giving history visualizations
+- [x] Voice Analysis and style fingerprinting
+- [x] Voice Settings page with radar chart
+- [x] Writing Studio voice integration
+
+### Phase 4: Scale (In Progress)
 - [ ] Team collaboration features
 - [ ] Email notifications and digests
-
-### Phase 4: Polish & Launch
-- [ ] Mobile-responsive optimizations
 - [ ] API access for integrations
-- [ ] Advanced analytics and benchmarking
+- [ ] Mobile-responsive optimizations
 - [ ] Browser extension for clipboard formatting
 
 ---
