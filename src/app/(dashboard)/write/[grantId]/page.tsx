@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import { FitScoreCard } from '@/components/discovery/fit-score-card'
 import { VoiceConsistencyIndicator } from '@/components/writing/voice-consistency-indicator'
 import { ApplyVoiceModal } from '@/components/writing/apply-voice-modal'
+import { AssigneeSelector } from '@/components/grants/assignee-selector'
 
 interface PageProps {
   params: Promise<{
@@ -467,6 +468,17 @@ export default function WritingStudioPage({ params }: PageProps) {
         </div>
 
         <div className="flex items-center gap-6">
+          {/* Assignee Selector */}
+          <div className="min-w-[200px]">
+            <AssigneeSelector
+              grantId={grantId}
+              currentAssignee={grant.assignedTo}
+              variant="full"
+              onAssignmentChange={() => {
+                // Refetch grant data to update the assignee
+              }}
+            />
+          </div>
           {/* Writing Mode Selector */}
           <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg p-1">
             {(['memory_assist', 'ai_draft', 'human_first', 'audit_mode'] as WritingMode[]).map((mode) => (

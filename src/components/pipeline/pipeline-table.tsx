@@ -7,6 +7,8 @@ import { GrantStatus } from '@prisma/client'
 import { api } from '@/lib/trpc/client'
 import { exportAndDownloadGrants } from '@/lib/export'
 import { toast } from 'sonner'
+import { AssigneeSelector } from '@/components/grants/assignee-selector'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 type Grant = NonNullable<ReturnType<typeof api.grants.list.useQuery>['data']>['grants'][number]
 
@@ -95,6 +97,17 @@ function getProgramColor(programId: string | null): string {
   if (!programId) return 'bg-slate-500'
   const hash = programId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
   return PROGRAM_COLORS[hash % PROGRAM_COLORS.length]
+}
+
+// Get initials from display name
+function getInitials(name: string | null | undefined): string {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 }
 
 interface PipelineTableProps {
@@ -364,6 +377,9 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                   </button>
                 </th>
                 <th className="px-4 py-3 text-left">
+                  <span className="text-xs font-medium text-slate-300">Assigned To</span>
+                </th>
+                <th className="px-4 py-3 text-left">
                   <button
                     onClick={() => handleSort('amount')}
                     className="flex items-center gap-2 text-xs font-medium text-slate-300 hover:text-white transition-colors"
@@ -453,6 +469,32 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                         </div>
                       ) : (
                         <span className="text-sm text-slate-500">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {grant.assignedTo ? (
+                        <div
+                          className="flex items-center gap-2 cursor-pointer hover:opacity-80"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Avatar className="w-6 h-6">
+                            <AvatarImage src={grant.assignedTo.avatarUrl || undefined} />
+                            <AvatarFallback className="bg-blue-500/20 text-blue-400 text-xs">
+                              {getInitials(grant.assignedTo.displayName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm text-slate-300">
+                            {grant.assignedTo.displayName || 'Unknown'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <AssigneeSelector
+                            grantId={grant.id}
+                            currentAssignee={grant.assignedTo}
+                            variant="compact"
+                          />
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3">

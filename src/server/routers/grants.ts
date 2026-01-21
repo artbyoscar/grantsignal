@@ -33,7 +33,11 @@ export const grantsRouter = router({
             ...(status && { status }),
             ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
             ...(programId && { programId }),
-            ...(assignedToId && { assignedToId }),
+            ...(assignedToId === 'unassigned'
+              ? { assignedToId: null }
+              : assignedToId
+              ? { assignedToId }
+              : {}),
             ...(funderType && {
               funder: {
                 type: funderType,
@@ -127,8 +131,20 @@ export const grantsRouter = router({
         },
         include: {
           funder: true,
-          opportunity: true,
+          opportunity: {
+            include: {
+              fitScores: true,
+            },
+          },
           program: true,
+          assignedTo: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+              clerkUserId: true,
+            },
+          },
           documents: {
             orderBy: { createdAt: 'desc' },
           },
@@ -142,6 +158,12 @@ export const grantsRouter = router({
                   },
                 },
               },
+            },
+          },
+          _count: {
+            select: {
+              documents: true,
+              commitments: true,
             },
           },
         },

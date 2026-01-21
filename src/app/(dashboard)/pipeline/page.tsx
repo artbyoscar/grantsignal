@@ -347,6 +347,7 @@ export default function PipelinePage() {
     const typeParam = searchParams.get('funderType')
     return typeParam ? (typeParam as FunderType) : undefined
   })
+  const [assignedToId, setAssignedToId] = useState<string | undefined>(searchParams.get('assignedTo') || undefined)
 
   // Load view preference from localStorage
   useEffect(() => {
@@ -368,22 +369,27 @@ export default function PipelinePage() {
     if (programId) params.set('program', programId)
     if (selectedStatuses.length > 0) params.set('statuses', selectedStatuses.join(','))
     if (funderType) params.set('funderType', funderType)
+    if (assignedToId) params.set('assignedTo', assignedToId)
 
     const newUrl = params.toString() ? `/pipeline?${params.toString()}` : '/pipeline'
     router.replace(newUrl, { scroll: false })
-  }, [programId, selectedStatuses, funderType, router])
+  }, [programId, selectedStatuses, funderType, assignedToId, router])
 
   // Fetch grants with filters
   const { data, isLoading, refetch } = api.grants.list.useQuery({
     programId,
     statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
     funderType,
+    assignedToId,
   })
   const grants = data?.grants || []
 
   // Fetch programs for filter
   const { data: programsData } = api.programs.list.useQuery()
   const programs = programsData || []
+
+  // Fetch team members for assignee filter
+  const { data: teamMembers } = api.team.listMembers.useQuery()
 
   // Update status mutation
   const updateStatusMutation = api.grants.updateStatus.useMutation({
@@ -469,10 +475,11 @@ export default function PipelinePage() {
     setProgramId(undefined)
     setSelectedStatuses([])
     setFunderType(undefined)
+    setAssignedToId(undefined)
   }
 
   // Check if any filters are active
-  const hasActiveFilters = programId || selectedStatuses.length > 0 || funderType
+  const hasActiveFilters = programId || selectedStatuses.length > 0 || funderType || assignedToId
 
   return (
     <div className="space-y-6">
@@ -482,7 +489,10 @@ export default function PipelinePage() {
           <h1 className="text-3xl font-bold text-white">Pipeline</h1>
           <p className="text-slate-400 mt-1">Manage your grant applications.</p>
         </div>
-        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+        <button
+          onClick={() => router.push('/opportunities')}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+        >
           <Plus className="w-4 h-4" />
           Add Grant
         </button>
@@ -526,7 +536,7 @@ export default function PipelinePage() {
           Filters
           {hasActiveFilters && (
             <span className="px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-              {[programId, selectedStatuses.length > 0, funderType].filter(Boolean).length}
+              {[programId, selectedStatuses.length > 0, funderType, assignedToId].filter(Boolean).length}
             </span>
           )}
         </button>
@@ -548,7 +558,7 @@ export default function PipelinePage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Program Filter */}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">Program</label>
@@ -599,6 +609,24 @@ export default function PipelinePage() {
                 {Object.values(FunderType).map((type) => (
                   <option key={type} value={type}>
                     {type.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Assignee Filter */}
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">Assigned To</label>
+              <select
+                value={assignedToId || ''}
+                onChange={(e) => setAssignedToId(e.target.value || undefined)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="">All Team Members</option>
+                <option value="unassigned">Unassigned</option>
+                {teamMembers?.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.displayName || member.email}
                   </option>
                 ))}
               </select>

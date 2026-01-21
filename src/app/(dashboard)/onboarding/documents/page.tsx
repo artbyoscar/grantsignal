@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, ArrowLeft, Upload, Cloud, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ export default function DocumentConnectionPage() {
 
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const cloudProviders = [
     {
@@ -71,8 +72,28 @@ export default function DocumentConnectionPage() {
     router.push('/onboarding/organization')
   }
 
+  const openFilePicker = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    // TODO: Implement file upload logic
+    console.log('Files selected:', e.target.files)
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.docx,.doc,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,text/plain"
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+
       <div className="max-w-3xl w-full space-y-8">
         {/* Progress Indicator */}
         <div className="space-y-2">
@@ -142,7 +163,10 @@ export default function DocumentConnectionPage() {
           {/* Drag and Drop Upload */}
           <div className="space-y-3">
             <h2 className="text-sm font-medium text-slate-300">Upload Files</h2>
-            <div className="border-2 border-dashed border-slate-700 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer">
+            <div
+              onClick={openFilePicker}
+              className="border-2 border-dashed border-slate-700 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer"
+            >
               <div className="flex flex-col items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center">
                   <Upload className="w-6 h-6 text-slate-400" />
@@ -153,7 +177,7 @@ export default function DocumentConnectionPage() {
                     or click to browse (PDF, DOC, DOCX)
                   </p>
                 </div>
-                <Button variant="outline" type="button">
+                <Button variant="outline" type="button" onClick={openFilePicker}>
                   <FolderOpen className="w-4 h-4" />
                   Browse Files
                 </Button>

@@ -178,6 +178,8 @@ model Organization {
   auditLogs        ComplianceAudit[]
   funderRequirements FunderRequirement[]
   invitations      TeamInvitation[]
+  apiKeys          ApiKey[]
+  webhooks         Webhook[]
 }
 
 model OrganizationUser {
@@ -528,4 +530,118 @@ model TeamInvitation {
   @@index([email])
   @@index([token])
   @@index([organizationId])
+}
+
+// ============================================================================
+// API KEYS & WEBHOOKS (Phase 4: Public API & Integration)
+// ============================================================================
+
+model ApiKey {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String    // Human-readable name (e.g., "Zapier Integration")
+  keyPrefix      String    @unique  // First 16 chars, visible (e.g., "gs_live_abc12345")
+  keyHash        String    // bcrypt hash of full key
+  scopes         String[]  // ["grants:read", "grants:write", "documents:read", etc.]
+  isExtension    Boolean   @default(false)  // Special flag for browser extension keys
+
+  // Metadata
+  lastUsedAt     DateTime?
+  lastUsedIp     String?
+  requestCount   Int       @default(0)
+
+  // Lifecycle
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  revokedBy      String?   // Clerk user ID
+  revokedReason  String?
+
+  createdAt      DateTime  @default(now())
+  createdBy      String    // Clerk user ID
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rateLimits     ApiKeyRateLimit?
+
+  @@index([organizationId])
+  @@index([keyPrefix])
+  @@index([expiresAt])
+}
+
+model ApiKeyRateLimit {
+  id                String   @id @default(cuid())
+  apiKeyId          String   @unique
+  requestsPerMinute Int      @default(100)
+  requestsPerHour   Int      @default(1000)
+  requestsPerDay    Int      @default(10000)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  apiKey            ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+}
+
+model Webhook {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  name               String
+  url                String    // Webhook endpoint URL
+  signingSecret      String    // For HMAC signature verification
+
+  // Event subscriptions
+  subscribedEvents   String[]  // ["grant.status_changed", "document.processing_completed", etc.]
+
+  // Status
+  isActive           Boolean   @default(true)
+  isPaused           Boolean   @default(false)
+  failureCount       Int       @default(0)
+  lastFailureAt      DateTime?
+  lastFailureReason  String?   @db.Text
+
+  // Metadata
+  createdAt          DateTime  @default(now())
+  createdBy          String    // Clerk user ID
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deliveries         WebhookDelivery[]
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model WebhookDelivery {
+  id                String    @id @default(cuid())
+  webhookId         String
+  eventType         String    // Event name (e.g., "grant.status_changed")
+  payload           Json      // The event payload sent
+
+  // Delivery status
+  status            String    // "pending", "success", "failed", "retrying"
+  attempts          Int       @default(0)
+  maxAttempts       Int       @default(5)
+
+  // Response tracking
+  httpStatus        Int?
+  responseBody      String?   @db.Text
+  errorMessage      String?   @db.Text
+
+  // Timing
+  scheduledFor      DateTime  @default(now())
+  lastAttemptAt     DateTime?
+  nextAttemptAt     DateTime?
+  completedAt       DateTime?
+
+  createdAt         DateTime  @default(now())
+
+  // Relations
+  webhook           Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([status])
+  @@index([eventType])
+  @@index([scheduledFor])
 }
