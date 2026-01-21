@@ -256,7 +256,8 @@ describe('Trust Architecture - RAG Retrieval', () => {
               documentName: `Document ${i}.pdf`,
               chunkIndex: i,
             },
-          })),
+          }))
+          .slice(0, 10), // Default topK is 10
       })
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
