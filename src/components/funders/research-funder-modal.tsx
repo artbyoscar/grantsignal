@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { trpc } from '@/lib/trpc/client'
+import { api } from '@/lib/trpc/client'
 import {
   Search,
   Loader2,
@@ -28,8 +28,8 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showCreateForm, setShowCreateForm] = useState(false)
 
-  const searchMutation = trpc.funders.search.useMutation()
-  const createMutation = trpc.funders.create.useMutation()
+  const searchMutation = api.funders.search.useMutation()
+  const createMutation = api.funders.create.useMutation()
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
