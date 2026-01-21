@@ -18,6 +18,7 @@ import { api } from '@/lib/trpc/client'
 import { GrantStatus, FunderType } from '@prisma/client'
 import { toast } from 'sonner'
 import { PipelineTable } from '@/components/pipeline/pipeline-table'
+import { DraggableGrantCard as DraggableCard, GrantCard as StaticGrantCard } from '@/components/pipeline/pipeline-card'
 
 // Column configuration with colors
 const COLUMNS = [
@@ -55,195 +56,6 @@ function formatCurrency(amount: number | null | undefined): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)
-}
-
-// Calculate days remaining and get color
-function getDeadlineInfo(deadline: Date | null | undefined): { text: string; color: string } | null {
-  if (!deadline) return null
-
-  const now = new Date()
-  const deadlineDate = new Date(deadline)
-  const daysRemaining = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-
-  let color = 'text-slate-400'
-  if (daysRemaining < 0) {
-    color = 'text-red-400'
-  } else if (daysRemaining < 7) {
-    color = 'text-red-400'
-  } else if (daysRemaining <= 14) {
-    color = 'text-amber-400'
-  } else {
-    color = 'text-green-400'
-  }
-
-  const text = daysRemaining < 0
-    ? `${Math.abs(daysRemaining)} days overdue`
-    : `${daysRemaining} days left`
-
-  return { text, color }
-}
-
-// Draggable Grant Card Component
-function DraggableGrantCard({ grant, color }: { grant: Grant; color: ColorType }) {
-  const router = useRouter()
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: grant.id,
-  })
-
-  const classes = colorClasses[color]
-  const deadlineInfo = getDeadlineInfo(grant.opportunity?.deadline || grant.deadline)
-
-  // Get fit score if available
-  const fitScore = grant.opportunity?.fitScores?.[0]
-
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined
-
-  // Fit score badge color
-  const getFitScoreColor = (score: number) => {
-    if (score >= 85) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-    if (score >= 70) return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-    if (score >= 50) return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-    return 'bg-red-500/20 text-red-400 border-red-500/30'
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      className={`
-        p-4 rounded-lg border transition-all cursor-grab active:cursor-grabbing relative
-        ${isDragging ? 'opacity-50' : 'opacity-100'}
-        ${classes.border} ${classes.bg}
-        bg-slate-800/90 hover:bg-slate-800
-      `}
-    >
-      {/* Fit Score Badge (top-right corner) */}
-      {fitScore && (
-        <div
-          className={`absolute top-2 right-2 px-2 py-0.5 text-[10px] font-bold rounded border ${getFitScoreColor(fitScore.overallScore)}`}
-          title={`Fit Score: ${fitScore.overallScore}\nMission: ${fitScore.missionScore} | Capacity: ${fitScore.capacityScore}`}
-        >
-          {fitScore.overallScore}
-        </div>
-      )}
-
-      {/* Status dot and funder name */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
-          <h4 className="text-sm font-medium text-white truncate">
-            {grant.funder?.name || 'Unknown Funder'}
-          </h4>
-        </div>
-        <button className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0">
-          <MoreHorizontal className="w-3 h-3 text-slate-400" />
-        </button>
-      </div>
-
-      {/* Amount */}
-      <div className="mb-2">
-        <span className="text-xs text-slate-400">Amount Requested</span>
-        <p className="text-lg font-semibold text-white">
-          {formatCurrency(grant.amountRequested)}
-        </p>
-      </div>
-
-      {/* Deadline */}
-      {deadlineInfo && (
-        <div className="flex items-center gap-2 text-xs mb-3">
-          <span className="text-slate-400">Deadline:</span>
-          <span className={`font-medium ${deadlineInfo.color}`}>
-            {deadlineInfo.text}
-          </span>
-        </div>
-      )}
-
-      {/* Open in Writer Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          router.push(`/write/${grant.id}`)
-        }}
-        className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-xs font-medium transition-colors"
-      >
-        <Edit3 className="w-3 h-3" />
-        Open in Writer
-      </button>
-    </div>
-  )
-}
-
-// Static Grant Card (for drag overlay)
-function GrantCard({ grant, color }: { grant: Grant; color: ColorType }) {
-  const classes = colorClasses[color]
-  const deadlineInfo = getDeadlineInfo(grant.opportunity?.deadline || grant.deadline)
-
-  // Get fit score if available
-  const fitScore = grant.opportunity?.fitScores?.[0]
-
-  // Fit score badge color
-  const getFitScoreColor = (score: number) => {
-    if (score >= 85) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-    if (score >= 70) return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-    if (score >= 50) return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-    return 'bg-red-500/20 text-red-400 border-red-500/30'
-  }
-
-  return (
-    <div
-      className={`
-        p-4 rounded-lg border transition-all relative
-        ${classes.border} ${classes.bg}
-        bg-slate-800/90
-      `}
-    >
-      {/* Fit Score Badge (top-right corner) */}
-      {fitScore && (
-        <div
-          className={`absolute top-2 right-2 px-2 py-0.5 text-[10px] font-bold rounded border ${getFitScoreColor(fitScore.overallScore)}`}
-        >
-          {fitScore.overallScore}
-        </div>
-      )}
-
-      {/* Status dot and funder name */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
-          <h4 className="text-sm font-medium text-white truncate">
-            {grant.funder?.name || 'Unknown Funder'}
-          </h4>
-        </div>
-        <button className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0">
-          <MoreHorizontal className="w-3 h-3 text-slate-400" />
-        </button>
-      </div>
-
-      {/* Amount */}
-      <div className="mb-2">
-        <span className="text-xs text-slate-400">Amount Requested</span>
-        <p className="text-lg font-semibold text-white">
-          {formatCurrency(grant.amountRequested)}
-        </p>
-      </div>
-
-      {/* Deadline */}
-      {deadlineInfo && (
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-400">Deadline:</span>
-          <span className={`font-medium ${deadlineInfo.color}`}>
-            {deadlineInfo.text}
-          </span>
-        </div>
-      )}
-    </div>
-  )
 }
 
 // Loading Skeleton Component
@@ -322,7 +134,7 @@ function DroppableColumn({
         ) : (
           // Grant cards
           grants.map((grant) => (
-            <DraggableGrantCard key={grant.id} grant={grant} color={column.color} />
+            <DraggableCard key={grant.id} grant={grant} color={column.color} />
           ))
         )}
       </div>
@@ -676,7 +488,7 @@ export default function PipelinePage() {
           <DragOverlay>
             {activeGrant && (
               <div className="w-72">
-                <GrantCard
+                <StaticGrantCard
                   grant={activeGrant}
                   color={COLUMNS.find(c => c.id === activeGrant.status)?.color || 'slate'}
                 />
