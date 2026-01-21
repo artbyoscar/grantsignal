@@ -4,6 +4,7 @@ import { grantsRouter } from './grants'
 import { documentsRouter } from './documents'
 import { complianceRouter } from './compliance'
 import { discoveryRouter } from './discovery'
+import { aiRouter } from './ai'
 
 /**
  * Main tRPC router combining all sub-routers
@@ -14,6 +15,7 @@ export const appRouter = router({
   documents: documentsRouter,
   compliance: complianceRouter,
   discovery: discoveryRouter,
+  ai: aiRouter,
 })
 
 export type AppRouter = typeof appRouter

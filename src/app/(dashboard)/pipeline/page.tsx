@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, MoreHorizontal } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Plus, MoreHorizontal, Edit3 } from 'lucide-react'
 import {
   DndContext,
   DragEndEvent,
@@ -83,6 +84,7 @@ function getDeadlineInfo(deadline: Date | null | undefined): { text: string; col
 
 // Draggable Grant Card Component
 function DraggableGrantCard({ grant, color }: { grant: Grant; color: ColorType }) {
+  const router = useRouter()
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: grant.id,
   })
@@ -132,13 +134,25 @@ function DraggableGrantCard({ grant, color }: { grant: Grant; color: ColorType }
 
       {/* Deadline */}
       {deadlineInfo && (
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs mb-3">
           <span className="text-slate-400">Deadline:</span>
           <span className={`font-medium ${deadlineInfo.color}`}>
             {deadlineInfo.text}
           </span>
         </div>
       )}
+
+      {/* Open in Writer Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          router.push(`/write/${grant.id}`)
+        }}
+        className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-xs font-medium transition-colors"
+      >
+        <Edit3 className="w-3 h-3" />
+        Open in Writer
+      </button>
     </div>
   )
 }

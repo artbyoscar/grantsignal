@@ -15,7 +15,11 @@
       "Bash(pnpm prisma db seed:*)",
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
-      "Bash(pnpm list:*)"
+      "Bash(pnpm list:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout /t 5)"
     ]
   }
 }
