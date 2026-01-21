@@ -31,7 +31,9 @@
       "Bash(npx eslint:*)",
       "Bash(pnpm prisma migrate dev:*)",
       "Bash(test:*)",
-      "Bash(pnpm test:*)"
+      "Bash(pnpm test:*)",
+      "Bash(pnpm dev)",
+      "Bash(timeout 8 tail -f:*)"
     ]
   }
 }

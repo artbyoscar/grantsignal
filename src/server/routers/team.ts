@@ -2,12 +2,12 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, orgProcedure, publicProcedure } from "../trpc";
 import { UserRole } from "@prisma/client";
-import { requireRole } from "~/lib/permissions";
+import { requireRole } from "@/lib/permissions";
 import {
   generateInvitationToken,
   verifyInvitationToken,
-} from "~/lib/invitation-token";
-import { resend, FROM_EMAIL } from "~/lib/resend";
+} from "@/lib/invitation-token";
+import { resend, FROM_EMAIL } from "@/lib/resend";
 import { clerkClient } from "@clerk/nextjs/server";
 
 export const teamRouter = router({
