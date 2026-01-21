@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { MemorySearch } from '@/components/writing/memory-search'
 import { AIGenerationPanel, type Source } from '@/components/writing/ai-generation-panel'
 import { Button } from '@/components/ui/button'
+import { FitScoreCard } from '@/components/discovery/fit-score-card'
 
 interface PageProps {
   params: {
@@ -680,6 +681,34 @@ export default function WritingStudioPage({ params }: PageProps) {
                 </div>
               )}
             </div>
+
+            {/* Fit Score Section */}
+            {grant.opportunity && grant.opportunity.fitScores && grant.opportunity.fitScores.length > 0 && (
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                <div className="mb-3">
+                  <h3 className="text-white font-semibold flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-400" />
+                    Opportunity Fit Score
+                  </h3>
+                </div>
+                <FitScoreCard
+                  opportunityId={grant.opportunityId!}
+                  variant="compact"
+                  initialData={{
+                    overallScore: grant.opportunity.fitScores[0].overallScore,
+                    missionScore: grant.opportunity.fitScores[0].missionScore,
+                    capacityScore: grant.opportunity.fitScores[0].capacityScore,
+                    geographicScore: grant.opportunity.fitScores[0].geographicScore,
+                    historicalScore: grant.opportunity.fitScores[0].historyScore,
+                    reusableContentPercentage: grant.opportunity.fitScores[0].reusableContentPercentage || 0,
+                    estimatedHours: grant.opportunity.fitScores[0].estimatedHours || 0,
+                    strengths: (grant.opportunity.fitScores[0].reusableContent as any)?.strengths || [],
+                    concerns: (grant.opportunity.fitScores[0].reusableContent as any)?.concerns || [],
+                    recommendations: (grant.opportunity.fitScores[0].reusableContent as any)?.recommendations || [],
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
 

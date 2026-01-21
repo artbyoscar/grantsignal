@@ -12,7 +12,7 @@ type Grant = NonNullable<ReturnType<typeof api.grants.list.useQuery>['data']>['g
 
 type Tab = 'active' | 'awarded' | 'declined' | 'completed'
 
-type SortField = 'funder' | 'program' | 'amount' | 'deadline' | 'status' | 'daysLeft'
+type SortField = 'funder' | 'program' | 'amount' | 'deadline' | 'status' | 'daysLeft' | 'fitScore'
 type SortDirection = 'asc' | 'desc'
 
 // Tab configurations
@@ -154,6 +154,10 @@ export function PipelineTable({ grants }: PipelineTableProps) {
         case 'daysLeft':
           aValue = getDaysRemaining(a.opportunity?.deadline || a.deadline) ?? 999999
           bValue = getDaysRemaining(b.opportunity?.deadline || b.deadline) ?? 999999
+          break
+        case 'fitScore':
+          aValue = a.opportunity?.fitScores?.[0]?.overallScore ?? -1
+          bValue = b.opportunity?.fitScores?.[0]?.overallScore ?? -1
           break
         default:
           return 0
@@ -360,6 +364,14 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                   </button>
                 </th>
                 <th className="px-4 py-3 text-left">
+                  <button
+                    onClick={() => handleSort('fitScore')}
+                    className="flex items-center gap-2 text-xs font-medium text-slate-300 hover:text-white transition-colors"
+                  >
+                    Fit Score {getSortIcon('fitScore')}
+                  </button>
+                </th>
+                <th className="px-4 py-3 text-left">
                   <span className="text-xs font-medium text-slate-300">Actions</span>
                 </th>
               </tr>
@@ -442,6 +454,32 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                       ) : (
                         <span className="text-sm text-slate-500">—</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const fitScore = grant.opportunity?.fitScores?.[0]
+                        if (!fitScore) {
+                          return <span className="text-sm text-slate-500">—</span>
+                        }
+
+                        const getFitScoreColor = (score: number) => {
+                          if (score >= 85) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                          if (score >= 70) return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                          if (score >= 50) return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                          return 'bg-red-500/20 text-red-400 border-red-500/30'
+                        }
+
+                        return (
+                          <div
+                            className="group relative cursor-help"
+                            title={`Mission: ${fitScore.missionScore} | Capacity: ${fitScore.capacityScore} | History: ${fitScore.historyScore}`}
+                          >
+                            <div className={`inline-flex px-2 py-1 text-xs font-bold rounded border ${getFitScoreColor(fitScore.overallScore)}`}>
+                              {fitScore.overallScore}
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">

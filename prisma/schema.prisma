@@ -130,6 +130,13 @@ model Organization {
   mission          String?            @db.Text
   voiceProfile     Json?
   voiceUpdatedAt   DateTime?
+
+  // Onboarding fields
+  onboardingCompleted Boolean         @default(false)
+  onboardingStep      Int?            // Current step if incomplete (1-4)
+  primaryProgramAreas String[]        // Array of program focus areas
+  geographicArea      String?         // Service area description
+
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -253,6 +260,8 @@ model FitScore {
   historyScore     Int
   reusableContent  Json?
   estimatedHours   Int?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   // Relations
   opportunity      Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)

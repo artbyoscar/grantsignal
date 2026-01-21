@@ -93,11 +93,22 @@ function DraggableGrantCard({ grant, color }: { grant: Grant; color: ColorType }
   const classes = colorClasses[color]
   const deadlineInfo = getDeadlineInfo(grant.opportunity?.deadline || grant.deadline)
 
+  // Get fit score if available
+  const fitScore = grant.opportunity?.fitScores?.[0]
+
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
       }
     : undefined
+
+  // Fit score badge color
+  const getFitScoreColor = (score: number) => {
+    if (score >= 85) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+    if (score >= 70) return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    if (score >= 50) return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+    return 'bg-red-500/20 text-red-400 border-red-500/30'
+  }
 
   return (
     <div
@@ -106,12 +117,22 @@ function DraggableGrantCard({ grant, color }: { grant: Grant; color: ColorType }
       {...listeners}
       {...attributes}
       className={`
-        p-4 rounded-lg border transition-all cursor-grab active:cursor-grabbing
+        p-4 rounded-lg border transition-all cursor-grab active:cursor-grabbing relative
         ${isDragging ? 'opacity-50' : 'opacity-100'}
         ${classes.border} ${classes.bg}
         bg-slate-800/90 hover:bg-slate-800
       `}
     >
+      {/* Fit Score Badge (top-right corner) */}
+      {fitScore && (
+        <div
+          className={`absolute top-2 right-2 px-2 py-0.5 text-[10px] font-bold rounded border ${getFitScoreColor(fitScore.overallScore)}`}
+          title={`Fit Score: ${fitScore.overallScore}\nMission: ${fitScore.missionScore} | Capacity: ${fitScore.capacityScore}`}
+        >
+          {fitScore.overallScore}
+        </div>
+      )}
+
       {/* Status dot and funder name */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -163,14 +184,34 @@ function GrantCard({ grant, color }: { grant: Grant; color: ColorType }) {
   const classes = colorClasses[color]
   const deadlineInfo = getDeadlineInfo(grant.opportunity?.deadline || grant.deadline)
 
+  // Get fit score if available
+  const fitScore = grant.opportunity?.fitScores?.[0]
+
+  // Fit score badge color
+  const getFitScoreColor = (score: number) => {
+    if (score >= 85) return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+    if (score >= 70) return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+    if (score >= 50) return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+    return 'bg-red-500/20 text-red-400 border-red-500/30'
+  }
+
   return (
     <div
       className={`
-        p-4 rounded-lg border transition-all
+        p-4 rounded-lg border transition-all relative
         ${classes.border} ${classes.bg}
         bg-slate-800/90
       `}
     >
+      {/* Fit Score Badge (top-right corner) */}
+      {fitScore && (
+        <div
+          className={`absolute top-2 right-2 px-2 py-0.5 text-[10px] font-bold rounded border ${getFitScoreColor(fitScore.overallScore)}`}
+        >
+          {fitScore.overallScore}
+        </div>
+      )}
+
       {/* Status dot and funder name */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">

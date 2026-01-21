@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock } from 'lucide-react'
 import { trpc } from '@/lib/trpc/client'
 import { useRouter } from 'next/navigation'
+import { FitScoreCard } from '@/components/fit-score-card'
 
 type AnalysisStep = 'idle' | 'parsing' | 'scoring' | 'complete' | 'error'
 
@@ -27,11 +28,20 @@ interface FitScore {
   overallScore: number
   missionScore: number
   capacityScore: number
-  historicalScore: number
+  geographicScore: number
+  historyScore: number
   estimatedHours: number
-  strengths: string[]
-  concerns: string[]
-  recommendations: string[]
+  reusableContent: {
+    strengths: string[]
+    concerns: string[]
+    recommendations: string[]
+    relevantDocuments: Array<{
+      id: string
+      name: string
+      type: string
+      relevance: string
+    }>
+  }
 }
 
 export default function OpportunitiesPage() {
@@ -43,9 +53,28 @@ export default function OpportunitiesPage() {
   const [parsedRfp, setParsedRfp] = useState<ParsedRFP | null>(null)
   const [fitScore, setFitScore] = useState<FitScore | null>(null)
 
+  // Opportunity list state
+  const [sortBy, setSortBy] = useState<'deadline' | 'fitScore' | 'createdAt'>('deadline')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [minFitScore, setMinFitScore] = useState(0)
+  const [showFilters, setShowFilters] = useState(false)
+
   const parseRfpMutation = trpc.discovery.parseRfp.useMutation()
   const calculateFitMutation = trpc.discovery.calculateFitScore.useMutation()
   const saveOpportunityMutation = trpc.discovery.saveOpportunity.useMutation()
+
+  // Query for listing opportunities with fit scores
+  const { data: opportunities, refetch: refetchOpportunities } = trpc.discovery.listOpportunities.useQuery(
+    {
+      sortBy,
+      sortOrder,
+      minFitScore,
+      includeDeadlinePassed: false,
+    },
+    {
+      enabled: analysisStep === 'idle', // Only fetch when not analyzing
+    }
+  )
 
   const handleAnalyze = async () => {
     if (!inputUrl && !inputText) {
@@ -68,20 +97,27 @@ export default function OpportunitiesPage() {
       setParsedRfp(parsed)
       setAnalysisStep('scoring')
 
-      // Step 2: Calculate fit score
+      // Step 2: Save opportunity temporarily to get an ID (we can enhance this later)
+      const tempOpportunity = await saveOpportunityMutation.mutateAsync({
+        title: parsed.title,
+        description: parsed.description,
+        deadline: parsed.deadline,
+        amountMin: parsed.amountMin,
+        amountMax: parsed.amountMax,
+        source: parsed.source,
+        notes: 'Temporary analysis - not yet approved',
+      })
+
+      // Step 3: Calculate fit score for the saved opportunity
       const score = await calculateFitMutation.mutateAsync({
-        opportunityData: {
-          title: parsed.title,
-          description: parsed.description,
-          amountMin: parsed.amountMin,
-          amountMax: parsed.amountMax,
-          requirements: parsed.requirements,
-          eligibility: parsed.eligibility,
-        },
+        opportunityId: tempOpportunity.opportunity.id,
       })
 
       setFitScore(score)
       setAnalysisStep('complete')
+
+      // Refetch opportunities list to show the new one
+      refetchOpportunities()
     } catch (err) {
       console.error('Analysis error:', err)
       setError(err instanceof Error ? err.message : 'Failed to analyze RFP')
@@ -93,6 +129,12 @@ export default function OpportunitiesPage() {
     if (!parsedRfp || !fitScore) return
 
     try {
+      // Build notes from fit score analysis
+      const notes = `Fit Score: ${fitScore.overallScore}/100
+Estimated Hours: ${fitScore.estimatedHours}h
+
+${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusableContent.strengths.map(s => `• ${s}`).join('\n')}\n\n` : ''}${fitScore.reusableContent.concerns.length > 0 ? `Concerns:\n${fitScore.reusableContent.concerns.map(c => `• ${c}`).join('\n')}\n\n` : ''}${fitScore.reusableContent.recommendations.length > 0 ? `Recommendations:\n${fitScore.reusableContent.recommendations.map(r => `• ${r}`).join('\n')}` : ''}`
+
       const result = await saveOpportunityMutation.mutateAsync({
         title: parsedRfp.title,
         description: parsedRfp.description,
@@ -101,8 +143,11 @@ export default function OpportunitiesPage() {
         amountMax: parsedRfp.amountMax,
         source: parsedRfp.source,
         fitScore: fitScore.overallScore,
-        notes: `Estimated Hours: ${fitScore.estimatedHours}h\n\nStrengths:\n${fitScore.strengths.map(s => `• ${s}`).join('\n')}\n\nConcerns:\n${fitScore.concerns.map(c => `• ${c}`).join('\n')}`,
+        notes,
       })
+
+      // Refetch opportunities list
+      refetchOpportunities()
 
       // Navigate to the grant detail page
       router.push(`/grants/${result.grant.id}`)
@@ -353,13 +398,25 @@ export default function OpportunitiesPage() {
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-1">
+                    <span className="text-slate-400">Geographic Fit</span>
+                    <span className="text-white">{fitScore.geographicScore}%</span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 transition-all duration-1000"
+                      style={{ width: `${fitScore.geographicScore}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
                     <span className="text-slate-400">Historical Success</span>
-                    <span className="text-white">{fitScore.historicalScore}%</span>
+                    <span className="text-white">{fitScore.historyScore}%</span>
                   </div>
                   <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-purple-500 transition-all duration-1000"
-                      style={{ width: `${fitScore.historicalScore}%` }}
+                      style={{ width: `${fitScore.historyScore}%` }}
                     />
                   </div>
                 </div>
@@ -367,6 +424,14 @@ export default function OpportunitiesPage() {
                   <span className="text-slate-400 text-sm">Estimated Effort:</span>
                   <span className="text-white ml-2 font-medium">{fitScore.estimatedHours} hours</span>
                 </div>
+                {fitScore.reusableContent.relevantDocuments.length > 0 && (
+                  <div className="col-span-2 pt-2 border-t border-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-slate-400 text-sm">Relevant Documents:</span>
+                      <span className="text-emerald-400 font-medium">{fitScore.reusableContent.relevantDocuments.length}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -393,36 +458,40 @@ export default function OpportunitiesPage() {
           {/* Analysis Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Strengths */}
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                Strengths
-              </h3>
-              <ul className="space-y-2">
-                {fitScore.strengths.map((strength, idx) => (
-                  <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                    <span className="text-emerald-500 mt-1">•</span>
-                    <span>{strength}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {fitScore.reusableContent.strengths.length > 0 && (
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  Strengths
+                </h3>
+                <ul className="space-y-2">
+                  {fitScore.reusableContent.strengths.map((strength, idx) => (
+                    <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
+                      <span className="text-emerald-500 mt-1">•</span>
+                      <span>{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Concerns */}
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-500" />
-                Considerations
-              </h3>
-              <ul className="space-y-2">
-                {fitScore.concerns.map((concern, idx) => (
-                  <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                    <span className="text-amber-500 mt-1">•</span>
-                    <span>{concern}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {fitScore.reusableContent.concerns.length > 0 && (
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-500" />
+                  Considerations
+                </h3>
+                <ul className="space-y-2">
+                  {fitScore.reusableContent.concerns.map((concern, idx) => (
+                    <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
+                      <span className="text-amber-500 mt-1">•</span>
+                      <span>{concern}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Requirements Checklist */}
@@ -455,23 +524,49 @@ export default function OpportunitiesPage() {
           </div>
 
           {/* Recommendations */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">AI Recommendations</h3>
-            <ul className="space-y-2">
-              {fitScore.recommendations.map((rec, idx) => (
-                <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                  <Brain className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {fitScore.reusableContent.recommendations.length > 0 && (
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">AI Recommendations</h3>
+              <ul className="space-y-2">
+                {fitScore.reusableContent.recommendations.map((rec, idx) => (
+                  <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
+                    <Brain className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <span>{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Relevant Documents */}
+          {fitScore.reusableContent.relevantDocuments.length > 0 && (
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Relevant Documents</h3>
+              <div className="space-y-3">
+                {fitScore.reusableContent.relevantDocuments.map((doc, idx) => (
+                  <div key={idx} className="border border-slate-700 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Database className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-white text-sm">{doc.name}</h4>
+                        <p className="text-xs text-slate-400 mt-1">{doc.relevance}</p>
+                        <span className="inline-block mt-2 px-2 py-1 bg-slate-700 text-slate-300 text-xs rounded">
+                          {doc.type}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Intelligence Status - Only show when not analyzing or showing results */}
+      {/* Opportunity List - Only show when not analyzing or showing results */}
       {analysisStep === 'idle' && (
         <>
+          {/* Intelligence Status */}
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Active Intelligence</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -502,13 +597,184 @@ export default function OpportunitiesPage() {
             </div>
           </div>
 
-          {/* Empty State for Opportunities */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
-            <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No opportunities analyzed yet</h3>
-            <p className="text-slate-400 max-w-md mx-auto">
-              Paste a grant URL or upload an RFP above to see fit scores, reusable content analysis, and funder intelligence.
-            </p>
+          {/* Opportunities Section */}
+          <div className="space-y-4">
+            {/* Controls Bar */}
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-xl font-semibold text-white">
+                Analyzed Opportunities
+                {opportunities && opportunities.length > 0 && (
+                  <span className="ml-2 text-slate-400 text-base">({opportunities.length})</span>
+                )}
+              </h2>
+              <div className="flex items-center gap-3">
+                {/* Sort Controls */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-slate-400">Sort by:</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="deadline">Deadline</option>
+                    <option value="fitScore">Fit Score</option>
+                    <option value="createdAt">Recently Added</option>
+                  </select>
+                  <button
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    className="p-2 bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
+                    title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+                  >
+                    <TrendingUp
+                      className={`w-4 h-4 text-slate-400 transition-transform ${
+                        sortOrder === 'desc' ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Filter Toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    showFilters || minFitScore > 0
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 border border-slate-600 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span className="text-sm">Filters</span>
+                  {minFitScore > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs font-medium">
+                      1
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Panel */}
+            {showFilters && (
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <h3 className="text-sm font-semibold text-white mb-4">Filter Options</h3>
+                <div className="space-y-4">
+                  {/* Minimum Fit Score Slider */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-slate-400">Minimum Fit Score</label>
+                      <span className="text-sm font-medium text-white">{minFitScore}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={minFitScore}
+                      onChange={(e) => setMinFitScore(parseInt(e.target.value))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                      <span>0%</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                      <span>75%</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* Reset Filters */}
+                  {minFitScore > 0 && (
+                    <button
+                      onClick={() => setMinFitScore(0)}
+                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Reset filters
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Opportunity Cards */}
+            {opportunities && opportunities.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {opportunities.map((opp) => (
+                  <div
+                    key={opp.id}
+                    className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-600 transition-colors cursor-pointer"
+                    onClick={() => router.push(`/opportunities/${opp.id}`)}
+                  >
+                    {/* Header with Fit Score */}
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-white mb-2">{opp.title}</h3>
+                        <p className="text-sm text-slate-400 line-clamp-2">
+                          {opp.description || 'No description available'}
+                        </p>
+                      </div>
+                      {opp.fitScore && (
+                        <div className="flex-shrink-0">
+                          <FitScoreCard fitScore={opp.fitScore} variant="mini" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="flex flex-wrap gap-4 text-sm border-t border-slate-700 pt-4">
+                      {opp.deadline && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-slate-500" />
+                          <span className="text-slate-400">Deadline:</span>
+                          <span className="text-white font-medium">
+                            {new Date(opp.deadline).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      {(opp.amountMin || opp.amountMax) && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">Amount:</span>
+                          <span className="text-white font-medium">
+                            {opp.amountMin && `$${opp.amountMin.toLocaleString()}`}
+                            {opp.amountMin && opp.amountMax && ' - '}
+                            {opp.amountMax && `$${opp.amountMax.toLocaleString()}`}
+                          </span>
+                        </div>
+                      )}
+                      {opp.fitScore?.estimatedHours && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-slate-500" />
+                          <span className="text-slate-400">Est. Effort:</span>
+                          <span className="text-white font-medium">{opp.fitScore.estimatedHours}h</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Relevant Documents Badge */}
+                    {opp.fitScore?.reusableContent &&
+                     typeof opp.fitScore.reusableContent === 'object' &&
+                     'relevantDocuments' in opp.fitScore.reusableContent &&
+                     opp.fitScore.reusableContent.relevantDocuments &&
+                     Array.isArray(opp.fitScore.reusableContent.relevantDocuments) &&
+                     opp.fitScore.reusableContent.relevantDocuments.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-slate-700">
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <Database className="w-4 h-4 text-emerald-500" />
+                          <span>{opp.fitScore.reusableContent.relevantDocuments.length} relevant document{opp.fitScore.reusableContent.relevantDocuments.length !== 1 ? 's' : ''} found</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
+                <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">No opportunities analyzed yet</h3>
+                <p className="text-slate-400 max-w-md mx-auto">
+                  Paste a grant URL or upload an RFP above to see fit scores, reusable content analysis, and funder intelligence.
+                </p>
+              </div>
+            )}
           </div>
         </>
       )}

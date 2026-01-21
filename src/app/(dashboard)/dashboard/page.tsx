@@ -5,7 +5,9 @@ import { CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { PipelineSummary } from '@/components/dashboard/pipeline-summary'
 import { ReportsWidget } from '@/components/dashboard/reports-widget'
+import { FitOpportunitiesWidget } from '@/components/dashboard/fit-opportunities-widget'
 import { Skeleton } from '@/components/ui/skeleton'
+import { TourOverlay } from '@/components/onboarding/tour-overlay'
 import { api } from '@/lib/trpc/client'
 
 export default function DashboardPage() {
@@ -100,12 +102,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-slate-400 mt-1">Welcome back, {user?.firstName || 'there'}!</p>
-      </div>
+    <>
+      <TourOverlay />
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+          <p className="text-slate-400 mt-1">Welcome back, {user?.firstName || 'there'}!</p>
+        </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -157,8 +161,14 @@ export default function DashboardPage() {
       {/* Pipeline Summary */}
       <PipelineSummary grants={data?.grants || []} isLoading={isLoading} />
 
-      {/* Urgent Actions, Recent Activity, and Reports */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Fit Opportunities and Monthly Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FitOpportunitiesWidget />
+        <ReportsWidget />
+      </div>
+
+      {/* Urgent Actions and Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Urgent Actions */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Urgent Actions</h2>
@@ -215,10 +225,8 @@ export default function DashboardPage() {
             <p className="text-sm text-slate-500 mt-1">Activity will appear here as you work</p>
           </div>
         </div>
-
-        {/* Monthly Summary Widget */}
-        <ReportsWidget />
       </div>
-    </div>
+      </div>
+    </>
   )
 }

@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
+import { calculateFitScore as calculateFitScoreService, getOrCalculateFitScore } from '../../lib/fit-scoring'
+import type { FitScoreResult } from '../../lib/fit-scoring'
 
 /**
  * Mock delay to simulate API processing
@@ -73,60 +75,265 @@ export const discoveryRouter = router({
     }),
 
   /**
-   * Calculate fit score for a parsed opportunity
-   * TODO: Implement real fit scoring against organization's documents and history
+   * Calculate fit score for an existing opportunity
+   * Uses AI to analyze fit against organization's profile, documents, and history
    */
   calculateFitScore: orgProcedure
     .input(
       z.object({
-        opportunityData: z.object({
-          title: z.string(),
-          description: z.string(),
-          amountMin: z.number().optional(),
-          amountMax: z.number().optional(),
-          requirements: z.array(z.object({
-            section: z.string(),
-            description: z.string(),
-            wordLimit: z.number(),
-          })),
-          eligibility: z.array(z.string()),
-        }),
+        opportunityId: z.string(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Simulate processing time
-      await delay(1500)
+      const result = await calculateFitScoreService(
+        input.opportunityId,
+        ctx.organizationId
+      )
 
-      // Mock fit score calculation
-      // TODO: Implement real scoring based on:
-      // - Organization's mission alignment
-      // - Past grant history
-      // - Document repository analysis
-      // - Capacity/budget fit
+      // Store in database
+      await ctx.db.fitScore.upsert({
+        where: {
+          opportunityId_organizationId: {
+            opportunityId: input.opportunityId,
+            organizationId: ctx.organizationId,
+          },
+        },
+        create: {
+          opportunityId: input.opportunityId,
+          organizationId: ctx.organizationId,
+          overallScore: result.overallScore,
+          missionScore: result.missionScore,
+          capacityScore: result.capacityScore,
+          geographicScore: result.geographicScore,
+          historyScore: result.historyScore,
+          estimatedHours: result.estimatedHours,
+          reusableContent: result.reusableContent,
+        },
+        update: {
+          overallScore: result.overallScore,
+          missionScore: result.missionScore,
+          capacityScore: result.capacityScore,
+          geographicScore: result.geographicScore,
+          historyScore: result.historyScore,
+          estimatedHours: result.estimatedHours,
+          reusableContent: result.reusableContent,
+        },
+      })
 
-      const mockScore = {
-        overallScore: 78, // 0-100
-        missionScore: 85,
-        capacityScore: 72,
-        historicalScore: 76,
-        estimatedHours: 40,
-        strengths: [
-          'Strong mission alignment with community development focus',
-          'Organization has successfully completed similar grants',
-          'Budget range matches organizational capacity',
-        ],
-        concerns: [
-          'Timeline is tight - requires immediate action',
-          'Budget justification section may require additional financial documentation',
-        ],
-        recommendations: [
-          'Highlight your recent community partnership initiatives',
-          'Emphasize your 5-year track record in infrastructure projects',
-          'Prepare detailed budget documentation early',
-        ],
+      return result
+    }),
+
+  /**
+   * Get fit score for an opportunity (from cache or calculate new)
+   * Returns cached score if exists, otherwise triggers new calculation
+   */
+  getFitScore: orgProcedure
+    .input(
+      z.object({
+        opportunityId: z.string(),
+        forceRecalculate: z.boolean().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (input.forceRecalculate) {
+        return await calculateFitScoreService(
+          input.opportunityId,
+          ctx.organizationId
+        )
       }
 
-      return mockScore
+      return await getOrCalculateFitScore(
+        input.opportunityId,
+        ctx.organizationId
+      )
+    }),
+
+  /**
+   * Calculate fit scores for multiple opportunities in batch
+   * Useful for discovery page to show scores for all opportunities
+   */
+  batchCalculateFitScores: orgProcedure
+    .input(
+      z.object({
+        opportunityIds: z.array(z.string()).max(50), // Limit to prevent overload
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const results = await Promise.allSettled(
+        input.opportunityIds.map(async (opportunityId) => {
+          try {
+            // Use cached scores if available
+            const score = await getOrCalculateFitScore(
+              opportunityId,
+              ctx.organizationId
+            )
+            return {
+              opportunityId,
+              overallScore: score.overallScore,
+              estimatedHours: score.estimatedHours,
+              fromCache: score.fromCache,
+            }
+          } catch (error) {
+            console.error(`Failed to calculate fit score for ${opportunityId}:`, error)
+            return {
+              opportunityId,
+              overallScore: 0,
+              estimatedHours: 0,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            }
+          }
+        })
+      )
+
+      return results.map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value
+        }
+        return {
+          opportunityId: input.opportunityIds[index],
+          overallScore: 0,
+          estimatedHours: 0,
+          error: result.reason?.message || 'Failed to calculate',
+        }
+      })
+    }),
+
+  /**
+   * Get recommended opportunities based on fit score
+   * Returns opportunities with high fit scores for dashboard widgets
+   */
+  getRecommendedOpportunities: orgProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).optional().default(10),
+        minScore: z.number().min(0).max(100).optional().default(70),
+        includeDeadlinePassed: z.boolean().optional().default(false),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const now = new Date()
+
+      // Find all fit scores for this organization above the threshold
+      const fitScores = await ctx.db.fitScore.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          overallScore: {
+            gte: input.minScore,
+          },
+          opportunity: input.includeDeadlinePassed
+            ? undefined
+            : {
+                OR: [
+                  { deadline: { gte: now } },
+                  { deadline: null },
+                ],
+              },
+        },
+        orderBy: {
+          overallScore: 'desc',
+        },
+        take: input.limit,
+        include: {
+          opportunity: {
+            include: {
+              funder: true,
+            },
+          },
+        },
+      })
+
+      return fitScores.map(score => ({
+        opportunity: score.opportunity,
+        fitScore: {
+          overallScore: score.overallScore,
+          missionScore: score.missionScore,
+          capacityScore: score.capacityScore,
+          geographicScore: score.geographicScore,
+          historyScore: score.historyScore,
+          estimatedHours: score.estimatedHours,
+          reusableContent: score.reusableContent as FitScoreResult['reusableContent'],
+        },
+      }))
+    }),
+
+  /**
+   * List all opportunities with their fit scores
+   * Supports sorting and filtering
+   */
+  listOpportunities: orgProcedure
+    .input(
+      z.object({
+        sortBy: z.enum(['deadline', 'fitScore', 'createdAt']).optional().default('deadline'),
+        sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
+        minFitScore: z.number().min(0).max(100).optional(),
+        includeDeadlinePassed: z.boolean().optional().default(false),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const now = new Date()
+
+      // Build where clause
+      const where: any = {
+        fitScores: {
+          some: {
+            organizationId: ctx.organizationId,
+            ...(input.minFitScore !== undefined && {
+              overallScore: { gte: input.minFitScore },
+            }),
+          },
+        },
+      }
+
+      // Filter by deadline if needed
+      if (!input.includeDeadlinePassed) {
+        where.OR = [
+          { deadline: { gte: now } },
+          { deadline: null },
+        ]
+      }
+
+      // Fetch opportunities with fit scores
+      const opportunities = await ctx.db.opportunity.findMany({
+        where,
+        include: {
+          funder: true,
+          fitScores: {
+            where: { organizationId: ctx.organizationId },
+          },
+        },
+        orderBy:
+          input.sortBy === 'fitScore'
+            ? undefined // We'll sort by fitScore in memory
+            : input.sortBy === 'deadline'
+            ? { deadline: input.sortOrder }
+            : { createdAt: input.sortOrder },
+      })
+
+      // If sorting by fit score, do it in memory
+      if (input.sortBy === 'fitScore') {
+        opportunities.sort((a, b) => {
+          const scoreA = a.fitScores[0]?.overallScore ?? 0
+          const scoreB = b.fitScores[0]?.overallScore ?? 0
+          return input.sortOrder === 'asc' ? scoreA - scoreB : scoreB - scoreA
+        })
+      }
+
+      // Transform to include fit score data
+      return opportunities.map((opp) => ({
+        ...opp,
+        fitScore: opp.fitScores[0]
+          ? {
+              overallScore: opp.fitScores[0].overallScore,
+              missionScore: opp.fitScores[0].missionScore,
+              capacityScore: opp.fitScores[0].capacityScore,
+              geographicScore: opp.fitScores[0].geographicScore,
+              historyScore: opp.fitScores[0].historyScore,
+              estimatedHours: opp.fitScores[0].estimatedHours,
+              reusableContent: opp.fitScores[0].reusableContent as FitScoreResult['reusableContent'],
+            }
+          : null,
+        fitScores: undefined, // Remove the array
+      }))
     }),
 
   /**
