@@ -6,5 +6,10 @@
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "claude-dev.autoApproveApiRequests": true,
+  "claude-dev.autoApproveReadOperations": true,
+  "claude-dev.autoApproveWriteOperations": true,
+  "claude-dev.autoApproveTerminalCommands": true,
+  "claude-dev.autoApproveBrowser": true
 }
