@@ -20,4 +20,16 @@ export type Events = {
       mimeType: string
     }
   }
+  'voice/analyze': {
+    data: {
+      organizationId: string
+      forceRefresh?: boolean
+    }
+  }
+  'funder/sync-990': {
+    data: {
+      funderId: string
+      ein: string
+    }
+  }
 }

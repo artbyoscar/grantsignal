@@ -156,8 +156,8 @@ export const discoveryRouter = router({
           deadline,
           amountMin,
           amountMax,
-          source,
-          organizationId: ctx.organizationId,
+          source: 'USER_INGESTED',
+          sourceUrl: source,
         },
       })
 

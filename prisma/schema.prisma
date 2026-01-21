@@ -174,24 +174,34 @@ model Program {
 }
 
 model Funder {
-  id               String         @id @default(cuid())
-  name             String
-  ein              String?        @unique
-  type             FunderType
-  totalAssets      Decimal?       @db.Decimal(15, 2)
-  totalGiving      Decimal?       @db.Decimal(15, 2)
-  grantSizeMin     Decimal?       @db.Decimal(15, 2)
-  grantSizeMax     Decimal?       @db.Decimal(15, 2)
-  grantSizeMedian  Decimal?       @db.Decimal(15, 2)
-  website          String?
-  lastSyncedAt     DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id                  String         @id @default(cuid())
+  name                String
+  ein                 String?        @unique
+  type                FunderType
+  mission             String?        @db.Text
+  city                String?
+  state               String?
+  nteeCode            String?
+  programAreas        Json?          // Array of focus areas
+  geographicFocus     Json?          // Geographic preferences
+  totalAssets         Decimal?       @db.Decimal(15, 2)
+  totalGiving         Decimal?       @db.Decimal(15, 2)
+  grantSizeMin        Decimal?       @db.Decimal(15, 2)
+  grantSizeMax        Decimal?       @db.Decimal(15, 2)
+  grantSizeMedian     Decimal?       @db.Decimal(15, 2)
+  website             String?
+  applicationProcess  String?        @db.Text
+  applicationDeadline String?        // e.g., "Quarterly: March 1, June 1, Sept 1, Dec 1"
+  contactInfo         Json?          // { email, phone, address }
+  historicalData      Json?          // 5-year giving trends
+  lastSyncedAt        DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   // Relations
-  opportunities    Opportunity[]
-  pastGrantees     PastGrantee[]
-  grants           Grant[]
+  opportunities       Opportunity[]
+  pastGrantees        PastGrantee[]
+  grants              Grant[]
 }
 
 model PastGrantee {
