@@ -180,6 +180,7 @@ model Organization {
   invitations      TeamInvitation[]
   apiKeys          ApiKey[]
   webhooks         Webhook[]
+  aiGenerations    AIGeneration[]
 }
 
 model OrganizationUser {
@@ -368,11 +369,43 @@ model Grant {
   assignedTo      OrganizationUser? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   documents       Document[]
   commitments     Commitment[]
+  aiGenerations   AIGeneration[]
 
   @@index([organizationId])
   @@index([status])
   @@index([deadline])
   @@index([assignedToId])
+}
+
+model AIGeneration {
+  id              String   @id @default(cuid())
+  organizationId  String
+  grantId         String?
+  userId          String   // Clerk user ID
+  sectionId       String?  // Section identifier (e.g., "project_description")
+
+  // Generation inputs
+  prompt          String   @db.Text
+  writingMode     String   // "memory_assist", "ai_draft", "human_first"
+
+  // Generation outputs
+  content         String   @db.Text
+  confidence      Int      // 0-100 confidence score
+  sources         Json     // Array of { documentId, documentName, text, score, chunkIndex }
+
+  // Metadata
+  model           String   // e.g., "claude-sonnet-4-5-20250929"
+  tokensUsed      Int?
+  generatedAt     DateTime @default(now())
+
+  // Relations
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grant           Grant?       @relation(fields: [grantId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([grantId])
+  @@index([userId])
+  @@index([generatedAt])
 }
 
 model Commitment {

@@ -5,6 +5,7 @@ import { Search, Loader2, FileText } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { DocumentType } from '@prisma/client'
 import { toast } from 'sonner'
+import { ConfidenceBadge } from '@/components/ui/confidence-badge'
 
 interface MemorySearchProps {
   onInsert: (text: string, source: { documentId: string; documentName: string }) => void
@@ -124,17 +125,14 @@ export function MemorySearch({ onInsert }: MemorySearchProps) {
             {searchResults.results.map((result) =>
               result.matchingChunks.map((chunk, chunkIdx) => {
                 const score = Math.round(chunk.score * 100)
-                const scoreColor =
-                  score > 80
-                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                    : score >= 60
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                    : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                const isLowConfidence = score < 60
 
                 return (
                   <div
                     key={`${result.document.id}-${chunkIdx}`}
-                    className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors"
+                    className={`bg-slate-800 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors ${
+                      isLowConfidence ? 'opacity-50' : ''
+                    }`}
                   >
                     {/* Header: Document Name and Type Badge */}
                     <div className="flex items-start gap-2 mb-2">
@@ -158,13 +156,16 @@ export function MemorySearch({ onInsert }: MemorySearchProps) {
                       {chunk.text.length > 200 ? '...' : ''}
                     </p>
 
-                    {/* Footer: Score Badge and Insert Button */}
+                    {/* Low Confidence Warning */}
+                    {isLowConfidence && (
+                      <div className="mb-3 px-2 py-1.5 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-amber-300">
+                        Low relevance - verify accuracy before use
+                      </div>
+                    )}
+
+                    {/* Footer: Confidence Badge and Insert Button */}
                     <div className="flex items-center justify-between gap-3">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded border ${scoreColor}`}
-                      >
-                        {score}% match
-                      </span>
+                      <ConfidenceBadge score={score} size="sm" />
                       <button
                         onClick={() =>
                           handleInsert(
@@ -173,7 +174,13 @@ export function MemorySearch({ onInsert }: MemorySearchProps) {
                             result.document.name
                           )
                         }
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                        disabled={isLowConfidence}
+                        className={`px-3 py-1.5 text-white text-xs font-medium rounded transition-colors ${
+                          isLowConfidence
+                            ? 'bg-slate-600 cursor-not-allowed opacity-50'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                        title={isLowConfidence ? 'Cannot insert low confidence content' : 'Insert content'}
                       >
                         Insert
                       </button>

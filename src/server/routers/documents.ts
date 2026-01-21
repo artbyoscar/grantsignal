@@ -288,6 +288,285 @@ export const documentsRouter = router({
     }),
 
   /**
+   * Get detailed health statistics based on confidence scores
+   */
+  getHealthStats: orgProcedure.query(async ({ ctx }) => {
+    const documents = await ctx.db.document.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+      },
+      select: {
+        id: true,
+        status: true,
+        confidenceScore: true,
+      },
+    })
+
+    const total = documents.length
+    let successful = 0
+    let needsReview = 0
+    let failed = 0
+    let processing = 0
+
+    documents.forEach((doc) => {
+      if (doc.status === ProcessingStatus.PROCESSING || doc.status === ProcessingStatus.PENDING) {
+        processing++
+      } else if (doc.status === ProcessingStatus.FAILED) {
+        failed++
+      } else if (doc.status === ProcessingStatus.NEEDS_REVIEW) {
+        needsReview++
+      } else if (doc.status === ProcessingStatus.COMPLETED) {
+        const score = doc.confidenceScore || 0
+        if (score >= 80) {
+          successful++
+        } else if (score >= 60) {
+          needsReview++
+        } else {
+          failed++
+        }
+      }
+    })
+
+    // Calculate overall health score (0-100)
+    const healthScore = total > 0 ? Math.round((successful / total) * 100) : 100
+
+    return {
+      total,
+      successful,
+      needsReview,
+      failed,
+      processing,
+      healthScore,
+    }
+  }),
+
+  /**
+   * Get documents by health status
+   */
+  getDocumentsByHealth: orgProcedure
+    .input(
+      z.object({
+        filter: z.enum(['all', 'successful', 'needs-review', 'failed']).default('all'),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const baseWhere = {
+        organizationId: ctx.organizationId,
+      }
+
+      let where: any = { ...baseWhere }
+
+      if (input.filter === 'successful') {
+        where.OR = [
+          {
+            status: ProcessingStatus.COMPLETED,
+            confidenceScore: { gte: 80 },
+          },
+        ]
+      } else if (input.filter === 'needs-review') {
+        where.OR = [
+          {
+            status: ProcessingStatus.NEEDS_REVIEW,
+          },
+          {
+            status: ProcessingStatus.COMPLETED,
+            confidenceScore: { gte: 60, lt: 80 },
+          },
+        ]
+      } else if (input.filter === 'failed') {
+        where.OR = [
+          {
+            status: ProcessingStatus.FAILED,
+          },
+          {
+            status: ProcessingStatus.COMPLETED,
+            confidenceScore: { lt: 60 },
+          },
+        ]
+      }
+
+      const documents = await ctx.db.document.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          grant: {
+            select: {
+              id: true,
+              funder: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      // Parse issues from parseWarnings
+      return documents.map((doc) => {
+        const issues: any[] = []
+
+        if (doc.parseWarnings) {
+          try {
+            const warnings = Array.isArray(doc.parseWarnings)
+              ? doc.parseWarnings
+              : typeof doc.parseWarnings === 'object' && doc.parseWarnings !== null
+              ? [doc.parseWarnings]
+              : []
+
+            warnings.forEach((warning: any) => {
+              if (typeof warning === 'string') {
+                issues.push({
+                  type: 'parsing',
+                  severity: 'medium',
+                  message: warning,
+                })
+              } else if (typeof warning === 'object') {
+                issues.push({
+                  type: warning.type || 'parsing',
+                  severity: warning.severity || 'medium',
+                  message: warning.message || String(warning),
+                  pageNumbers: warning.pageNumbers,
+                })
+              }
+            })
+          } catch (error) {
+            console.error('Error parsing warnings:', error)
+          }
+        }
+
+        // Add generic issues based on confidence score
+        const score = doc.confidenceScore || 0
+        if (score < 60 && doc.status === ProcessingStatus.COMPLETED) {
+          issues.push({
+            type: 'quality',
+            severity: 'high',
+            message: 'Very low confidence score. Manual verification required.',
+          })
+        } else if (score < 80 && doc.status === ProcessingStatus.COMPLETED) {
+          issues.push({
+            type: 'quality',
+            severity: 'medium',
+            message: 'Medium confidence score. Review recommended.',
+          })
+        }
+
+        return {
+          ...doc,
+          issues,
+        }
+      })
+    }),
+
+  /**
+   * Update document corrections
+   */
+  updateDocumentCorrections: orgProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+        extractedText: z.string().optional(),
+        metadata: z.any().optional(),
+        confidenceScore: z.number().min(0).max(100).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { documentId, ...updates } = input
+
+      const document = await ctx.db.document.updateMany({
+        where: {
+          id: documentId,
+          organizationId: ctx.organizationId,
+        },
+        data: {
+          ...updates,
+          status: ProcessingStatus.COMPLETED,
+        },
+      })
+
+      if (document.count === 0) {
+        throw new Error('Document not found or access denied')
+      }
+
+      return ctx.db.document.findUnique({
+        where: { id: documentId },
+      })
+    }),
+
+  /**
+   * Reprocess a failed document
+   */
+  reprocessDocument: orgProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const doc = await ctx.db.document.findFirst({
+        where: {
+          id: input.documentId,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      if (!doc) {
+        throw new Error('Document not found or access denied')
+      }
+
+      // Update status to PROCESSING
+      await ctx.db.document.update({
+        where: {
+          id: input.documentId,
+        },
+        data: {
+          status: ProcessingStatus.PROCESSING,
+          confidenceScore: null,
+          parseWarnings: null,
+        },
+      })
+
+      // Trigger Inngest document processing job
+      await inngest.send({
+        name: 'document/uploaded',
+        data: {
+          documentId: doc.id,
+          organizationId: doc.organizationId,
+          s3Key: doc.s3Key,
+          mimeType: doc.mimeType,
+        },
+      })
+
+      return ctx.db.document.findUnique({
+        where: { id: input.documentId },
+      })
+    }),
+
+  /**
+   * Delete a document
+   */
+  deleteDocument: orgProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const document = await ctx.db.document.deleteMany({
+        where: {
+          id: input.documentId,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      if (document.count === 0) {
+        throw new Error('Document not found or access denied')
+      }
+
+      return { success: true }
+    }),
+
+  /**
    * Semantic search across organization documents
    */
   search: orgProcedure

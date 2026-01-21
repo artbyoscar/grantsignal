@@ -1,5 +1,7 @@
 import pdf from 'pdf-parse'
 import mammoth from 'mammoth'
+import { confidenceScoring } from '../ai/confidence-scoring'
+import type { ParsedDocumentMetadata, ParseConfidenceResult } from '@/types/confidence'
 
 export interface ParseResult {
   text: string
@@ -9,30 +11,49 @@ export interface ParseResult {
     pageCount?: number
     wordCount: number
     detectedType?: string
+    hasStructuredData?: boolean
+    extractedDates?: Date[]
+    extractedEntities?: {
+      amounts?: string[]
+      names?: string[]
+      organizations?: string[]
+    }
   }
+  confidenceDetails?: ParseConfidenceResult // Detailed confidence breakdown
 }
 
 /**
  * Parse document and extract text with confidence scoring
+ * @param useAdvancedScoring - Use new confidence scoring service (default: true)
  */
 export async function parseDocument(
   buffer: Buffer,
-  mimeType: string
+  mimeType: string,
+  useAdvancedScoring = true
 ): Promise<ParseResult> {
   try {
     // Route to appropriate parser based on MIME type
+    let result: ParseResult;
+
     if (mimeType === 'application/pdf') {
-      return await parsePDF(buffer)
+      result = await parsePDF(buffer)
     } else if (
       mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
       mimeType === 'application/msword'
     ) {
-      return await parseDOCX(buffer)
+      result = await parseDOCX(buffer)
     } else if (mimeType === 'text/plain') {
-      return await parseTXT(buffer)
+      result = await parseTXT(buffer)
     } else {
       throw new Error(`Unsupported MIME type: ${mimeType}`)
     }
+
+    // Apply advanced confidence scoring if enabled
+    if (useAdvancedScoring) {
+      result = enhanceWithConfidenceScoring(result)
+    }
+
+    return result
   } catch (error) {
     console.error('Document parsing error:', error)
     throw error
@@ -211,4 +232,168 @@ function calculateTextConfidence(text: string, wordCount: number): number {
 function countWords(text: string): number {
   if (!text || text.trim().length === 0) return 0
   return text.trim().split(/\s+/).length
+}
+
+/**
+ * Extract dates from text using regex patterns
+ */
+function extractDates(text: string): Date[] {
+  const dates: Date[] = []
+
+  // Common date patterns
+  const patterns = [
+    /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/g, // MM/DD/YYYY or DD-MM-YYYY
+    /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})\b/gi, // Month DD, YYYY
+    /\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\b/gi, // DD Month YYYY
+    /\b(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})\b/g, // YYYY-MM-DD
+  ]
+
+  for (const pattern of patterns) {
+    const matches = text.matchAll(pattern)
+    for (const match of matches) {
+      try {
+        const dateStr = match[0]
+        const parsed = new Date(dateStr)
+        if (!isNaN(parsed.getTime())) {
+          dates.push(parsed)
+        }
+      } catch {
+        // Skip invalid dates
+      }
+    }
+  }
+
+  return dates
+}
+
+/**
+ * Extract monetary amounts from text
+ */
+function extractAmounts(text: string): string[] {
+  const amounts: string[] = []
+
+  // Patterns for dollar amounts
+  const patterns = [
+    /\$[\d,]+(?:\.\d{2})?/g, // $1,234.56
+    /\b\d+(?:,\d{3})*(?:\.\d{2})?\s*(?:dollars?|USD)\b/gi, // 1,234.56 dollars
+  ]
+
+  for (const pattern of patterns) {
+    const matches = text.matchAll(pattern)
+    for (const match of matches) {
+      amounts.push(match[0])
+    }
+  }
+
+  return [...new Set(amounts)] // Remove duplicates
+}
+
+/**
+ * Extract person names (basic heuristic)
+ */
+function extractNames(text: string): string[] {
+  const names: string[] = []
+
+  // Look for capitalized words that might be names (2-3 word sequences)
+  const pattern = /\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/g
+  const matches = text.matchAll(pattern)
+
+  for (const match of matches) {
+    const fullName = match[0]
+    // Filter out common false positives
+    if (!fullName.match(/^(The|For|And|But|Not|With|From|Into|Upon|About)\s/)) {
+      names.push(fullName)
+    }
+  }
+
+  return [...new Set(names)].slice(0, 10) // Limit to 10 unique names
+}
+
+/**
+ * Extract organization names (basic heuristic)
+ */
+function extractOrganizations(text: string): string[] {
+  const orgs: string[] = []
+
+  // Look for words followed by common org suffixes
+  const patterns = [
+    /\b([A-Z][A-Za-z\s&]+)\s+(Inc\.?|LLC|Corp\.?|Corporation|Foundation|Institute|University|College|Company|Association)\b/g,
+  ]
+
+  for (const pattern of patterns) {
+    const matches = text.matchAll(pattern)
+    for (const match of matches) {
+      orgs.push(match[0])
+    }
+  }
+
+  return [...new Set(orgs)].slice(0, 10) // Limit to 10 unique orgs
+}
+
+/**
+ * Check if text has structured data (tables, lists, etc.)
+ */
+function hasStructuredData(text: string): boolean {
+  // Look for patterns that suggest tables or structured lists
+  const structureIndicators = [
+    /\|\s*[^\n]+\s*\|/g, // Table with pipes
+    /^\s*[\d\-\*\+]\.\s+/gm, // Numbered or bulleted lists
+    /\t{2,}/g, // Multiple tabs (table columns)
+    /^[\-=]{3,}$/gm, // Horizontal rules
+  ]
+
+  return structureIndicators.some(pattern => pattern.test(text))
+}
+
+/**
+ * Enhance parse result with advanced confidence scoring
+ */
+function enhanceWithConfidenceScoring(result: ParseResult): ParseResult {
+  const { text, metadata } = result
+
+  // Extract additional metadata for confidence scoring
+  const extractedDates = extractDates(text)
+  const extractedAmounts = extractAmounts(text)
+  const extractedNames = extractNames(text)
+  const extractedOrgs = extractOrganizations(text)
+  const hasStructured = hasStructuredData(text)
+
+  // Build metadata for confidence scoring
+  const docMetadata: ParsedDocumentMetadata = {
+    text,
+    wordCount: metadata.wordCount,
+    pageCount: metadata.pageCount,
+    detectedType: metadata.detectedType as any,
+    hasStructuredData: hasStructured,
+    extractedDates: extractedDates.length > 0 ? extractedDates : undefined,
+    extractedEntities: {
+      amounts: extractedAmounts.length > 0 ? extractedAmounts : undefined,
+      names: extractedNames.length > 0 ? extractedNames : undefined,
+      organizations: extractedOrgs.length > 0 ? extractedOrgs : undefined,
+    },
+  }
+
+  // Calculate advanced confidence
+  const confidenceResult = confidenceScoring.calculateParseConfidence(docMetadata)
+
+  // Merge warnings
+  const allWarnings = [...result.warnings, ...confidenceResult.warnings]
+
+  // Update result with enhanced data
+  return {
+    ...result,
+    confidence: confidenceResult.score,
+    warnings: [...new Set(allWarnings)], // Remove duplicates
+    metadata: {
+      ...metadata,
+      hasStructuredData: hasStructured,
+      extractedDates: extractedDates.length > 0 ? extractedDates : undefined,
+      extractedEntities: {
+        amounts: extractedAmounts.length > 0 ? extractedAmounts : undefined,
+        names: extractedNames.length > 0 ? extractedNames : undefined,
+        organizations: extractedOrgs.length > 0 ? extractedOrgs : undefined,
+      },
+    },
+    confidenceDetails: confidenceResult,
+  }
 }

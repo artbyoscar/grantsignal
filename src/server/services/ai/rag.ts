@@ -1,5 +1,7 @@
 import { getIndex, isPineconeConfigured } from '@/lib/pinecone'
 import { generateEmbedding } from './embeddings'
+import { confidenceScoring } from './confidence-scoring'
+import type { RetrievalConfidenceResult, SourceDocument } from '@/types/confidence'
 
 export interface RAGContext {
   text: string
@@ -7,6 +9,13 @@ export interface RAGContext {
   documentName: string
   chunkIndex: number
   score: number
+  parseConfidence?: number
+  createdAt?: Date
+}
+
+export interface RAGQueryResult {
+  contexts: RAGContext[]
+  confidence: RetrievalConfidenceResult
 }
 
 export interface QueryOrganizationMemoryOptions {
@@ -60,6 +69,8 @@ export async function queryOrganizationMemory(
         documentName: (match.metadata?.documentName as string) || 'Unknown',
         chunkIndex: (match.metadata?.chunkIndex as number) || 0,
         score: match.score || 0,
+        parseConfidence: match.metadata?.parseConfidence as number | undefined,
+        createdAt: match.metadata?.createdAt ? new Date(match.metadata.createdAt as string) : undefined,
       }))
       .filter(context => context.text.length > 0) // Ensure we have valid text
 
@@ -69,6 +80,42 @@ export async function queryOrganizationMemory(
   } catch (error) {
     console.error('Error querying organization memory:', error)
     throw new Error(`Failed to query organization memory: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}
+
+/**
+ * Query organization's document memory with confidence scoring
+ * @param options - Query options
+ * @returns Contexts and confidence score for retrieval quality
+ */
+export async function queryOrganizationMemoryWithConfidence(
+  options: QueryOrganizationMemoryOptions
+): Promise<RAGQueryResult> {
+  // Get contexts using existing method
+  const contexts = await queryOrganizationMemory(options)
+
+  // Convert contexts to SourceDocument format for confidence calculation
+  const sources: SourceDocument[] = contexts.map(ctx => ({
+    documentId: ctx.documentId,
+    documentName: ctx.documentName,
+    text: ctx.text,
+    score: ctx.score,
+    chunkIndex: ctx.chunkIndex,
+    parseConfidence: ctx.parseConfidence,
+    createdAt: ctx.createdAt,
+  }))
+
+  // Calculate retrieval confidence
+  const confidence = confidenceScoring.calculateRetrievalConfidence(sources)
+
+  console.log(`Retrieval confidence: ${confidence.score}% (${confidence.level})`)
+  if (confidence.warnings.length > 0) {
+    console.warn('Retrieval warnings:', confidence.warnings)
+  }
+
+  return {
+    contexts,
+    confidence,
   }
 }
 

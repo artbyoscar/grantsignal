@@ -867,33 +867,106 @@ export default function WritingStudioPage({ params }: PageProps) {
             >
               {(currentSectionData?.isAiGenerated || currentSectionData?.aiSources?.length) && (
                 <div className="absolute -left-4 top-0 flex flex-col gap-1">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500 text-white text-xs font-medium rounded-r">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500 text-white text-xs font-medium rounded-r shadow-md">
                     <Sparkles className="w-3 h-3" />
                     AI Assisted
                   </span>
                   {writingMode === 'audit_mode' && currentSectionData?.aiSources && (
-                    <div className="bg-slate-800 border border-slate-700 rounded-r px-2 py-1 text-xs text-slate-300">
-                      {currentSectionData.aiSources.length} source{currentSectionData.aiSources.length !== 1 ? 's' : ''}
-                    </div>
+                    <>
+                      <div className="bg-slate-100 border-l-2 border-blue-500 rounded-r px-2 py-1 text-xs text-slate-700 shadow-sm">
+                        <div className="font-medium">{currentSectionData.aiSources.length} source{currentSectionData.aiSources.length !== 1 ? 's' : ''}</div>
+                        {currentSectionData.aiInteractions && (
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            {currentSectionData.aiInteractions.length} interaction{currentSectionData.aiInteractions.length !== 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </div>
+                      {/* Average Confidence */}
+                      {currentSectionData.aiSources.length > 0 && (
+                        <div className="bg-slate-100 border-l-2 border-green-500 rounded-r px-2 py-1 text-xs shadow-sm">
+                          <div className="text-slate-500 text-[10px]">Avg Confidence</div>
+                          <div className="font-medium text-green-700">
+                            {Math.round(
+                              currentSectionData.aiSources.reduce((sum, s) => sum + s.score, 0) /
+                              currentSectionData.aiSources.length
+                            )}%
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
 
               {/* AI Source Attribution (Audit Mode) */}
               {writingMode === 'audit_mode' && currentSectionData?.aiSources && currentSectionData.aiSources.length > 0 && (
-                <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertCircle className="w-4 h-4 text-blue-400" />
-                    <h4 className="text-sm font-semibold text-blue-400">AI Sources Used</h4>
+                <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600" />
+                    <h4 className="text-sm font-semibold text-blue-900">Trust Architecture: AI Sources Used</h4>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {currentSectionData.aiSources.map((source, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
-                        <FileText className="w-3 h-3 text-slate-400" />
-                        <span>{source.documentName}</span>
-                        <span className="text-slate-500">({source.score}% relevance)</span>
+                      <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-white rounded border border-blue-200">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <FileText className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                          <span className="text-xs text-slate-900 truncate">{source.documentName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                            source.score >= 80 ? 'bg-green-100 text-green-700' :
+                            source.score >= 60 ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {source.score}%
+                          </span>
+                          <button
+                            onClick={() => window.open(`/documents/${source.documentId}`, '_blank')}
+                            className="text-blue-600 hover:text-blue-700 text-xs underline"
+                          >
+                            View
+                          </button>
+                        </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Audit Trail Info */}
+                  {currentSectionData.aiInteractions && currentSectionData.aiInteractions.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-blue-200">
+                      <div className="text-xs text-slate-600 mb-2 font-medium">
+                        AI Interaction History:
+                      </div>
+                      <div className="space-y-1.5">
+                        {currentSectionData.aiInteractions.map((interaction, idx) => (
+                          <div key={idx} className="text-xs text-slate-700 flex items-start gap-2">
+                            <span className="text-slate-400">•</span>
+                            <div className="flex-1">
+                              <span className="font-medium">{interaction.mode.replace('_', ' ')}:</span>{' '}
+                              {interaction.prompt.slice(0, 60)}
+                              {interaction.prompt.length > 60 ? '...' : ''}
+                              {interaction.confidence && (
+                                <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
+                                  interaction.confidence >= 80 ? 'bg-green-100 text-green-700' :
+                                  interaction.confidence >= 60 ? 'bg-amber-100 text-amber-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>
+                                  {interaction.confidence}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Trust Architecture Info */}
+                  <div className="mt-3 pt-3 border-t border-blue-200">
+                    <p className="text-xs text-blue-700">
+                      All AI-generated content is tracked per GrantSignal Trust Architecture.
+                      Confidence thresholds enforced: ≥80% (high), 60-79% (medium), &lt;60% (blocked).
+                    </p>
                   </div>
                 </div>
               )}

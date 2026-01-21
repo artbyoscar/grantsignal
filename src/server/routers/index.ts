@@ -6,6 +6,7 @@ import { documentsRouter } from './documents'
 import { complianceRouter } from './compliance'
 import { discoveryRouter } from './discovery'
 import { aiRouter } from './ai'
+import { auditRouter } from './audit'
 import { writingRouter } from './writing'
 import { onboardingRouter } from './onboarding'
 import { reportsRouter } from './reports'
@@ -24,6 +25,7 @@ export const appRouter = router({
   compliance: complianceRouter,
   discovery: discoveryRouter,
   ai: aiRouter,
+  audit: auditRouter,
   writing: writingRouter,
   onboarding: onboardingRouter,
   reports: reportsRouter,
