@@ -1,5 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { mockGetIndex, mockPineconeQuery, resetPineconeMocks } from '../mocks/pinecone'
 import { mockRAGContexts } from '../fixtures/documents'
+
+// This must be called before importing the module under test
+vi.mock('@/lib/pinecone', () => ({
+  getIndex: mockGetIndex,
+}))
 
 vi.mock('@/server/services/ai/embeddings', () => ({
   generateEmbedding: vi.fn(async (text: string) => {
@@ -10,7 +16,7 @@ vi.mock('@/server/services/ai/embeddings', () => ({
 
 describe('Trust Architecture - RAG Retrieval', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    resetPineconeMocks()
   })
 
   describe('Similarity Threshold (0.7 cosine similarity)', () => {
@@ -33,24 +39,15 @@ describe('Trust Architecture - RAG Retrieval', () => {
     })
 
     it('should filter out results below similarity threshold', async () => {
-      // Mock Pinecone with mixed similarity scores
-      const mockIndex = {
-        namespace: () => ({
-          query: vi.fn(async () => ({
-            matches: [
-              { id: '1', score: 0.92, metadata: { text: 'High relevance', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
-              { id: '2', score: 0.75, metadata: { text: 'Medium relevance', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } },
-              { id: '3', score: 0.65, metadata: { text: 'Low relevance', documentId: 'doc-3', documentName: 'Doc 3', chunkIndex: 0 } }, // Below threshold
-              { id: '4', score: 0.55, metadata: { text: 'Very low relevance', documentId: 'doc-4', documentName: 'Doc 4', chunkIndex: 0 } }, // Below threshold
-            ],
-          })),
-        }),
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
-      }))
+      // Configure mock with mixed similarity scores
+      mockPineconeQuery.mockResolvedValueOnce({
+        matches: [
+          { id: '1', score: 0.92, metadata: { text: 'High relevance', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
+          { id: '2', score: 0.75, metadata: { text: 'Medium relevance', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } },
+          { id: '3', score: 0.65, metadata: { text: 'Low relevance', documentId: 'doc-3', documentName: 'Doc 3', chunkIndex: 0 } }, // Below threshold
+          { id: '4', score: 0.55, metadata: { text: 'Very low relevance', documentId: 'doc-4', documentName: 'Doc 4', chunkIndex: 0 } }, // Below threshold
+        ],
+      })
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -70,22 +67,13 @@ describe('Trust Architecture - RAG Retrieval', () => {
     it('should use configurable minimum score threshold', async () => {
       const customThreshold = 0.8
 
-      const mockIndex = {
-        namespace: () => ({
-          query: vi.fn(async () => ({
-            matches: [
-              { id: '1', score: 0.92, metadata: { text: 'High', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
-              { id: '2', score: 0.85, metadata: { text: 'High-medium', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } },
-              { id: '3', score: 0.75, metadata: { text: 'Medium', documentId: 'doc-3', documentName: 'Doc 3', chunkIndex: 0 } },
-            ],
-          })),
-        }),
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
-      }))
+      mockPineconeQuery.mockResolvedValueOnce({
+        matches: [
+          { id: '1', score: 0.92, metadata: { text: 'High', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
+          { id: '2', score: 0.85, metadata: { text: 'High-medium', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } },
+          { id: '3', score: 0.75, metadata: { text: 'Medium', documentId: 'doc-3', documentName: 'Doc 3', chunkIndex: 0 } },
+        ],
+      })
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -102,21 +90,12 @@ describe('Trust Architecture - RAG Retrieval', () => {
     })
 
     it('should handle case when no chunks meet threshold', async () => {
-      const mockIndex = {
-        namespace: () => ({
-          query: vi.fn(async () => ({
-            matches: [
-              { id: '1', score: 0.65, metadata: { text: 'Low', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
-              { id: '2', score: 0.55, metadata: { text: 'Very low', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } },
-            ],
-          })),
-        }),
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
-      }))
+      mockPineconeQuery.mockResolvedValueOnce({
+        matches: [
+          { id: '1', score: 0.65, metadata: { text: 'Low', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
+          { id: '2', score: 0.55, metadata: { text: 'Very low', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } },
+        ],
+      })
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -132,18 +111,7 @@ describe('Trust Architecture - RAG Retrieval', () => {
 
   describe('No Sources = No Generation', () => {
     it('should return empty array when no sources found', async () => {
-      const mockIndex = {
-        namespace: () => ({
-          query: vi.fn(async () => ({
-            matches: [],
-          })),
-        }),
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
-      }))
+      mockPineconeQuery.mockResolvedValueOnce({ matches: [] })
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -225,22 +193,13 @@ describe('Trust Architecture - RAG Retrieval', () => {
     })
 
     it('should filter out contexts with empty text', async () => {
-      const mockIndex = {
-        namespace: () => ({
-          query: vi.fn(async () => ({
-            matches: [
-              { id: '1', score: 0.92, metadata: { text: 'Valid text', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
-              { id: '2', score: 0.88, metadata: { text: '', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } }, // Empty text
-              { id: '3', score: 0.85, metadata: { documentId: 'doc-3', documentName: 'Doc 3', chunkIndex: 0 } }, // No text field
-            ],
-          })),
-        }),
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
-      }))
+      mockPineconeQuery.mockResolvedValueOnce({
+        matches: [
+          { id: '1', score: 0.92, metadata: { text: 'Valid text', documentId: 'doc-1', documentName: 'Doc 1', chunkIndex: 0 } },
+          { id: '2', score: 0.88, metadata: { text: '', documentId: 'doc-2', documentName: 'Doc 2', chunkIndex: 0 } }, // Empty text
+          { id: '3', score: 0.85, metadata: { documentId: 'doc-3', documentName: 'Doc 3', chunkIndex: 0 } }, // No text field
+        ],
+      })
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -257,29 +216,20 @@ describe('Trust Architecture - RAG Retrieval', () => {
 
   describe('Top-K Results', () => {
     it('should limit results to topK parameter', async () => {
-      const mockIndex = {
-        namespace: () => ({
-          query: vi.fn(async ({ topK }: { topK: number }) => ({
-            matches: Array(15)
-              .fill(0)
-              .map((_, i) => ({
-                id: `vec-${i}`,
-                score: 0.95 - i * 0.02, // Decreasing scores
-                metadata: {
-                  text: `Context ${i}`,
-                  documentId: `doc-${i}`,
-                  documentName: `Document ${i}.pdf`,
-                  chunkIndex: i,
-                },
-              }))
-              .slice(0, topK),
-          })),
-        }),
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
+      mockPineconeQuery.mockImplementationOnce(async ({ topK }: { topK: number }) => ({
+        matches: Array(15)
+          .fill(0)
+          .map((_, i) => ({
+            id: `vec-${i}`,
+            score: 0.95 - i * 0.02, // Decreasing scores
+            metadata: {
+              text: `Context ${i}`,
+              documentId: `doc-${i}`,
+              documentName: `Document ${i}.pdf`,
+              chunkIndex: i,
+            },
+          }))
+          .slice(0, topK),
       }))
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
@@ -294,29 +244,20 @@ describe('Trust Architecture - RAG Retrieval', () => {
     })
 
     it('should default to 10 results when topK not specified', async () => {
-      const mockIndex = {
-        namespace: () => ({
-          query: vi.fn(async () => ({
-            matches: Array(15)
-              .fill(0)
-              .map((_, i) => ({
-                id: `vec-${i}`,
-                score: 0.95 - i * 0.02,
-                metadata: {
-                  text: `Context ${i}`,
-                  documentId: `doc-${i}`,
-                  documentName: `Document ${i}.pdf`,
-                  chunkIndex: i,
-                },
-              })),
+      mockPineconeQuery.mockResolvedValueOnce({
+        matches: Array(15)
+          .fill(0)
+          .map((_, i) => ({
+            id: `vec-${i}`,
+            score: 0.95 - i * 0.02,
+            metadata: {
+              text: `Context ${i}`,
+              documentId: `doc-${i}`,
+              documentName: `Document ${i}.pdf`,
+              chunkIndex: i,
+            },
           })),
-        }),
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
-      }))
+      })
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -334,18 +275,6 @@ describe('Trust Architecture - RAG Retrieval', () => {
   describe('Organization Isolation', () => {
     it('should query within organization namespace', async () => {
       const organizationId = 'org-456'
-      const namespaceFn = vi.fn(() => ({
-        query: vi.fn(async () => ({ matches: [] })),
-      }))
-
-      const mockIndex = {
-        namespace: namespaceFn,
-      }
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => mockIndex,
-      }))
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -354,7 +283,8 @@ describe('Trust Architecture - RAG Retrieval', () => {
         organizationId,
       })
 
-      expect(namespaceFn).toHaveBeenCalledWith(organizationId)
+      // Verify the namespace was called with the organization ID
+      expect(mockGetIndex().namespace).toHaveBeenCalledWith(organizationId)
     })
 
     it('should not return results from other organizations', () => {
@@ -377,10 +307,8 @@ describe('Trust Architecture - RAG Retrieval', () => {
 
   describe('Error Handling', () => {
     it('should handle Pinecone not configured', async () => {
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => false,
-        getIndex: () => null,
-      }))
+      // Mock getIndex to return null for this test
+      mockGetIndex.mockReturnValueOnce(null as any)
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -393,20 +321,8 @@ describe('Trust Architecture - RAG Retrieval', () => {
     })
 
     it('should handle embedding generation failure gracefully', async () => {
-      vi.doMock('@/server/services/ai/embeddings', () => ({
-        generateEmbedding: vi.fn(async () => {
-          throw new Error('Embedding generation failed')
-        }),
-      }))
-
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => ({
-          namespace: () => ({
-            query: vi.fn(async () => ({ matches: [] })),
-          }),
-        }),
-      }))
+      const { generateEmbedding } = await import('@/server/services/ai/embeddings')
+      vi.mocked(generateEmbedding).mockRejectedValueOnce(new Error('Embedding generation failed'))
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 
@@ -419,16 +335,7 @@ describe('Trust Architecture - RAG Retrieval', () => {
     })
 
     it('should handle Pinecone query errors', async () => {
-      vi.doMock('@/lib/pinecone', () => ({
-        isPineconeConfigured: () => true,
-        getIndex: () => ({
-          namespace: () => ({
-            query: vi.fn(async () => {
-              throw new Error('Pinecone query failed')
-            }),
-          }),
-        }),
-      }))
+      mockPineconeQuery.mockRejectedValueOnce(new Error('Pinecone query failed'))
 
       const { queryOrganizationMemory } = await import('@/server/services/ai/rag')
 

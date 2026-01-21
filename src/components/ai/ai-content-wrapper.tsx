@@ -4,18 +4,10 @@ import React from "react";
 import { AlertTriangle, RefreshCw, Check, Edit, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ConfidenceBadge } from "./confidence-badge";
-import { SourceAttributionPanel } from "./source-attribution-panel";
+import { ConfidenceBadge } from "@/components/ui/confidence-badge";
+import { SourceAttributionPanel } from "@/components/ui/source-attribution-panel";
 import { cn } from "@/lib/utils";
-
-interface Source {
-  id: string;
-  title: string;
-  excerpt: string;
-  relevanceScore: number;
-  documentId: string;
-  url?: string;
-}
+import type { Source } from "@/types/source";
 
 interface AIContentWrapperProps {
   children: React.ReactNode;
@@ -26,7 +18,7 @@ interface AIContentWrapperProps {
   onAccept?: () => void;
   onEdit?: () => void;
   onRegenerate?: () => void;
-  onSourceClick: (source: Source) => void;
+  onSourceClick?: (source: Source) => void;
 }
 
 /**
@@ -179,8 +171,9 @@ export function AIContentWrapper({
       {/* Source Attribution Panel - Always Visible */}
       <SourceAttributionPanel
         sources={sources}
-        onSourceClick={onSourceClick}
-        variant={confidenceLevel === "low" ? "expanded" : "collapsed"}
+        generatedAt={generatedAt}
+        onSourceClick={onSourceClick || (() => {})}
+        defaultExpanded={confidenceLevel === "low"}
       />
 
       {/* Trust Architecture Footer */}

@@ -104,7 +104,7 @@ describe('Trust Architecture - Audit Trail', () => {
       auditRecord.sources.forEach((source) => {
         expect(source).toHaveProperty('documentId')
         expect(source).toHaveProperty('documentName')
-        expect(source).toHaveProperty('relevance')
+        expect(source).toHaveProperty('relevanceScore')
       })
     })
 
@@ -134,10 +134,10 @@ describe('Trust Architecture - Audit Trail', () => {
       }
 
       auditRecord.sources.forEach((source) => {
-        expect(source.relevance).toBeDefined()
-        expect(typeof source.relevance).toBe('number')
-        expect(source.relevance).toBeGreaterThanOrEqual(0)
-        expect(source.relevance).toBeLessThanOrEqual(100)
+        expect(source.relevanceScore).toBeDefined()
+        expect(typeof source.relevanceScore).toBe('number')
+        expect(source.relevanceScore).toBeGreaterThanOrEqual(0)
+        expect(source.relevanceScore).toBeLessThanOrEqual(100)
       })
     })
   })
@@ -192,7 +192,7 @@ describe('Trust Architecture - Audit Trail', () => {
       expect(auditRecord.sources.length).toBeGreaterThan(2)
 
       const avgRelevance =
-        auditRecord.sources.reduce((sum, s) => sum + s.relevance, 0) /
+        auditRecord.sources.reduce((sum, s) => sum + s.relevanceScore, 0) /
         auditRecord.sources.length
 
       expect(avgRelevance).toBeGreaterThan(70)

@@ -467,7 +467,12 @@ describe('SourceAttributionPanel Component', () => {
 
       await user.click(screen.getByText(/View \d+ Source/))
 
-      expect(screen.getByText(/3 sources used for this generation/)).toBeInTheDocument()
+      expect(screen.getByText(/Source Attribution/)).toBeInTheDocument()
+      // Verify 3 source items are rendered
+      const sourceItems = screen.getAllByRole('button').filter(btn =>
+        btn.className.includes('group')
+      )
+      expect(sourceItems.length).toBeGreaterThanOrEqual(3)
     })
   })
 

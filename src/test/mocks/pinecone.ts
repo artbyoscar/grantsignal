@@ -1,46 +1,51 @@
 import { vi } from 'vitest'
-import { mockRAGContexts } from '../fixtures/documents'
 
-/**
- * Mock Pinecone index for testing RAG retrieval
- */
-export const createMockPineconeIndex = (scenario: keyof typeof mockRAGContexts = 'highSimilarity') => {
-  return {
-    namespace: vi.fn(() => ({
-      query: vi.fn(async ({ vector, topK, includeMetadata }) => {
-        const contexts = mockRAGContexts[scenario]
+export const mockPineconeQuery = vi.fn()
+export const mockNamespace = vi.fn(() => ({
+  query: mockPineconeQuery,
+}))
+export const mockGetIndex = vi.fn(() => ({
+  namespace: mockNamespace,
+}))
 
-        return {
-          matches: contexts.map((ctx, idx) => ({
-            id: `vec-${idx}`,
-            score: ctx.score,
-            metadata: {
-              text: ctx.text,
-              documentId: ctx.documentId,
-              documentName: ctx.documentName,
-              chunkIndex: ctx.chunkIndex,
-            },
-          })),
-          namespace: 'test-org',
-        }
-      }),
-      deleteMany: vi.fn(async () => ({})),
-    })),
-  }
+// Default mock responses
+export const defaultPineconeResponse = {
+  matches: [
+    {
+      id: 'chunk-1',
+      score: 0.92,
+      metadata: {
+        documentId: 'doc-1',
+        documentName: 'Doc 1',
+        text: 'High relevance',
+        chunkIndex: 0,
+      },
+    },
+    {
+      id: 'chunk-2',
+      score: 0.75,
+      metadata: {
+        documentId: 'doc-2',
+        documentName: 'Doc 2',
+        text: 'Medium relevance',
+        chunkIndex: 0,
+      },
+    },
+  ],
 }
 
-/**
- * Mock embedding generation
- */
-export const mockGenerateEmbedding = vi.fn(async (text: string) => {
-  // Return a mock 1536-dimensional embedding (OpenAI ada-002 size)
-  return Array(1536).fill(0).map(() => Math.random())
-})
+export function resetPineconeMocks() {
+  mockPineconeQuery.mockReset()
+  mockNamespace.mockReset()
+  mockGetIndex.mockReset()
 
-/**
- * Mock Pinecone configuration
- */
-export const mockPineconeConfig = {
-  isPineconeConfigured: vi.fn(() => true),
-  getIndex: vi.fn(() => createMockPineconeIndex()),
+  mockPineconeQuery.mockResolvedValue(defaultPineconeResponse)
+  mockNamespace.mockReturnValue({ query: mockPineconeQuery })
+  mockGetIndex.mockReturnValue({ namespace: mockNamespace })
 }
+
+// Setup mock
+vi.mock('@/lib/pinecone', () => ({
+  getIndex: mockGetIndex,
+  isPineconeConfigured: () => true,
+}))
