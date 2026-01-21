@@ -1,8 +1,326 @@
 import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
-import { GrantStatus } from '@prisma/client'
+import { GrantStatus, FunderType } from '@prisma/client'
 
 export const reportsRouter = router({
+  /**
+   * Get executive summary report data
+   */
+  getExecutiveSummary: orgProcedure
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const startDate = input.startDate ? new Date(input.startDate) : new Date(new Date().getFullYear(), 0, 1)
+      const endDate = input.endDate ? new Date(input.endDate) : new Date()
+
+      // Get all grants for the organization
+      const allGrants = await ctx.db.grant.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+        },
+        include: {
+          funder: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          program: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      })
+
+      // Calculate key metrics
+      const submittedGrants = allGrants.filter((g) =>
+        g.submittedAt && new Date(g.submittedAt) >= startDate && new Date(g.submittedAt) <= endDate
+      )
+      const awardedGrants = allGrants.filter((g) =>
+        g.status === 'AWARDED' && g.awardedAt && new Date(g.awardedAt) >= startDate && new Date(g.awardedAt) <= endDate
+      )
+      const declinedGrants = allGrants.filter((g) =>
+        g.status === 'DECLINED' && new Date(g.updatedAt) >= startDate && new Date(g.updatedAt) <= endDate
+      )
+
+      const totalRequested = submittedGrants.reduce((sum, g) => sum + Number(g.amountRequested || 0), 0)
+      const totalAwarded = awardedGrants.reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0)
+      const totalDecisions = awardedGrants.length + declinedGrants.length
+      const winRate = totalDecisions > 0 ? (awardedGrants.length / totalDecisions) * 100 : 0
+
+      // Pipeline overview by stage
+      const pipelineStatuses: GrantStatus[] = [
+        'PROSPECT',
+        'RESEARCHING',
+        'WRITING',
+        'REVIEW',
+        'SUBMITTED',
+        'PENDING',
+      ]
+      const pipelineOverview = pipelineStatuses.map((status) => {
+        const statusGrants = allGrants.filter((g) => g.status === status)
+        return {
+          status,
+          count: statusGrants.length,
+          totalValue: statusGrants.reduce((sum, g) => sum + Number(g.amountRequested || 0), 0),
+        }
+      })
+
+      // Recent wins (last 5 awarded)
+      const recentWins = awardedGrants
+        .slice(0, 5)
+        .map((g) => ({
+          id: g.id,
+          funderName: g.funder?.name || 'Unknown',
+          amount: Number(g.amountAwarded || 0),
+          awardedAt: g.awardedAt,
+          programName: g.program?.name || null,
+        }))
+
+      // Upcoming deadlines (next 10)
+      const upcomingDeadlines = allGrants
+        .filter((g) => g.deadline && new Date(g.deadline) > endDate && pipelineStatuses.includes(g.status))
+        .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
+        .slice(0, 10)
+        .map((g) => ({
+          id: g.id,
+          funderName: g.funder?.name || 'Unknown',
+          deadline: g.deadline,
+          amountRequested: Number(g.amountRequested || 0),
+          status: g.status,
+        }))
+
+      // Program performance
+      const programs = await ctx.db.program.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      const programPerformance = programs.map((program) => {
+        const programGrants = allGrants.filter((g) => g.programId === program.id)
+        const programAwarded = programGrants.filter((g) => g.status === 'AWARDED').length
+        const programDeclined = programGrants.filter((g) => g.status === 'DECLINED').length
+        const programDecisions = programAwarded + programDeclined
+        const successRate = programDecisions > 0 ? (programAwarded / programDecisions) * 100 : 0
+
+        return {
+          programId: program.id,
+          programName: program.name,
+          submitted: programGrants.filter((g) => g.submittedAt).length,
+          awarded: programAwarded,
+          successRate,
+        }
+      })
+
+      // Get organization details
+      const organization = await ctx.db.organization.findUnique({
+        where: { id: ctx.organizationId },
+        select: { name: true },
+      })
+
+      return {
+        organizationName: organization?.name || 'Organization',
+        dateRange: { startDate, endDate },
+        keyMetrics: {
+          totalSubmitted: submittedGrants.length,
+          totalAwarded: awardedGrants.length,
+          winRate: Math.round(winRate * 10) / 10,
+          totalRequested,
+          totalAwarded,
+        },
+        pipelineOverview,
+        recentWins,
+        upcomingDeadlines,
+        programPerformance,
+      }
+    }),
+
+  /**
+   * Get pipeline report (all grants with full details)
+   */
+  getPipelineReport: orgProcedure
+    .input(
+      z.object({
+        statusFilter: z.array(z.nativeEnum(GrantStatus)).optional(),
+        programId: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const grants = await ctx.db.grant.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          ...(input.statusFilter && input.statusFilter.length > 0
+            ? { status: { in: input.statusFilter } }
+            : {}),
+          ...(input.programId ? { programId: input.programId } : {}),
+        },
+        include: {
+          funder: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          program: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          opportunity: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+        orderBy: {
+          deadline: 'asc',
+        },
+      })
+
+      // Group by status
+      const statusGroups = Object.values(GrantStatus).map((status) => {
+        const statusGrants = grants.filter((g) => g.status === status)
+        const totalValue = statusGrants.reduce(
+          (sum, g) =>
+            sum + Number(status === 'AWARDED' ? g.amountAwarded || 0 : g.amountRequested || 0),
+          0
+        )
+
+        return {
+          status,
+          count: statusGrants.length,
+          totalValue,
+          grants: statusGrants.map((g) => ({
+            id: g.id,
+            funderName: g.funder?.name || 'Unknown',
+            funderType: g.funder?.type,
+            programName: g.program?.name,
+            amount: Number(status === 'AWARDED' ? g.amountAwarded || 0 : g.amountRequested || 0),
+            deadline: g.deadline,
+            submittedAt: g.submittedAt,
+            awardedAt: g.awardedAt,
+          })),
+        }
+      })
+
+      return {
+        statusGroups: statusGroups.filter((g) => g.count > 0),
+        totalGrants: grants.length,
+        totalValue: statusGroups.reduce((sum, g) => sum + g.totalValue, 0),
+      }
+    }),
+
+  /**
+   * Get win/loss analysis
+   */
+  getWinLossAnalysis: orgProcedure
+    .input(
+      z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const startDate = input.startDate ? new Date(input.startDate) : new Date(new Date().getFullYear(), 0, 1)
+      const endDate = input.endDate ? new Date(input.endDate) : new Date()
+
+      const grants = await ctx.db.grant.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          OR: [
+            { status: 'AWARDED', awardedAt: { gte: startDate, lte: endDate } },
+            { status: 'DECLINED', updatedAt: { gte: startDate, lte: endDate } },
+          ],
+        },
+        include: {
+          funder: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          program: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      })
+
+      // Overall metrics
+      const awarded = grants.filter((g) => g.status === 'AWARDED')
+      const declined = grants.filter((g) => g.status === 'DECLINED')
+      const totalDecisions = awarded.length + declined.length
+      const overallWinRate = totalDecisions > 0 ? (awarded.length / totalDecisions) * 100 : 0
+
+      // By funder type
+      const byFunderType = Object.values(FunderType).map((type) => {
+        const typeGrants = grants.filter((g) => g.funder?.type === type)
+        const typeAwarded = typeGrants.filter((g) => g.status === 'AWARDED')
+        const typeDecisions = typeGrants.length
+        const successRate = typeDecisions > 0 ? (typeAwarded.length / typeDecisions) * 100 : 0
+
+        return {
+          funderType: type,
+          awarded: typeAwarded.length,
+          declined: typeDecisions - typeAwarded.length,
+          successRate: Math.round(successRate * 10) / 10,
+          totalAmount: typeAwarded.reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0),
+        }
+      }).filter((t) => t.awarded + t.declined > 0)
+
+      // By program
+      const programs = await ctx.db.program.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      const byProgram = programs.map((program) => {
+        const programGrants = grants.filter((g) => g.programId === program.id)
+        const programAwarded = programGrants.filter((g) => g.status === 'AWARDED')
+        const programDecisions = programGrants.length
+        const successRate = programDecisions > 0 ? (programAwarded.length / programDecisions) * 100 : 0
+
+        return {
+          programId: program.id,
+          programName: program.name,
+          awarded: programAwarded.length,
+          declined: programDecisions - programAwarded.length,
+          successRate: Math.round(successRate * 10) / 10,
+          totalAmount: programAwarded.reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0),
+        }
+      }).filter((p) => p.awarded + p.declined > 0)
+
+      return {
+        dateRange: { startDate, endDate },
+        overallMetrics: {
+          totalAwarded: awarded.length,
+          totalDeclined: declined.length,
+          winRate: Math.round(overallWinRate * 10) / 10,
+          totalAmountAwarded: awarded.reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0),
+        },
+        byFunderType,
+        byProgram,
+      }
+    }),
+
   /**
    * Get monthly summary report data
    */

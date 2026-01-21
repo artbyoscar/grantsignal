@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/trpc/client'
 import {
@@ -27,9 +27,9 @@ import { Button } from '@/components/ui/button'
 import { FitScoreCard } from '@/components/discovery/fit-score-card'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     grantId: string
-  }
+  }>
 }
 
 type WritingMode = 'memory_assist' | 'ai_draft' | 'human_first' | 'audit_mode'
@@ -58,6 +58,7 @@ interface SectionContent {
 }
 
 export default function WritingStudioPage({ params }: PageProps) {
+  const { grantId } = use(params)
   const router = useRouter()
   const [writingMode, setWritingMode] = useState<WritingMode>('memory_assist')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
@@ -80,12 +81,12 @@ export default function WritingStudioPage({ params }: PageProps) {
 
   // Fetch grant data
   const { data: grant, isLoading: isLoadingGrant } = api.grants.byId.useQuery({
-    id: params.grantId,
+    id: grantId,
   })
 
   // Fetch draft content
   const { data: draftData, refetch: refetchDraft } = api.writing.getGrantDraft.useQuery({
-    grantId: params.grantId,
+    grantId: grantId,
   })
 
   // Load draft content
@@ -217,7 +218,7 @@ export default function WritingStudioPage({ params }: PageProps) {
     const sectionData = sectionContents[currentSection]
 
     saveContentMutation.mutate({
-      grantId: params.grantId,
+      grantId: grantId,
       sectionName: currentSection,
       content: sectionData.content,
       isAiGenerated: sectionData.isAiGenerated || false,
@@ -450,7 +451,7 @@ export default function WritingStudioPage({ params }: PageProps) {
                   }))
 
                 const report = {
-                  grantId: params.grantId,
+                  grantId: grantId,
                   grantTitle: grant?.opportunity?.title || 'Untitled',
                   exportedAt: new Date().toISOString(),
                   totalSections: Object.keys(sectionContents).length,
@@ -462,7 +463,7 @@ export default function WritingStudioPage({ params }: PageProps) {
                 const url = URL.createObjectURL(blob)
                 const a = document.createElement('a')
                 a.href = url
-                a.download = `ai-usage-report-${params.grantId}-${Date.now()}.json`
+                a.download = `ai-usage-report-${grantId}-${Date.now()}.json`
                 a.click()
                 URL.revokeObjectURL(url)
                 toast.success('AI usage report exported')
@@ -893,7 +894,7 @@ export default function WritingStudioPage({ params }: PageProps) {
       {/* AI Generation Panel */}
       {showAiPanel && currentSection && (
         <AIGenerationPanel
-          grantId={params.grantId}
+          grantId={grantId}
           sectionName={currentSection}
           onAccept={handleAcceptAiContent}
           onClose={() => setShowAiPanel(false)}

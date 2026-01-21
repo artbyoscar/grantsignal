@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowUpDown, ArrowUp, ArrowDown, Edit3, Archive, Download, MoreHorizontal } from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, Edit3, Archive, Download, MoreHorizontal, Search, Eye } from 'lucide-react'
 import { GrantStatus } from '@prisma/client'
 import { api } from '@/lib/trpc/client'
 import { exportAndDownloadGrants } from '@/lib/export'
@@ -10,13 +10,14 @@ import { toast } from 'sonner'
 
 type Grant = NonNullable<ReturnType<typeof api.grants.list.useQuery>['data']>['grants'][number]
 
-type Tab = 'active' | 'awarded' | 'declined' | 'completed'
+type Tab = 'all' | 'active' | 'awarded' | 'declined' | 'completed'
 
 type SortField = 'funder' | 'program' | 'amount' | 'deadline' | 'status' | 'daysLeft' | 'fitScore'
 type SortDirection = 'asc' | 'desc'
 
 // Tab configurations
-const TABS: Array<{ id: Tab; label: string; statuses: GrantStatus[] }> = [
+const TABS: Array<{ id: Tab; label: string; statuses: GrantStatus[] | 'all' }> = [
+  { id: 'all', label: 'All', statuses: 'all' },
   {
     id: 'active',
     label: 'Active',
@@ -102,10 +103,11 @@ interface PipelineTableProps {
 
 export function PipelineTable({ grants }: PipelineTableProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<Tab>('active')
+  const [activeTab, setActiveTab] = useState<Tab>('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sortField, setSortField] = useState<SortField>('deadline')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const updateStatusMutation = api.grants.updateStatus.useMutation({
     onSuccess: () => {
@@ -117,11 +119,24 @@ export function PipelineTable({ grants }: PipelineTableProps) {
   })
 
   // Filter grants by active tab
-  const filteredGrants = useMemo(() => {
+  const filteredByTab = useMemo(() => {
     const tabConfig = TABS.find((t) => t.id === activeTab)
     if (!tabConfig) return []
+    if (tabConfig.statuses === 'all') return grants
     return grants.filter((grant) => tabConfig.statuses.includes(grant.status))
   }, [grants, activeTab])
+
+  // Filter grants by search query
+  const filteredGrants = useMemo(() => {
+    if (!searchQuery.trim()) return filteredByTab
+
+    const query = searchQuery.toLowerCase()
+    return filteredByTab.filter((grant) => {
+      const title = grant.opportunity?.title?.toLowerCase() || ''
+      const funder = grant.funder?.name?.toLowerCase() || ''
+      return title.includes(query) || funder.includes(query)
+    })
+  }, [filteredByTab, searchQuery])
 
   // Sort grants
   const sortedGrants = useMemo(() => {
@@ -229,6 +244,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
 
   // Empty state messages
   const emptyStateMessages: Record<Tab, string> = {
+    all: 'No grants found. Start by adding opportunities from Smart Discovery.',
     active: 'No active grants. Start by adding opportunities from Smart Discovery.',
     awarded: 'No awarded grants yet. Keep applying!',
     declined: 'No declined grants. (That\'s good!)',
@@ -240,7 +256,9 @@ export function PipelineTable({ grants }: PipelineTableProps) {
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-700">
         {TABS.map((tab) => {
-          const count = grants.filter((g) => tab.statuses.includes(g.status)).length
+          const count = tab.statuses === 'all'
+            ? grants.length
+            : grants.filter((g) => tab.statuses.includes(g.status)).length
           return (
             <button
               key={tab.id}
@@ -271,6 +289,20 @@ export function PipelineTable({ grants }: PipelineTableProps) {
             </button>
           )
         })}
+      </div>
+
+      {/* Search and Export */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by grant title or funder name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+          />
+        </div>
       </div>
 
       {/* Bulk Actions Bar */}
@@ -497,6 +529,16 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
+                            router.push(`/grants/${grant.id}`)
+                          }}
+                          className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4 text-slate-400 hover:text-blue-400" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
                             // TODO: Implement archive functionality
                             toast.info('Archive functionality coming soon')
                           }}
@@ -504,13 +546,6 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                           title="Archive"
                         >
                           <Archive className="w-4 h-4 text-slate-400 hover:text-amber-400" />
-                        </button>
-                        <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1.5 hover:bg-slate-700 rounded transition-colors"
-                          title="More options"
-                        >
-                          <MoreHorizontal className="w-4 h-4 text-slate-400" />
                         </button>
                       </div>
                     </td>

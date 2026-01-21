@@ -26,7 +26,8 @@
       "Bash(pnpm prisma db push:*)",
       "Bash(pnpm prisma generate:*)",
       "Bash(npx prisma migrate dev:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(head:*)"
     ]
   }
 }

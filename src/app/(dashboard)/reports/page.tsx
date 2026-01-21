@@ -1,44 +1,103 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, TrendingUp, Target, Award } from 'lucide-react'
+import { FileText, TrendingUp, Target, Award, DollarSign, Calendar } from 'lucide-react'
 import { MonthlySummary } from '@/components/reports/monthly-summary'
+import { ExecutiveSummary } from '@/components/reports/executive-summary'
+import { StatCard } from '@/components/dashboard/stat-card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { api } from '@/lib/trpc/client'
 
-type ReportType = 'monthly' | 'pipeline' | 'winrate' | 'funder' | null
+type ReportType = 'monthly' | 'executive' | 'pipeline' | 'winrate' | 'funder' | null
 
 export default function ReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType>(null)
+  const [dateRange] = useState({
+    startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+  })
+
+  // Fetch grants data for quick stats
+  const { data: grantsData, isLoading: grantsLoading } = api.grants.list.useQuery({})
+
+  // Calculate quick stats
+  const stats = grantsData?.grants
+    ? (() => {
+        const currentYear = new Date().getFullYear()
+        const grants = grantsData.grants
+
+        // Total grants
+        const totalGrants = grants.length
+
+        // YTD Awarded
+        const ytdAwarded = grants
+          .filter(
+            (g) =>
+              g.amountAwarded &&
+              g.awardedAt &&
+              new Date(g.awardedAt).getFullYear() === currentYear
+          )
+          .reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0)
+
+        // Win Rate
+        const decidedGrants = grants.filter(
+          (g) => g.status === 'AWARDED' || g.status === 'DECLINED'
+        )
+        const awardedGrants = grants.filter((g) => g.status === 'AWARDED')
+        const winRate = decidedGrants.length > 0 ? (awardedGrants.length / decidedGrants.length) * 100 : 0
+
+        // Active Pipeline Value
+        const pipelineStatuses = ['PROSPECT', 'RESEARCHING', 'WRITING', 'REVIEW', 'SUBMITTED', 'PENDING']
+        const pipelineValue = grants
+          .filter((g) => pipelineStatuses.includes(g.status))
+          .reduce((sum, g) => sum + Number(g.amountRequested || 0), 0)
+
+        return {
+          totalGrants,
+          ytdAwarded,
+          winRate,
+          pipelineValue,
+        }
+      })()
+    : null
 
   const reportCards = [
+    {
+      id: 'executive' as const,
+      title: 'Executive Summary',
+      description: 'One-page overview of grant activity and key metrics',
+      icon: FileText,
+      color: 'from-emerald-500 to-teal-500',
+    },
     {
       id: 'monthly' as const,
       title: 'Monthly Summary',
       description: 'Comprehensive monthly performance report for leadership',
-      icon: FileText,
+      icon: Calendar,
       color: 'from-blue-500 to-cyan-500',
     },
     {
       id: 'pipeline' as const,
-      title: 'Pipeline Overview',
-      description: 'Current state of grant pipeline by status',
+      title: 'Pipeline Report',
+      description: 'All grants by status with amounts and details',
       icon: TrendingUp,
       color: 'from-purple-500 to-pink-500',
       comingSoon: true,
     },
     {
       id: 'winrate' as const,
-      title: 'Win Rate Analysis',
-      description: 'Historical win rates and trends over time',
+      title: 'Win/Loss Analysis',
+      description: 'Success rates by funder type and program area',
       icon: Target,
-      color: 'from-emerald-500 to-teal-500',
+      color: 'from-amber-500 to-orange-500',
       comingSoon: true,
     },
     {
       id: 'funder' as const,
-      title: 'Funder Performance',
-      description: 'Track success rates with specific funders',
+      title: 'Funder Report',
+      description: 'Deep dive on specific funder relationships',
       icon: Award,
-      color: 'from-orange-500 to-red-500',
+      color: 'from-red-500 to-pink-500',
       comingSoon: true,
     },
   ]
@@ -65,18 +124,77 @@ export default function ReportsPage() {
     )
   }
 
+  if (activeReport === 'executive') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <button
+            onClick={() => setActiveReport(null)}
+            className="text-sm text-slate-400 hover:text-white transition-colors mb-4"
+          >
+            ← Back to Reports
+          </button>
+          <h1 className="text-3xl font-bold text-white">Executive Summary Report</h1>
+          <p className="text-slate-400 mt-1">
+            One-page overview of grant activity and portfolio performance
+          </p>
+        </div>
+
+        <ExecutiveSummary dateRange={dateRange} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white">Reports & Analytics</h1>
         <p className="text-slate-400 mt-1">
-          Generate and export reports for leadership and stakeholders
+          Generate comprehensive reports on your grant portfolio and performance
         </p>
       </div>
 
+      {/* Quick Stats */}
+      {grantsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+      ) : stats ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Total Grants"
+            value={stats.totalGrants}
+            icon={<FileText className="w-5 h-5" />}
+            description="Across all statuses"
+          />
+          <StatCard
+            title="Total Awarded YTD"
+            value={`$${(stats.ytdAwarded / 1000000).toFixed(1)}M`}
+            icon={<DollarSign className="w-5 h-5" />}
+            description="Current year funding"
+            trend={stats.ytdAwarded > 0 ? { value: 100, isPositive: true } : undefined}
+          />
+          <StatCard
+            title="Win Rate"
+            value={`${stats.winRate.toFixed(0)}%`}
+            icon={<Target className="w-5 h-5" />}
+            description="Success rate"
+            trend={stats.winRate > 50 ? { value: stats.winRate, isPositive: true } : undefined}
+          />
+          <StatCard
+            title="Active Pipeline Value"
+            value={`$${(stats.pipelineValue / 1000000).toFixed(1)}M`}
+            icon={<TrendingUp className="w-5 h-5" />}
+            description="Potential funding"
+          />
+        </div>
+      ) : null}
+
       {/* Report Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {reportCards.map((report) => {
           const Icon = report.icon
           return (
