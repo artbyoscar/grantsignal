@@ -6,6 +6,7 @@ import { StatCard } from '@/components/dashboard/stat-card'
 import { PipelineSummary } from '@/components/dashboard/pipeline-summary'
 import { ReportsWidget } from '@/components/dashboard/reports-widget'
 import { FitOpportunitiesWidget } from '@/components/dashboard/fit-opportunities-widget'
+import { ComplianceWidget } from '@/components/dashboard/compliance-widget'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TourOverlay } from '@/components/onboarding/tour-overlay'
 import { api } from '@/lib/trpc/client'
@@ -161,11 +162,14 @@ export default function DashboardPage() {
       {/* Pipeline Summary */}
       <PipelineSummary grants={data?.grants || []} isLoading={isLoading} />
 
-      {/* Fit Opportunities and Monthly Summary */}
+      {/* Fit Opportunities and Compliance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FitOpportunitiesWidget />
-        <ReportsWidget />
+        <ComplianceWidget />
       </div>
+
+      {/* Monthly Summary */}
+      <ReportsWidget />
 
       {/* Urgent Actions and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

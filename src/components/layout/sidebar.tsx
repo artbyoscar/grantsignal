@@ -13,18 +13,32 @@ import {
   User
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/opportunities', label: 'Opportunities', icon: Search },
-  { href: '/pipeline', label: 'Pipeline', icon: Kanban },
-  { href: '/documents', label: 'Documents', icon: FileText },
-  { href: '/compliance', label: 'Compliance', icon: Shield },
-  { href: '/reports', label: 'Reports', icon: BarChart3 },
-]
+import { api } from '@/trpc/react'
 
 export function Sidebar() {
   const pathname = usePathname()
+
+  // Fetch compliance summary for badge count
+  const { data: complianceSummary } = api.compliance.getSummary.useQuery(undefined, {
+    refetchInterval: 60000 // Refresh every minute
+  })
+
+  const unresolvedConflictsCount = complianceSummary?.unresolvedConflicts ?? 0
+
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/opportunities', label: 'Opportunities', icon: Search },
+    { href: '/pipeline', label: 'Pipeline', icon: Kanban },
+    { href: '/documents', label: 'Documents', icon: FileText },
+    {
+      href: '/compliance',
+      label: 'Compliance',
+      icon: Shield,
+      badge: unresolvedConflictsCount > 0 ? unresolvedConflictsCount : undefined,
+      badgeColor: 'bg-red-500'
+    },
+    { href: '/reports', label: 'Reports', icon: BarChart3 },
+  ]
 
   return (
     <aside className="w-64 min-h-screen bg-slate-800 border-r border-slate-700 flex flex-col">
@@ -51,7 +65,17 @@ export function Sidebar() {
               )}
             >
               <Icon className="w-5 h-5" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge !== undefined && (
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-xs font-semibold text-white",
+                    item.badgeColor || "bg-blue-500"
+                  )}
+                >
+                  {item.badge}
+                </span>
+              )}
             </Link>
           )
         })}

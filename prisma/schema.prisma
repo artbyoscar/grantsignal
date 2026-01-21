@@ -118,6 +118,15 @@ enum ComplianceActionType {
   SCAN_COMPLETED
 }
 
+enum FunderRequirementType {
+  INDIRECT_COST_CAP
+  REPORTING_SCHEDULE
+  BRANDING_REQUIREMENT
+  FORMAT_REQUIREMENT
+  MATCH_REQUIREMENT
+  OTHER
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -148,6 +157,7 @@ model Organization {
   commitments      Commitment[]
   fitScores        FitScore[]
   auditLogs        ComplianceAudit[]
+  funderRequirements FunderRequirement[]
 }
 
 model OrganizationUser {
@@ -209,6 +219,7 @@ model Funder {
   opportunities       Opportunity[]
   pastGrantees        PastGrantee[]
   grants              Grant[]
+  requirements        FunderRequirement[]
 }
 
 model PastGrantee {
@@ -344,6 +355,11 @@ model Commitment {
   dueDate            DateTime?
   status             CommitmentStatus   @default(PENDING)
   sourceDocumentId   String?
+  sourceText         String?            @db.Text
+  extractedBy        String             @default("AI")
+  confidence         Int?
+  verifiedAt         DateTime?
+  verifiedBy         String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -368,8 +384,11 @@ model CommitmentConflict {
   status               ConflictStatus   @default(UNRESOLVED)
   resolutionAction     String?          // UPDATE_DRAFT | FLAG_FOR_REVIEW | IGNORE
   resolutionReason     String?          @db.Text
+  affectedGrants       String[]
+  suggestedResolution  String?          @db.Text
   resolvedBy           String?          // Clerk user ID
   resolvedAt           DateTime?
+  resolutionNotes      String?          @db.Text
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
@@ -398,4 +417,23 @@ model ComplianceAudit {
   @@index([organizationId])
   @@index([actionType])
   @@index([createdAt])
+}
+
+model FunderRequirement {
+  id             String                @id @default(cuid())
+  funderId       String
+  organizationId String
+  type           FunderRequirementType
+  description    String
+  value          String?
+  sourceDocument String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  // Relations
+  funder         Funder                @relation(fields: [funderId], references: [id], onDelete: Cascade)
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([funderId])
+  @@index([organizationId])
 }
