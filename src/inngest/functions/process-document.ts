@@ -2,10 +2,11 @@ import { inngest } from '@/inngest/client'
 import { db } from '@/lib/prisma'
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 import { parseDocument } from '@/server/services/documents/parser'
-import { ProcessingStatus } from '@prisma/client'
+import { ProcessingStatus, DocumentType } from '@prisma/client'
 import { chunkText } from '@/server/services/documents/chunker'
 import { generateEmbeddings } from '@/server/services/ai/embeddings'
 import { getIndex, isPineconeConfigured } from '@/lib/pinecone'
+import { extractCommitmentsFromDocument } from '@/server/services/compliance/commitment-extractor'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -218,6 +219,55 @@ export const processDocument = inngest.createFunction(
           skipped: true,
           reason: 'Vectorization error',
           error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    })
+
+    // Step 5: Auto-extract commitments from award documents
+    await step.run('extract-commitments', async () => {
+      // Get document details to check type
+      const document = await db.document.findUnique({
+        where: { id: documentId },
+        include: { grant: true }
+      })
+
+      // Only process award letters and agreements
+      const awardDocTypes: DocumentType[] = [DocumentType.AWARD_LETTER, DocumentType.AGREEMENT]
+      if (!document || !awardDocTypes.includes(document.type)) {
+        console.log(`Skipping commitment extraction: document type is ${document?.type}`)
+        return { skipped: true, reason: 'Not an award document' }
+      }
+
+      // Check if associated with an awarded grant
+      if (!document.grant || document.grant.status !== 'AWARDED') {
+        console.log(`Skipping commitment extraction: grant status is ${document.grant?.status || 'none'}`)
+        return { skipped: true, reason: 'No awarded grant associated' }
+      }
+
+      try {
+        console.log(`Extracting commitments from ${document.name} for grant ${document.grantId}`)
+        const commitments = await extractCommitmentsFromDocument(documentId, document.grantId!)
+
+        // Log audit trail
+        await db.complianceAudit.create({
+          data: {
+            organizationId,
+            actionType: 'SCAN_COMPLETED',
+            description: `Auto-extracted ${commitments.length} commitments from ${document.name}`,
+            performedBy: 'SYSTEM',
+            metadata: { documentId, commitmentCount: commitments.length }
+          }
+        })
+
+        console.log(`Successfully extracted ${commitments.length} commitments from ${document.name}`)
+        return { success: true, commitmentCount: commitments.length }
+      } catch (error) {
+        console.error('Commitment extraction failed:', error)
+        // Don't fail the entire document processing job
+        return {
+          skipped: true,
+          reason: 'Extraction error',
+          error: error instanceof Error ? error.message : 'Unknown error'
         }
       }
     })

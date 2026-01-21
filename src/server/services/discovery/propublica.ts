@@ -155,24 +155,40 @@ export async function fetchFunder990(ein: string): Promise<Funder990Data> {
 /**
  * Fetch historical grantees from Schedule I (Grants to Organizations)
  *
- * Note: ProPublica doesn't have a direct Schedule I endpoint.
- * This requires using their search or parsing PDFs.
- * For now, we'll return an empty array and add manual entry support.
+ * Note: ProPublica doesn't have a direct Schedule I endpoint in their public API.
+ * This attempts to fetch data from their search page, but is limited.
+ * For comprehensive data, consider:
+ * 1. PDF parsing of 990 forms
+ * 2. Candid/GuideStar API (paid)
+ * 3. Manual data entry
  */
 export async function fetchFunderFilings(ein: string): Promise<PastGrantee[]> {
   // Remove any hyphens from EIN
   const cleanEin = ein.replace(/-/g, '')
 
   try {
-    // ProPublica doesn't provide a direct Schedule I endpoint in their public API
-    // In production, you would either:
-    // 1. Parse the PDF 990 forms
-    // 2. Use a paid service like Candid/GuideStar
-    // 3. Manually enter data from 990s
+    // Attempt to fetch from ProPublica's search endpoint
+    // This provides limited data but is better than nothing
+    const searchResponse = await fetch(
+      `https://projects.propublica.org/nonprofits/api/v2/search.json?q=${cleanEin}`
+    )
 
-    // For now, return empty array
-    // TODO: Implement PDF parsing or integrate with Candid API
-    console.log(`Schedule I data not available via ProPublica API for EIN ${cleanEin}`)
+    if (searchResponse.ok) {
+      const searchData = await searchResponse.json()
+
+      // ProPublica's search API returns basic info but not detailed Schedule I
+      // This is a limitation of the free API
+      console.log(`ProPublica search found ${searchData.organizations?.length || 0} results for EIN ${cleanEin}`)
+    }
+
+    // For comprehensive Schedule I data, you need to:
+    // 1. Parse the PDF 990 forms from filing URLs
+    // 2. Use a paid service like Candid API
+    // 3. Manually enter grantee data from 990s
+
+    console.log(`Schedule I data requires PDF parsing or paid API for EIN ${cleanEin}`)
+    console.log(`Consider using Candid Foundation Directory API or parsing PDF 990s manually`)
+
     return []
   } catch (error) {
     console.error('Error fetching Schedule I data:', error)

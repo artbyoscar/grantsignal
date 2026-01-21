@@ -4,6 +4,7 @@ import { useUser } from '@clerk/nextjs'
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { PipelineSummary } from '@/components/dashboard/pipeline-summary'
+import { GrantsByProgram } from '@/components/dashboard/grants-by-program'
 import { ReportsWidget } from '@/components/dashboard/reports-widget'
 import { FitOpportunitiesWidget } from '@/components/dashboard/fit-opportunities-widget'
 import { ComplianceWidget } from '@/components/dashboard/compliance-widget'
@@ -14,6 +15,7 @@ import { api } from '@/lib/trpc/client'
 export default function DashboardPage() {
   const { user } = useUser()
   const { data, isLoading, error } = api.grants.list.useQuery({})
+  const { data: programsData, isLoading: programsLoading } = api.programs.list.useQuery()
 
   // Calculate stats from grants data
   const stats = data?.grants
@@ -159,8 +161,15 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Pipeline Summary */}
-      <PipelineSummary grants={data?.grants || []} isLoading={isLoading} />
+      {/* Pipeline Summary and Grants by Program */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PipelineSummary grants={data?.grants || []} isLoading={isLoading} />
+        <GrantsByProgram
+          grants={data?.grants || []}
+          programs={programsData || []}
+          isLoading={isLoading || programsLoading}
+        />
+      </div>
 
       {/* Fit Opportunities and Compliance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

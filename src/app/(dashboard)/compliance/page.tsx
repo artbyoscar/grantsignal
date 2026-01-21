@@ -8,6 +8,7 @@ import {
   AlertCircle, FileText, Calendar, TrendingUp
 } from 'lucide-react';
 import { formatDistanceToNow, format, isPast, differenceInDays } from 'date-fns';
+import { ResolveConflictModal } from '@/components/compliance/resolve-conflict-modal';
 
 // Health Score Card Component
 function HealthScoreCard({ score }: { score: number }) {
@@ -114,7 +115,7 @@ function StatsCards({ summary }: { summary: any }) {
 }
 
 // Conflicts List Component
-function ConflictsList({ conflicts, onResolve }: { conflicts: any[]; onResolve: (id: string) => void }) {
+function ConflictsList({ conflicts, onResolve }: { conflicts: any[]; onResolve: (conflict: any) => void }) {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'CRITICAL': return 'bg-red-500/20 text-red-400 border-red-500/50';
@@ -146,7 +147,7 @@ function ConflictsList({ conflicts, onResolve }: { conflicts: any[]; onResolve: 
               <span className="text-xs text-slate-500 uppercase">{conflict.conflictType.replace('_', ' ')}</span>
             </div>
             <button
-              onClick={() => onResolve(conflict.id)}
+              onClick={() => onResolve(conflict)}
               className="text-sm text-blue-400 hover:text-blue-300"
             >
               Resolve
@@ -229,7 +230,7 @@ function UpcomingCommitments({ commitments }: { commitments: any[] }) {
 
 // Main Page Component
 export default function CompliancePage() {
-  const [showResolveModal, setShowResolveModal] = useState<string | null>(null);
+  const [selectedConflict, setSelectedConflict] = useState<any | null>(null);
 
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } =
     api.compliance.getSummary.useQuery();
@@ -248,8 +249,13 @@ export default function CompliancePage() {
     detectMutation.mutate();
   };
 
-  const handleResolve = (conflictId: string) => {
-    setShowResolveModal(conflictId);
+  const handleResolve = (conflict: any) => {
+    setSelectedConflict(conflict);
+  };
+
+  const handleResolveComplete = () => {
+    refetchSummary();
+    refetchConflicts();
   };
 
   if (summaryLoading) {
@@ -339,6 +345,15 @@ export default function CompliancePage() {
           )}
         </div>
       </div>
+
+      {/* Conflict Resolution Modal */}
+      {selectedConflict && (
+        <ResolveConflictModal
+          conflict={selectedConflict}
+          onClose={() => setSelectedConflict(null)}
+          onResolved={handleResolveComplete}
+        />
+      )}
     </div>
   );
 }

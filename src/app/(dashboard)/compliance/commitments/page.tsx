@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { format, isPast, differenceInDays } from 'date-fns';
 import Link from 'next/link';
+import Papa from 'papaparse';
 
 const TYPE_LABELS: Record<string, string> = {
   DELIVERABLE: 'Deliverable',
@@ -56,6 +57,32 @@ export default function CommitmentsPage() {
     return commitment.status;
   };
 
+  const handleExportCSV = () => {
+    if (!filteredCommitments) return;
+
+    const csvData = filteredCommitments.map(c => ({
+      'Grant': c.grant?.funder?.name || 'Unknown',
+      'Description': c.description,
+      'Type': TYPE_LABELS[c.type] || c.type,
+      'Status': c.status,
+      'Due Date': c.dueDate ? format(new Date(c.dueDate), 'yyyy-MM-dd') : '',
+      'Metric Name': c.metricName || '',
+      'Metric Value': c.metricValue || '',
+      'Confidence': c.confidence || '',
+      'Extracted By': c.extractedBy,
+      'Verified': c.verifiedAt ? 'Yes' : 'No'
+    }));
+
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `commitments-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -69,7 +96,10 @@ export default function CommitmentsPage() {
           <h1 className="text-3xl font-bold text-white">Commitment Registry</h1>
           <p className="text-slate-400 mt-1">All promises made to funders across your grants</p>
         </div>
-        <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+        <button
+          onClick={handleExportCSV}
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+        >
           <Download className="w-4 h-4" />
           Export CSV
         </button>

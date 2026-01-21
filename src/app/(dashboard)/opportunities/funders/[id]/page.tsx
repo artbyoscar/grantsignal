@@ -329,22 +329,73 @@ function GivingHistoryTab({ givingHistory }: { givingHistory: any }) {
     )
   }
 
+  // Calculate year-over-year growth
+  const filings5Year = givingHistory.filings.slice(0, 5)
+  const growthData = filings5Year.map((filing: any, idx: number) => {
+    if (idx === filings5Year.length - 1) return { ...filing, growth: null }
+    const previousFiling = filings5Year[idx + 1]
+    const growth = previousFiling.totalGiving > 0
+      ? ((filing.totalGiving - previousFiling.totalGiving) / previousFiling.totalGiving) * 100
+      : 0
+    return { ...filing, growth }
+  })
+
+  // Calculate average growth
+  const validGrowth = growthData.filter((f: any) => f.growth !== null).map((f: any) => f.growth)
+  const avgGrowth = validGrowth.length > 0
+    ? validGrowth.reduce((sum: number, g: number) => sum + g, 0) / validGrowth.length
+    : 0
+
   return (
     <div className="space-y-6">
-      {/* 5-Year Trend Chart */}
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+          <div className="text-slate-400 text-sm mb-1">Latest Year Giving</div>
+          <div className="text-2xl font-bold text-emerald-400">
+            ${filings5Year[0].totalGiving.toLocaleString()}
+          </div>
+          <div className="text-xs text-slate-500 mt-1">FY {filings5Year[0].year}</div>
+        </div>
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+          <div className="text-slate-400 text-sm mb-1">Average Growth (YoY)</div>
+          <div className={`text-2xl font-bold ${avgGrowth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {avgGrowth >= 0 ? '+' : ''}{avgGrowth.toFixed(1)}%
+          </div>
+          <div className="text-xs text-slate-500 mt-1">Last 5 years</div>
+        </div>
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+          <div className="text-slate-400 text-sm mb-1">5-Year Total</div>
+          <div className="text-2xl font-bold text-blue-400">
+            ${filings5Year.reduce((sum: number, f: any) => sum + f.totalGiving, 0).toLocaleString()}
+          </div>
+          <div className="text-xs text-slate-500 mt-1">Combined giving</div>
+        </div>
+      </div>
+
+      {/* 5-Year Trend Chart with Growth */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
         <h2 className="text-xl font-semibold text-white mb-6">5-Year Giving Trends</h2>
         <div className="space-y-4">
-          {givingHistory.filings.slice(0, 5).map((filing: any, idx: number) => {
-            const maxGiving = Math.max(
-              ...givingHistory.filings.slice(0, 5).map((f: any) => f.totalGiving)
-            )
+          {growthData.map((filing: any, idx: number) => {
+            const maxGiving = Math.max(...filings5Year.map((f: any) => f.totalGiving))
             const percentage = (filing.totalGiving / maxGiving) * 100
 
             return (
               <div key={idx}>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-white font-medium">{filing.year}</span>
+                <div className="flex justify-between items-center text-sm mb-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-white font-medium w-12">{filing.year}</span>
+                    {filing.growth !== null && (
+                      <span className={`text-xs px-2 py-0.5 rounded ${
+                        filing.growth >= 0
+                          ? 'bg-emerald-900/30 text-emerald-400'
+                          : 'bg-red-900/30 text-red-400'
+                      }`}>
+                        {filing.growth >= 0 ? '+' : ''}{filing.growth.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
                   <span className="text-emerald-400 font-medium">
                     ${filing.totalGiving.toLocaleString()}
                   </span>
@@ -358,6 +409,70 @@ function GivingHistoryTab({ givingHistory }: { givingHistory: any }) {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      {/* Assets vs. Giving Comparison */}
+      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-white mb-6">Assets vs. Giving Comparison</h2>
+        <div className="space-y-4">
+          {filings5Year.map((filing: any, idx: number) => {
+            const maxValue = Math.max(
+              ...filings5Year.map((f: any) => Math.max(f.totalAssets, f.totalGiving))
+            )
+            const assetsPercentage = (filing.totalAssets / maxValue) * 100
+            const givingPercentage = (filing.totalGiving / maxValue) * 100
+            const payoutRate = filing.totalAssets > 0
+              ? (filing.totalGiving / filing.totalAssets) * 100
+              : 0
+
+            return (
+              <div key={idx} className="space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-white font-medium">{filing.year}</span>
+                  <span className="text-xs text-slate-400">
+                    Payout Rate: {payoutRate.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 w-16">Assets:</span>
+                    <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-500"
+                        style={{ width: `${assetsPercentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-slate-300 w-32 text-right">
+                      ${filing.totalAssets.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 w-16">Giving:</span>
+                    <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 transition-all duration-500"
+                        style={{ width: `${givingPercentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-slate-300 w-32 text-right">
+                      ${filing.totalGiving.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-4 pt-4 border-t border-slate-700 flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-500 rounded" />
+            <span className="text-slate-400">Total Assets</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-emerald-500 rounded" />
+            <span className="text-slate-400">Total Giving</span>
+          </div>
         </div>
       </div>
 

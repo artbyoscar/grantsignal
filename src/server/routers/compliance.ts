@@ -20,6 +20,83 @@ export const complianceRouter = router({
       return { count: commitments.length, commitments };
     }),
 
+  // Batch extract commitments from multiple grants
+  batchExtractCommitments: orgProcedure
+    .input(z.object({
+      grantIds: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Find all awarded grants with completed award documents
+      const grants = await ctx.db.grant.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          status: 'AWARDED',
+          id: input.grantIds ? { in: input.grantIds } : undefined,
+          documents: {
+            some: {
+              type: { in: ['AWARD_LETTER', 'AGREEMENT'] },
+              status: 'COMPLETED',
+            },
+          },
+        },
+        include: {
+          documents: {
+            where: {
+              type: { in: ['AWARD_LETTER', 'AGREEMENT'] },
+              status: 'COMPLETED',
+            },
+          },
+          funder: true,
+        },
+      })
+
+      const results = []
+
+      for (const grant of grants) {
+        for (const doc of grant.documents) {
+          try {
+            const commitments = await extractCommitmentsFromDocument(doc.id, grant.id)
+            results.push({
+              grantId: grant.id,
+              grantName: grant.funder?.name || 'Unknown',
+              documentId: doc.id,
+              documentName: doc.name,
+              count: commitments.length,
+              success: true,
+            })
+          } catch (error) {
+            results.push({
+              grantId: grant.id,
+              grantName: grant.funder?.name || 'Unknown',
+              documentId: doc.id,
+              documentName: doc.name,
+              count: 0,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            })
+          }
+        }
+      }
+
+      // Log audit
+      await ctx.db.complianceAudit.create({
+        data: {
+          organizationId: ctx.organizationId,
+          actionType: 'SCAN_COMPLETED',
+          description: `Batch extracted commitments from ${grants.length} grants`,
+          performedBy: ctx.auth.userId,
+          metadata: { grantCount: grants.length, results },
+        },
+      })
+
+      return {
+        processed: results.length,
+        successful: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results,
+      }
+    }),
+
   // Get all commitments for organization
   listCommitments: orgProcedure
     .input(z.object({

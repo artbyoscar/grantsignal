@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock } from 'lucide-react'
+import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock, Building2 } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { useRouter } from 'next/navigation'
 import { FitScoreCard } from '@/components/fit-score-card'
+import { ResearchFunderModal } from '@/components/funders/research-funder-modal'
 
 type AnalysisStep = 'idle' | 'parsing' | 'scoring' | 'complete' | 'error'
 
@@ -52,6 +53,7 @@ export default function OpportunitiesPage() {
   const [error, setError] = useState<string | null>(null)
   const [parsedRfp, setParsedRfp] = useState<ParsedRFP | null>(null)
   const [fitScore, setFitScore] = useState<FitScore | null>(null)
+  const [showResearchModal, setShowResearchModal] = useState(false)
 
   // Opportunity list state
   const [sortBy, setSortBy] = useState<'deadline' | 'fitScore' | 'createdAt'>('deadline')
@@ -163,10 +165,25 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Smart Discovery</h1>
-        <p className="text-slate-400 mt-1">Find and analyze grant opportunities.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Smart Discovery</h1>
+          <p className="text-slate-400 mt-1">Find and analyze grant opportunities.</p>
+        </div>
+        <button
+          onClick={() => setShowResearchModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+        >
+          <Building2 className="w-4 h-4" />
+          Research Funder
+        </button>
       </div>
+
+      {/* Research Funder Modal */}
+      <ResearchFunderModal
+        isOpen={showResearchModal}
+        onClose={() => setShowResearchModal(false)}
+      />
 
       {/* Main Input Area */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
