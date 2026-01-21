@@ -17,7 +17,7 @@ export default function ProcessingStatusPage() {
   const [showVoiceAnalysis, setShowVoiceAnalysis] = useState(false)
 
   const totalDocuments = orgData?._count.documents || 0
-  const processedDocuments = documents?.documents.filter((d) => d.status === 'COMPLETED').length || 0
+  const processedDocuments = documents?.filter((d) => d.status === 'COMPLETED').length || 0
   const processingProgress = totalDocuments > 0 ? (processedDocuments / totalDocuments) * 100 : 100
 
   useEffect(() => {
@@ -121,7 +121,7 @@ export default function ProcessingStatusPage() {
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium text-slate-300">Documents</h3>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {documents?.documents.map((doc) => (
+                    {documents?.map((doc) => (
                       <div
                         key={doc.id}
                         className="flex items-center justify-between p-3 bg-slate-900 border border-slate-700 rounded-lg"

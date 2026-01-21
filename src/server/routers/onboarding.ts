@@ -6,25 +6,50 @@ export const onboardingRouter = router({
    * Get current onboarding status
    */
   getStatus: orgProcedure.query(async ({ ctx }) => {
-    const org = await ctx.db.organization.findUnique({
-      where: { id: ctx.organizationId },
-      select: {
-        onboardingCompleted: true,
-        onboardingStep: true,
-        name: true,
-        ein: true,
-        mission: true,
-        primaryProgramAreas: true,
-        geographicArea: true,
-        _count: {
-          select: {
-            documents: true,
-          },
+    // Check onboarding completion status for the organization
+    const [org, documentCount, grantCount] = await Promise.all([
+      ctx.db.organization.findUnique({
+        where: { id: ctx.organizationId },
+        select: {
+          onboardingCompleted: true,
+          onboardingStep: true,
+          name: true,
+          ein: true,
+          mission: true,
+          primaryProgramAreas: true,
+          geographicArea: true,
+          voiceProfile: true,
         },
-      },
-    })
+      }),
+      ctx.db.document.count({
+        where: { organizationId: ctx.organizationId },
+      }),
+      ctx.db.grant.count({
+        where: { organizationId: ctx.organizationId },
+      }),
+    ])
 
-    return org
+    return {
+      // Original fields for backward compatibility
+      ...org,
+      // New structured status fields
+      isComplete: Boolean(org?.mission && documentCount > 0),
+      steps: {
+        organizationProfile: Boolean(org?.name && org?.ein),
+        missionStatement: Boolean(org?.mission),
+        documentsUploaded: documentCount > 0,
+        grantsCreated: grantCount > 0,
+        voiceAnalyzed: Boolean(org?.voiceProfile),
+      },
+      counts: {
+        documents: documentCount,
+        grants: grantCount,
+      },
+      // For backward compatibility with components expecting _count
+      _count: {
+        documents: documentCount,
+      },
+    }
   }),
 
   /**

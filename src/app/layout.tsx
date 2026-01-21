@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
-import { TRPCProvider } from '@/lib/trpc/provider'
+import { TRPCProvider } from '@/trpc/react'
 import { Toaster } from 'sonner'
 import "./globals.css";
 

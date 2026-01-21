@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock } from 'lucide-react'
-import { trpc } from '@/lib/trpc/client'
+import { api } from '@/lib/trpc/client'
 import { useRouter } from 'next/navigation'
 import { FitScoreCard } from '@/components/fit-score-card'
 
@@ -59,12 +59,12 @@ export default function OpportunitiesPage() {
   const [minFitScore, setMinFitScore] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
 
-  const parseRfpMutation = trpc.discovery.parseRfp.useMutation()
-  const calculateFitMutation = trpc.discovery.calculateFitScore.useMutation()
-  const saveOpportunityMutation = trpc.discovery.saveOpportunity.useMutation()
+  const parseRfpMutation = api.discovery.parseRfp.useMutation()
+  const calculateFitMutation = api.discovery.calculateFitScore.useMutation()
+  const saveOpportunityMutation = api.discovery.saveOpportunity.useMutation()
 
   // Query for listing opportunities with fit scores
-  const { data: opportunities, refetch: refetchOpportunities } = trpc.discovery.listOpportunities.useQuery(
+  const { data: opportunities, refetch: refetchOpportunities } = api.discovery.listOpportunities.useQuery(
     {
       sortBy,
       sortOrder,
