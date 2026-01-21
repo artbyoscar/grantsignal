@@ -79,6 +79,11 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --glow-blue: 0 0 20px rgba(59, 130, 246, 0.4);
+  --glow-blue-strong: 0 0 40px rgba(59, 130, 246, 0.6);
+  --glow-green: 0 0 20px rgba(16, 185, 129, 0.4);
+  --glow-amber: 0 0 20px rgba(245, 158, 11, 0.4);
+  --glow-red: 0 0 20px rgba(239, 68, 68, 0.4);
 }
 
 .dark {
@@ -122,4 +127,76 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Gradient Text Utility */
+.text-gradient-blue {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow Utilities */
+.glow-blue {
+  box-shadow: var(--glow-blue);
+}
+
+.glow-blue-strong {
+  box-shadow: var(--glow-blue-strong);
+}
+
+.glow-green {
+  box-shadow: var(--glow-green);
+}
+
+.glow-amber {
+  box-shadow: var(--glow-amber);
+}
+
+.glow-red {
+  box-shadow: var(--glow-red);
+}
+
+/* Card Elevated Shadow */
+.card-elevated {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Gradient Border Utility */
+.border-gradient {
+  position: relative;
+}
+
+.border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(59, 130, 246, 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Ambient Background Glow */
+.ambient-glow {
+  position: relative;
+}
+
+.ambient-glow::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
 }
