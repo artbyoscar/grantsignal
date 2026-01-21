@@ -172,7 +172,7 @@ export default function TeamPage() {
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
                             <span className="text-sm font-medium text-slate-600">
-                              {(member.firstName?.[0] || member.email[0]).toUpperCase()}
+                              {(member.displayName ?? member.firstName ?? member.email ?? 'U').charAt(0).toUpperCase()}
                             </span>
                           </div>
                         )}
