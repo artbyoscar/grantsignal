@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
 import { GrantStatus, FunderType } from '@prisma/client'
+import { emitGrantStatusChanged } from '@/server/services/webhooks/emitter'
 
 export const grantsRouter = router({
   /**
@@ -263,6 +264,21 @@ export const grantsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Get the old status first
+      const oldGrant = await ctx.db.grant.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      if (!oldGrant) {
+        throw new Error('Grant not found or access denied')
+      }
+
+      const oldStatus = oldGrant.status
+
+      // Update the status
       const grant = await ctx.db.grant.updateMany({
         where: {
           id: input.id,
@@ -277,9 +293,31 @@ export const grantsRouter = router({
         throw new Error('Grant not found or access denied')
       }
 
-      return ctx.db.grant.findUnique({
+      const updatedGrant = await ctx.db.grant.findUnique({
         where: { id: input.id },
       })
+
+      // Emit webhook event if status changed
+      if (oldStatus !== input.status && updatedGrant) {
+        await emitGrantStatusChanged(
+          ctx.organizationId,
+          updatedGrant.id,
+          oldStatus,
+          input.status,
+          {
+            id: updatedGrant.id,
+            title: null, // Grant model doesn't have title field
+            amountRequested: updatedGrant.amountRequested ? Number(updatedGrant.amountRequested) : null,
+            amountAwarded: updatedGrant.amountAwarded ? Number(updatedGrant.amountAwarded) : null,
+            deadline: updatedGrant.deadline,
+          }
+        ).catch((error) => {
+          console.error('Failed to emit webhook event:', error)
+          // Don't fail the mutation if webhook fails
+        })
+      }
+
+      return updatedGrant
     }),
 
   /**

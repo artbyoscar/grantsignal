@@ -267,7 +267,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
   return (
     <div className="space-y-4">
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-700">
+      <div className="flex items-center gap-2 border-b border-slate-700 overflow-x-auto scrollbar-thin">
         {TABS.map((tab) => {
           const count = tab.statuses === 'all'
             ? grants.length
@@ -280,7 +280,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                 setSelectedIds(new Set()) // Clear selection when switching tabs
               }}
               className={`
-                px-4 py-2 font-medium text-sm transition-colors relative
+                px-3 md:px-4 py-2 font-medium text-xs md:text-sm transition-colors relative whitespace-nowrap
                 ${
                   activeTab === tab.id
                     ? 'text-blue-400 border-b-2 border-blue-400'
@@ -292,7 +292,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
               {count > 0 && (
                 <span
                   className={`
-                    ml-2 px-2 py-0.5 text-xs rounded-full
+                    ml-1 md:ml-2 px-1.5 md:px-2 py-0.5 text-[10px] md:text-xs rounded-full
                     ${activeTab === tab.id ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-700 text-slate-400'}
                   `}
                 >
@@ -310,10 +310,10 @@ export function PipelineTable({ grants }: PipelineTableProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by grant title or funder name..."
+            placeholder="Search grants..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs md:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
           />
         </div>
       </div>

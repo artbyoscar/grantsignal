@@ -7,6 +7,7 @@ import { chunkText } from '@/server/services/documents/chunker'
 import { generateEmbeddings } from '@/server/services/ai/embeddings'
 import { getIndex, isPineconeConfigured } from '@/lib/pinecone'
 import { extractCommitmentsFromDocument } from '@/server/services/compliance/commitment-extractor'
+import { emitDocumentProcessed } from '@/server/services/webhooks/emitter'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -105,6 +106,25 @@ export const processDocument = inngest.createFunction(
         })
 
         console.log(`Document ${documentId} updated with status: ${status}`)
+
+        // Emit webhook event for document processed
+        await emitDocumentProcessed(
+          organizationId,
+          documentId,
+          status,
+          Math.round(parseResult.confidence),
+          parseResult.warnings.length > 0,
+          {
+            id: updatedDoc.id,
+            name: updatedDoc.name,
+            type: updatedDoc.type,
+            size: updatedDoc.size,
+            grantId: updatedDoc.grantId,
+          }
+        ).catch((error) => {
+          console.error('Failed to emit webhook event:', error)
+          // Don't fail the processing if webhook fails
+        })
 
         return {
           documentId,

@@ -79,6 +79,7 @@ export default function WritingStudioPage({ params }: PageProps) {
   const [requirementsOpen, setRequirementsOpen] = useState(true)
   const [memoryAssistOpen, setMemoryAssistOpen] = useState(true)
   const [funderIntelOpen, setFunderIntelOpen] = useState(true)
+  const [showMobileReferencePanel, setShowMobileReferencePanel] = useState(false)
 
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -453,23 +454,23 @@ export default function WritingStudioPage({ params }: PageProps) {
   return (
     <div className="h-screen flex flex-col bg-slate-900">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-slate-800">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/pipeline')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Pipeline
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-6 py-3 md:py-4 border-b border-slate-700 bg-slate-800">
+        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/pipeline')} className="flex-shrink-0">
+            <ArrowLeft className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Back to Pipeline</span>
           </Button>
-          <div>
-            <h1 className="text-lg font-bold text-white">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base md:text-lg font-bold text-white truncate">
               {grant.opportunity?.title || 'Untitled Grant'}
             </h1>
-            <p className="text-sm text-slate-400">{grant.funder?.name || 'Unknown Funder'}</p>
+            <p className="text-xs md:text-sm text-slate-400 truncate">{grant.funder?.name || 'Unknown Funder'}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          {/* Assignee Selector */}
-          <div className="min-w-[200px]">
+        <div className="flex flex-wrap items-center gap-2 md:gap-4">
+          {/* Assignee Selector - Hidden on small mobile */}
+          <div className="hidden sm:block min-w-[160px] md:min-w-[200px]">
             <AssigneeSelector
               grantId={grantId}
               currentAssignee={grant.assignedTo}
@@ -480,23 +481,27 @@ export default function WritingStudioPage({ params }: PageProps) {
             />
           </div>
           {/* Writing Mode Selector */}
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-lg p-1 overflow-x-auto">
             {(['memory_assist', 'ai_draft', 'human_first', 'audit_mode'] as WritingMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setWritingMode(mode)}
                 className={`
-                  px-3 py-1.5 rounded text-xs font-medium transition-colors
+                  px-2 md:px-3 py-1.5 rounded text-[10px] md:text-xs font-medium transition-colors whitespace-nowrap
                   ${writingMode === mode ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-300'}
                 `}
               >
-                {mode === 'memory_assist' && 'Memory Assist'}
-                {mode === 'ai_draft' && 'AI Draft'}
-                {mode === 'human_first' && 'Human First'}
+                {mode === 'memory_assist' && <span className="hidden sm:inline">Memory Assist</span>}
+                {mode === 'memory_assist' && <span className="sm:hidden">Memory</span>}
+                {mode === 'ai_draft' && <span className="hidden sm:inline">AI Draft</span>}
+                {mode === 'ai_draft' && <span className="sm:hidden">AI</span>}
+                {mode === 'human_first' && <span className="hidden sm:inline">Human First</span>}
+                {mode === 'human_first' && <span className="sm:hidden">Human</span>}
                 {mode === 'audit_mode' && (
                   <span className="flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
-                    Audit Mode
+                    <span className="hidden sm:inline">Audit Mode</span>
+                    <span className="sm:hidden">Audit</span>
                   </span>
                 )}
               </button>
@@ -547,7 +552,7 @@ export default function WritingStudioPage({ params }: PageProps) {
           {/* Save Status */}
           <div className="flex items-center gap-2">
             <span
-              className={`text-sm ${
+              className={`text-xs md:text-sm ${
                 saveStatus === 'saved'
                   ? 'text-green-400'
                   : saveStatus === 'saving'
@@ -564,26 +569,28 @@ export default function WritingStudioPage({ params }: PageProps) {
             </span>
           </div>
 
-          {/* Voice Consistency Indicator */}
+          {/* Voice Consistency Indicator - Hidden on small mobile */}
           {currentSection && currentSectionData?.content && (
-            <VoiceConsistencyIndicator
-              text={currentSectionData.content}
-              className="ml-2"
-            />
+            <div className="hidden md:block">
+              <VoiceConsistencyIndicator
+                text={currentSectionData.content}
+                className="ml-2"
+              />
+            </div>
           )}
 
           {/* Word Count */}
-          <div className="text-sm text-slate-400">
-            {totalWordCount.toLocaleString()} words
+          <div className="text-xs md:text-sm text-slate-400 whitespace-nowrap">
+            {totalWordCount.toLocaleString()}w
           </div>
         </div>
       </div>
 
       {/* Main Content Area - Split Pane */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Reference Panel */}
+        {/* Left Reference Panel - Hidden on mobile */}
         <div
-          className="overflow-y-auto border-r border-slate-700 bg-slate-900"
+          className="hidden lg:block overflow-y-auto border-r border-slate-700 bg-slate-900"
           style={{ width: `${leftPanelWidth}%` }}
         >
           <div className="p-4 space-y-4">
@@ -790,23 +797,23 @@ export default function WritingStudioPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Resize Handle */}
+        {/* Resize Handle - Hidden on mobile */}
         <div
           ref={resizeRef}
-          className="w-1 bg-slate-700 hover:bg-blue-500 cursor-col-resize transition-colors"
+          className="hidden lg:block w-1 bg-slate-700 hover:bg-blue-500 cursor-col-resize transition-colors"
         />
 
         {/* Right Editor Panel */}
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-800">
           {/* Section Navigation Tabs */}
           {requirements.length > 0 && (
-            <div className="flex items-center gap-1 p-2 border-b border-slate-700 overflow-x-auto">
+            <div className="flex items-center gap-1 p-2 border-b border-slate-700 overflow-x-auto scrollbar-thin">
               {requirements.map((req) => (
                 <button
                   key={req.section}
                   onClick={() => handleSectionChange(req.section)}
                   className={`
-                    px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors
+                    px-2 md:px-3 py-1.5 rounded text-[10px] md:text-xs font-medium whitespace-nowrap transition-colors
                     ${
                       currentSection === req.section
                         ? 'bg-blue-600 text-white'
@@ -824,28 +831,28 @@ export default function WritingStudioPage({ params }: PageProps) {
           )}
 
           {/* Editor Area */}
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 p-3 md:p-4 overflow-y-auto">
             {currentRequirement && (
-              <div className="mb-4 p-3 bg-slate-900 border border-slate-700 rounded-lg">
+              <div className="mb-3 md:mb-4 p-3 bg-slate-900 border border-slate-700 rounded-lg">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-white mb-1">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs md:text-sm font-medium text-white mb-1">
                       {currentRequirement.section}
                       {currentRequirement.required && (
                         <span className="text-red-400 ml-1">*</span>
                       )}
                     </h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-[10px] md:text-xs text-slate-400 line-clamp-2">
                       {currentRequirement.description}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs text-slate-400">
-                      {currentSectionWordCount} / {currentRequirement.wordLimit || '∞'} words
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-[10px] md:text-xs text-slate-400">
+                      {currentSectionWordCount} / {currentRequirement.wordLimit || '∞'}
                     </div>
                     {currentRequirement.wordLimit &&
                       currentSectionWordCount > currentRequirement.wordLimit && (
-                        <div className="text-xs text-amber-400 mt-1">Over limit</div>
+                        <div className="text-[10px] md:text-xs text-amber-400 mt-1">Over</div>
                       )}
                   </div>
                 </div>
@@ -897,7 +904,7 @@ export default function WritingStudioPage({ params }: PageProps) {
                 onChange={handleContentChange}
                 placeholder={`Start writing the ${currentSection} section...`}
                 disabled={isGenerating}
-                className="w-full min-h-[600px] bg-slate-900 border border-slate-700 rounded-lg p-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none text-sm leading-relaxed"
+                className="w-full min-h-[400px] md:min-h-[600px] bg-slate-900 border border-slate-700 rounded-lg p-3 md:p-4 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors resize-none text-sm md:text-base leading-relaxed"
               />
             </div>
           </div>
@@ -905,13 +912,13 @@ export default function WritingStudioPage({ params }: PageProps) {
       </div>
 
       {/* Bottom AI Action Bar */}
-      <div className="border-t border-slate-700 bg-slate-800 p-4">
-        <div className="flex items-center gap-3">
+      <div className="border-t border-slate-700 bg-slate-800 p-2 md:p-4">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3">
           <div className="flex-1 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-blue-400 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Ask Claude to help with..."
+              placeholder="Ask Claude to help..."
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               onKeyDown={(e) => {
@@ -920,19 +927,20 @@ export default function WritingStudioPage({ params }: PageProps) {
                   handleOpenAiPanel()
                 }
               }}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs md:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <Button
               size="sm"
               onClick={() => handleQuickAction('draft')}
               disabled={!currentSection}
-              className="gap-2"
+              className="gap-1 md:gap-2 flex-shrink-0 text-xs"
             >
-              <FileText className="w-4 h-4" />
-              Draft Section
+              <FileText className="w-3 md:w-4 h-3 md:h-4" />
+              <span className="hidden sm:inline">Draft Section</span>
+              <span className="sm:hidden">Draft</span>
             </Button>
 
             <Button
@@ -940,10 +948,11 @@ export default function WritingStudioPage({ params }: PageProps) {
               variant="outline"
               onClick={() => handleQuickAction('examples')}
               disabled={!currentSection}
-              className="gap-2"
+              className="gap-1 md:gap-2 flex-shrink-0 text-xs"
             >
-              <Search className="w-4 h-4" />
-              Find Examples
+              <Search className="w-3 md:w-4 h-3 md:h-4" />
+              <span className="hidden sm:inline">Find Examples</span>
+              <span className="sm:hidden">Examples</span>
             </Button>
 
             <Button
@@ -951,10 +960,11 @@ export default function WritingStudioPage({ params }: PageProps) {
               variant="outline"
               onClick={() => handleQuickAction('consistency')}
               disabled={!currentSection}
-              className="gap-2"
+              className="gap-1 md:gap-2 flex-shrink-0 text-xs hidden md:flex"
             >
-              <Eye className="w-4 h-4" />
-              Check Consistency
+              <Eye className="w-3 md:w-4 h-3 md:h-4" />
+              <span className="hidden sm:inline">Check Consistency</span>
+              <span className="sm:hidden">Check</span>
             </Button>
 
             <Button
@@ -962,16 +972,17 @@ export default function WritingStudioPage({ params }: PageProps) {
               variant="outline"
               onClick={handleApplyVoice}
               disabled={!currentSection}
-              className="gap-2 bg-blue-600/10 border-blue-500/30 hover:bg-blue-600/20"
+              className="gap-1 md:gap-2 flex-shrink-0 text-xs bg-blue-600/10 border-blue-500/30 hover:bg-blue-600/20"
               title="Apply your organization's voice to selected text"
             >
-              <Volume2 className="w-4 h-4" />
-              Apply Voice
+              <Volume2 className="w-3 md:w-4 h-3 md:h-4" />
+              <span className="hidden sm:inline">Apply Voice</span>
+              <span className="sm:hidden">Voice</span>
             </Button>
 
             <button
               onClick={handleOpenAiPanel}
-              className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700 rounded transition-colors"
+              className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
               title="Open AI panel"
             >
               <Sparkles className="w-4 h-4" />

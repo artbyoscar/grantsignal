@@ -282,17 +282,17 @@ function DroppableColumn({
   const classes = colorClasses[column.color]
 
   return (
-    <div className="flex-shrink-0 w-72">
+    <div className="flex-shrink-0 w-64 sm:w-72">
       {/* Column Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className={`w-3 h-3 rounded-full ${classes.dot}`} />
-          <h3 className="font-medium text-white">{column.name}</h3>
-          <span className="text-xs text-slate-500 bg-slate-700 px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`w-3 h-3 rounded-full flex-shrink-0 ${classes.dot}`} />
+          <h3 className="font-medium text-white text-sm sm:text-base truncate">{column.name}</h3>
+          <span className="text-xs text-slate-500 bg-slate-700 px-2 py-0.5 rounded-full flex-shrink-0">
             {isLoading ? '...' : grants.length}
           </span>
         </div>
-        <button className="p-1 hover:bg-slate-700 rounded transition-colors">
+        <button className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0">
           <MoreHorizontal className="w-4 h-4 text-slate-400" />
         </button>
       </div>
@@ -301,7 +301,7 @@ function DroppableColumn({
       <div
         ref={setNodeRef}
         className={`
-          bg-slate-800/50 border rounded-lg p-3 min-h-[400px] space-y-3 transition-colors
+          bg-slate-800/50 border rounded-lg p-2 sm:p-3 min-h-[400px] space-y-2 sm:space-y-3 transition-colors
           ${isOver ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700'}
         `}
       >
@@ -482,45 +482,45 @@ export default function PipelinePage() {
   const hasActiveFilters = programId || selectedStatuses.length > 0 || funderType || assignedToId
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Pipeline</h1>
-          <p className="text-slate-400 mt-1">Manage your grant applications.</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Pipeline</h1>
+          <p className="text-slate-400 mt-1 text-sm md:text-base">Manage your grant applications.</p>
         </div>
         <button
           onClick={() => router.push('/opportunities')}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm md:text-base"
         >
           <Plus className="w-4 h-4" />
-          Add Grant
+          <span className="md:inline">Add Grant</span>
         </button>
       </div>
 
       {/* Toolbar: View Toggle + Filters */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* View Toggle */}
         <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg p-1">
           <button
             onClick={() => handleViewChange('kanban')}
             className={`
-              px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors
+              flex-1 sm:flex-none px-3 py-1.5 rounded flex items-center justify-center gap-2 text-sm font-medium transition-colors
               ${view === 'kanban' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'}
             `}
           >
             <LayoutGrid className="w-4 h-4" />
-            Kanban
+            <span className="hidden sm:inline">Kanban</span>
           </button>
           <button
             onClick={() => handleViewChange('table')}
             className={`
-              px-3 py-1.5 rounded flex items-center gap-2 text-sm font-medium transition-colors
+              flex-1 sm:flex-none px-3 py-1.5 rounded flex items-center justify-center gap-2 text-sm font-medium transition-colors
               ${view === 'table' ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-slate-300'}
             `}
           >
             <Table2 className="w-4 h-4" />
-            Table
+            <span className="hidden sm:inline">Table</span>
           </button>
         </div>
 
@@ -528,7 +528,7 @@ export default function PipelinePage() {
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={`
-            px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2
+            px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
             ${showFilters || hasActiveFilters ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-slate-800 text-slate-400 hover:text-slate-300 border border-slate-700'}
           `}
         >
@@ -558,7 +558,7 @@ export default function PipelinePage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Program Filter */}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-2">Program</label>
@@ -636,7 +636,7 @@ export default function PipelinePage() {
       )}
 
       {/* Pipeline Stats */}
-      <div className="flex items-center gap-6 text-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 text-sm">
         <div className="flex items-center gap-2">
           <span className="text-slate-400">Total Grants:</span>
           <span className="text-white font-medium">
@@ -661,7 +661,7 @@ export default function PipelinePage() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {COLUMNS.map((column) => (
               <DroppableColumn
                 key={column.id}

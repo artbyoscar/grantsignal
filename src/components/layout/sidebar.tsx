@@ -16,7 +16,11 @@ import {
 import { cn } from '@/lib/utils'
 import { api } from '@/trpc/react'
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void
+}
+
+export function Sidebar({ onNavigate }: SidebarProps = {}) {
   const pathname = usePathname()
 
   // Fetch compliance summary for badge count
@@ -43,14 +47,19 @@ export function Sidebar() {
   ]
 
   return (
-    <aside className="w-64 min-h-screen bg-slate-800 border-r border-slate-700 flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-slate-700">
+    <aside className="w-64 h-screen bg-slate-800 border-r border-slate-700 flex flex-col">
+      {/* Logo - Hidden on mobile (shown in header instead) */}
+      <div className="hidden md:block p-6 border-b border-slate-700">
         <h1 className="text-xl font-bold text-white">GrantSignal</h1>
       </div>
 
+      {/* Mobile Logo */}
+      <div className="md:hidden p-6 border-b border-slate-700">
+        <h1 className="text-xl font-bold text-white">Menu</h1>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon
@@ -59,6 +68,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 isActive

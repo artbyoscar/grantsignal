@@ -1,5 +1,6 @@
 import { db } from '@/server/db';
 import { ConflictType, ConflictSeverity } from '@prisma/client';
+import { emitComplianceConflictDetected } from '@/server/services/webhooks/emitter';
 
 interface DetectedConflict {
   type: ConflictType;
@@ -135,7 +136,7 @@ export async function detectConflicts(organizationId: string): Promise<DetectedC
     });
 
     if (!existing) {
-      await db.commitmentConflict.create({
+      const newConflict = await db.commitmentConflict.create({
         data: {
           commitmentId: conflict.commitmentIds[0],
           conflictType: conflict.type,
@@ -146,6 +147,25 @@ export async function detectConflicts(organizationId: string): Promise<DetectedC
           status: 'UNRESOLVED'
         }
       });
+
+      // Emit webhook event for new conflict
+      await emitComplianceConflictDetected(
+        organizationId,
+        newConflict.id,
+        newConflict.commitmentId,
+        newConflict.conflictType,
+        newConflict.severity,
+        {
+          id: newConflict.id,
+          conflictType: newConflict.conflictType,
+          severity: newConflict.severity,
+          description: newConflict.description,
+          resolutionAction: newConflict.resolutionAction,
+        }
+      ).catch((error) => {
+        console.error('Failed to emit webhook event:', error)
+        // Don't fail the detection if webhook fails
+      })
     }
   }
 
