@@ -110,6 +110,14 @@ enum ConflictStatus {
   IGNORED
 }
 
+enum ComplianceActionType {
+  CONFLICT_DETECTED
+  CONFLICT_RESOLVED
+  CONFLICT_IGNORED
+  COMMITMENT_UPDATED
+  SCAN_COMPLETED
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -132,6 +140,7 @@ model Organization {
   grants           Grant[]
   commitments      Commitment[]
   fitScores        FitScore[]
+  auditLogs        ComplianceAudit[]
 }
 
 model OrganizationUser {
@@ -288,6 +297,10 @@ model Grant {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  // Draft content storage
+  draftContent    Json?        // { [sectionName]: { content: string, wordCount: number, lastUpdated: DateTime } }
+  aiAuditLog      Json?        // Array of { timestamp, action, sectionName, prompt, sources, confidence }
+
   // Relations
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   funder          Funder?      @relation(fields: [funderId], references: [id], onDelete: SetNull)
@@ -326,17 +339,44 @@ model Commitment {
 }
 
 model CommitmentConflict {
-  id            String           @id @default(cuid())
-  commitmentId  String
-  conflictType  ConflictType
-  description   String
-  severity      ConflictSeverity
-  status        ConflictStatus   @default(UNRESOLVED)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id                   String           @id @default(cuid())
+  commitmentId         String
+  relatedCommitmentIds String[]         // Other commitments involved in the conflict
+  conflictType         ConflictType
+  description          String           @db.Text
+  detectedValues       Json             // { original: any, conflicting: any, context: any }
+  severity             ConflictSeverity
+  status               ConflictStatus   @default(UNRESOLVED)
+  resolutionAction     String?          // UPDATE_DRAFT | FLAG_FOR_REVIEW | IGNORE
+  resolutionReason     String?          @db.Text
+  resolvedBy           String?          // Clerk user ID
+  resolvedAt           DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   // Relations
-  commitment    Commitment       @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  commitment           Commitment       @relation(fields: [commitmentId], references: [id], onDelete: Cascade)
+  auditLogs            ComplianceAudit[]
 
   @@index([commitmentId])
+  @@index([status])
+}
+
+model ComplianceAudit {
+  id                   String                @id @default(cuid())
+  organizationId       String
+  actionType           ComplianceActionType
+  description          String                @db.Text
+  performedBy          String                // Clerk user ID
+  metadata             Json?                 // Additional context (affected grants, commitments, etc.)
+  conflictId           String?
+  createdAt            DateTime              @default(now())
+
+  // Relations
+  organization         Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conflict             CommitmentConflict?   @relation(fields: [conflictId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([actionType])
+  @@index([createdAt])
 }

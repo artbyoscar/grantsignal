@@ -7,6 +7,7 @@ import {
   ConflictSeverity,
   ConflictStatus,
   GrantStatus,
+  ComplianceActionType,
 } from '@prisma/client'
 
 export const complianceRouter = router({
@@ -128,18 +129,25 @@ export const complianceRouter = router({
           const values = new Set(commitments.map((c) => c.metricValue))
           if (values.size > 1) {
             // Different values for the same metric across grants
-            for (const commitment of commitments) {
-              const conflict = await ctx.prisma.commitmentConflict.create({
-                data: {
-                  commitmentId: commitment.id,
-                  conflictType: ConflictType.METRIC_MISMATCH,
-                  description: `Metric "${metricName}" has conflicting values across grants: ${Array.from(values).join(', ')}`,
-                  severity: ConflictSeverity.HIGH,
-                  status: ConflictStatus.UNRESOLVED,
+            const primaryCommitment = commitments[0]
+            const relatedIds = commitments.slice(1).map((c) => c.id)
+
+            const conflict = await ctx.prisma.commitmentConflict.create({
+              data: {
+                commitmentId: primaryCommitment.id,
+                relatedCommitmentIds: relatedIds,
+                conflictType: ConflictType.METRIC_MISMATCH,
+                description: `Metric "${metricName}" has conflicting values across grants: ${Array.from(values).join(', ')}`,
+                detectedValues: {
+                  metricName,
+                  values: Array.from(values),
+                  commitmentIds: commitments.map((c) => c.id),
                 },
-              })
-              detectedConflicts.push(conflict)
-            }
+                severity: ConflictSeverity.HIGH,
+                status: ConflictStatus.UNRESOLVED,
+              },
+            })
+            detectedConflicts.push(conflict)
           }
         }
       }
@@ -167,8 +175,22 @@ export const complianceRouter = router({
               const conflict = await ctx.prisma.commitmentConflict.create({
                 data: {
                   commitmentId: d1.id,
+                  relatedCommitmentIds: [d2.id],
                   conflictType: ConflictType.TIMELINE_OVERLAP,
                   description: `Multiple deliverables due within a week: "${d1.description}" and "${d2.description}"`,
+                  detectedValues: {
+                    commitment1: {
+                      description: d1.description,
+                      dueDate: d1.dueDate,
+                      id: d1.id,
+                    },
+                    commitment2: {
+                      description: d2.description,
+                      dueDate: d2.dueDate,
+                      id: d2.id,
+                    },
+                    daysDiff,
+                  },
                   severity: ConflictSeverity.MEDIUM,
                   status: ConflictStatus.UNRESOLVED,
                 },
@@ -213,8 +235,18 @@ export const complianceRouter = router({
             const conflict = await ctx.prisma.commitmentConflict.create({
               data: {
                 commitmentId: monthCommitments[0].id,
+                relatedCommitmentIds: monthCommitments.slice(1).map((c) => c.id),
                 conflictType: ConflictType.CAPACITY_OVERCOMMIT,
                 description: `${count} commitments due in ${new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} may exceed organizational capacity`,
+                detectedValues: {
+                  month: new Date(year, month).toLocaleDateString('en-US', {
+                    month: 'long',
+                    year: 'numeric',
+                  }),
+                  commitmentCount: count,
+                  threshold: 10,
+                  commitmentIds: monthCommitments.map((c) => c.id),
+                },
                 severity: ConflictSeverity.CRITICAL,
                 status: ConflictStatus.UNRESOLVED,
               },
@@ -224,6 +256,24 @@ export const complianceRouter = router({
         }
       }
 
+      // Log scan in audit trail
+      await ctx.prisma.complianceAudit.create({
+        data: {
+          organizationId: ctx.organizationId,
+          actionType: ComplianceActionType.SCAN_COMPLETED,
+          description: `Compliance scan completed. Detected ${detectedConflicts.length} conflicts across ${grants.length} grants.`,
+          performedBy: ctx.userId,
+          metadata: {
+            grantsScanned: grants.length,
+            conflictsDetected: detectedConflicts.length,
+            conflictTypes: detectedConflicts.reduce((acc: Record<string, number>, c) => {
+              acc[c.conflictType] = (acc[c.conflictType] || 0) + 1
+              return acc
+            }, {}),
+          },
+        },
+      })
+
       return {
         conflictsFound: detectedConflicts.length,
         conflicts: detectedConflicts,
@@ -231,17 +281,14 @@ export const complianceRouter = router({
     }),
 
   /**
-   * Resolve or ignore a conflict
+   * Resolve or ignore a conflict with resolution workflow
    */
   resolveConflict: orgProcedure
     .input(
       z.object({
         conflictId: z.string(),
-        status: z.enum([
-          ConflictStatus.RESOLVED,
-          ConflictStatus.IGNORED,
-          ConflictStatus.UNDER_REVIEW,
-        ]),
+        action: z.enum(['UPDATE_DRAFT', 'FLAG_FOR_REVIEW', 'IGNORE']),
+        reason: z.string().min(1, 'Resolution reason is required'),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -253,6 +300,13 @@ export const complianceRouter = router({
             organizationId: ctx.organizationId,
           },
         },
+        include: {
+          commitment: {
+            include: {
+              grant: true,
+            },
+          },
+        },
       })
 
       if (!conflict) {
@@ -262,19 +316,21 @@ export const complianceRouter = router({
       const updated = await ctx.prisma.commitmentConflict.update({
         where: { id: input.conflictId },
         data: {
-          status: input.status,
+          status:
+            input.action === 'IGNORE'
+              ? ConflictStatus.IGNORED
+              : ConflictStatus.RESOLVED,
+          resolutionAction: input.action,
+          resolutionReason: input.reason,
+          resolvedBy: ctx.userId,
+          resolvedAt: new Date(),
         },
         include: {
           commitment: {
             include: {
               grant: {
-                select: {
-                  id: true,
-                  funder: {
-                    select: {
-                      name: true,
-                    },
-                  },
+                include: {
+                  funder: true,
                 },
               },
             },
@@ -282,6 +338,215 @@ export const complianceRouter = router({
         },
       })
 
+      // Log in audit trail
+      await ctx.prisma.complianceAudit.create({
+        data: {
+          organizationId: ctx.organizationId,
+          actionType:
+            input.action === 'IGNORE'
+              ? ComplianceActionType.CONFLICT_IGNORED
+              : ComplianceActionType.CONFLICT_RESOLVED,
+          description: `Conflict resolved: ${conflict.description}. Action: ${input.action}. Reason: ${input.reason}`,
+          performedBy: ctx.userId,
+          conflictId: input.conflictId,
+          metadata: {
+            conflictType: conflict.conflictType,
+            severity: conflict.severity,
+            action: input.action,
+            grantId: conflict.commitment.grantId,
+          },
+        },
+      })
+
       return updated
     }),
+
+  /**
+   * Get audit trail with filters
+   */
+  getAuditTrail: orgProcedure
+    .input(
+      z.object({
+        actionType: z.nativeEnum(ComplianceActionType).optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const auditLogs = await ctx.prisma.complianceAudit.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          ...(input.actionType && { actionType: input.actionType }),
+          ...(input.startDate &&
+            input.endDate && {
+              createdAt: {
+                gte: input.startDate,
+                lte: input.endDate,
+              },
+            }),
+        },
+        include: {
+          conflict: {
+            include: {
+              commitment: {
+                include: {
+                  grant: {
+                    include: {
+                      funder: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: input.limit,
+      })
+
+      return auditLogs
+    }),
+
+  /**
+   * Export audit trail as CSV
+   */
+  exportAuditTrail: orgProcedure
+    .input(
+      z.object({
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const auditLogs = await ctx.prisma.complianceAudit.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          ...(input.startDate &&
+            input.endDate && {
+              createdAt: {
+                gte: input.startDate,
+                lte: input.endDate,
+              },
+            }),
+        },
+        include: {
+          conflict: {
+            include: {
+              commitment: {
+                include: {
+                  grant: {
+                    include: {
+                      funder: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      })
+
+      // Format as CSV
+      const headers = [
+        'Date',
+        'Action Type',
+        'Description',
+        'Performed By',
+        'Grant',
+        'Funder',
+        'Conflict Type',
+        'Severity',
+      ]
+
+      const rows = auditLogs.map((log) => [
+        log.createdAt.toISOString(),
+        log.actionType,
+        `"${log.description.replace(/"/g, '""')}"`, // Escape quotes in CSV
+        log.performedBy,
+        log.conflict?.commitment?.grant?.id || 'N/A',
+        log.conflict?.commitment?.grant?.funder?.name || 'N/A',
+        log.conflict?.conflictType || 'N/A',
+        log.conflict?.severity || 'N/A',
+      ])
+
+      const csv = [headers, ...rows].map((row) => row.join(',')).join('\n')
+
+      return {
+        csv,
+        filename: `compliance-audit-${new Date().toISOString().split('T')[0]}.csv`,
+      }
+    }),
+
+  /**
+   * Get statistics for dashboard
+   */
+  getStatistics: orgProcedure.query(async ({ ctx }) => {
+    const [
+      totalCommitments,
+      pendingCommitments,
+      overdueCommitments,
+      totalConflicts,
+      unresolvedConflicts,
+      criticalConflicts,
+    ] = await Promise.all([
+      ctx.prisma.commitment.count({
+        where: { organizationId: ctx.organizationId },
+      }),
+      ctx.prisma.commitment.count({
+        where: {
+          organizationId: ctx.organizationId,
+          status: CommitmentStatus.PENDING,
+        },
+      }),
+      ctx.prisma.commitment.count({
+        where: {
+          organizationId: ctx.organizationId,
+          status: CommitmentStatus.OVERDUE,
+        },
+      }),
+      ctx.prisma.commitmentConflict.count({
+        where: {
+          commitment: {
+            organizationId: ctx.organizationId,
+          },
+        },
+      }),
+      ctx.prisma.commitmentConflict.count({
+        where: {
+          commitment: {
+            organizationId: ctx.organizationId,
+          },
+          status: ConflictStatus.UNRESOLVED,
+        },
+      }),
+      ctx.prisma.commitmentConflict.count({
+        where: {
+          commitment: {
+            organizationId: ctx.organizationId,
+          },
+          status: ConflictStatus.UNRESOLVED,
+          severity: ConflictSeverity.CRITICAL,
+        },
+      }),
+    ])
+
+    return {
+      commitments: {
+        total: totalCommitments,
+        pending: pendingCommitments,
+        overdue: overdueCommitments,
+      },
+      conflicts: {
+        total: totalConflicts,
+        unresolved: unresolvedConflicts,
+        critical: criticalConflicts,
+      },
+    }
+  }),
 })

@@ -20,7 +20,12 @@
       "Bash(ls:*)",
       "Bash(npm run dev:*)",
       "Bash(timeout /t 5)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(dir /b /s \"c:\\\\Users\\\\OscarNuñez\\\\Desktop\\\\grantsignal\\\\src\\\\components\")",
+      "Bash(findstr:*)",
+      "Bash(pnpm prisma db push:*)",
+      "Bash(pnpm prisma generate:*)",
+      "Bash(npx prisma migrate dev:*)"
     ]
   }
 }

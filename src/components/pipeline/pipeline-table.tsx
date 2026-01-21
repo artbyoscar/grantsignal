@@ -450,10 +450,11 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                             e.stopPropagation()
                             router.push(`/write/${grant.id}`)
                           }}
-                          className="p-1.5 hover:bg-slate-700 rounded transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
                           title="Open in Writer"
                         >
-                          <Edit3 className="w-4 h-4 text-slate-400 hover:text-blue-400" />
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Write
                         </button>
                         <button
                           onClick={(e) => {
