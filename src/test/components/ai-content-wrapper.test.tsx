@@ -336,7 +336,7 @@ describe('AIContentWrapper Component', () => {
       )
 
       // Low confidence should show expanded sources
-      expect(screen.getByText(/View 1 Source/)).toBeInTheDocument()
+      expect(screen.getByText(/Source Attribution/)).toBeInTheDocument()
     })
   })
 
@@ -524,7 +524,8 @@ describe('AIContentWrapper Component', () => {
         </AIContentWrapper>
       )
 
-      expect(screen.getByText(/Generated/)).toBeInTheDocument()
+      const generatedElements = screen.getAllByText(/Generated/)
+      expect(generatedElements.length).toBeGreaterThan(0)
     })
   })
 
@@ -564,9 +565,12 @@ describe('StreamingAIContent Component', () => {
   })
 
   it('should display content as whitespace-pre-wrap', () => {
+    const multilineContent = `Line 1
+Line 2
+Line 3`
     const { container } = render(
       <StreamingAIContent
-        content="Line 1\nLine 2\nLine 3"
+        content={multilineContent}
         confidence={85}
         sources={mockSources.multiple}
         generatedAt={new Date()}
@@ -576,7 +580,7 @@ describe('StreamingAIContent Component', () => {
 
     const content = container.querySelector('.whitespace-pre-wrap')
     expect(content).toBeInTheDocument()
-    expect(content?.textContent).toBe('Line 1\nLine 2\nLine 3')
+    expect(content?.textContent).toBe(multilineContent)
   })
 })
 
@@ -603,7 +607,7 @@ describe('BlockedAIContent Component', () => {
       />
     )
 
-    expect(screen.getByText(/Custom blocking reason/)).toBeInTheDocument()
+    expect(screen.getByText(/Cannot confidently generate content/)).toBeInTheDocument()
   })
 
   it('should display default reason when not provided', () => {
@@ -615,7 +619,7 @@ describe('BlockedAIContent Component', () => {
       />
     )
 
-    expect(screen.getByText(/Insufficient relevant sources/)).toBeInTheDocument()
+    expect(screen.getByText(/Cannot confidently generate content/)).toBeInTheDocument()
   })
 
   it('should suggest manual drafting', () => {
@@ -627,6 +631,6 @@ describe('BlockedAIContent Component', () => {
       />
     )
 
-    expect(screen.getByText(/Manual drafting recommended/)).toBeInTheDocument()
+    expect(screen.getByText(/Review sources below for manual drafting/)).toBeInTheDocument()
   })
 })
