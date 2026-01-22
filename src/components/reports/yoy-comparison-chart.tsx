@@ -1,6 +1,7 @@
 'use client'
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { Calendar } from 'lucide-react'
 
 interface YoYData {
   category: string
@@ -39,7 +40,15 @@ export function YoYComparisonChart({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
+      {data.length === 0 ? (
+        <div className="h-[300px] flex flex-col items-center justify-center text-slate-400">
+          <Calendar className="h-12 w-12 mb-3 opacity-50" />
+          <p className="text-sm">No year-over-year data available</p>
+          <p className="text-xs text-slate-500 mt-1">Data will appear once grants are awarded</p>
+        </div>
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis
@@ -82,7 +91,7 @@ export function YoYComparisonChart({
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="mt-4 pt-4 border-t border-slate-700 grid grid-cols-2 gap-4">
+          <div className="mt-4 pt-4 border-t border-slate-700 grid grid-cols-2 gap-4">
         <div>
           <span className="text-sm text-slate-400">{previousYearLabel} Total</span>
           <p className="text-xl font-bold text-slate-300">
@@ -96,6 +105,8 @@ export function YoYComparisonChart({
           </p>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

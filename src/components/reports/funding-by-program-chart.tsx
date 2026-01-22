@@ -1,6 +1,7 @@
 'use client'
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { FileText } from 'lucide-react'
 
 interface ProgramData {
   name: string
@@ -37,7 +38,14 @@ export function FundingByProgramChart({ data }: FundingByProgramChartProps) {
         </span>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
+      {data.length === 0 ? (
+        <div className="h-[300px] flex flex-col items-center justify-center text-slate-400">
+          <FileText className="h-12 w-12 mb-3 opacity-50" />
+          <p className="text-sm">No program funding data available</p>
+          <p className="text-xs text-slate-500 mt-1">Award grants to see funding distribution</p>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
             data={data}
@@ -73,6 +81,7 @@ export function FundingByProgramChart({ data }: FundingByProgramChartProps) {
           />
         </PieChart>
       </ResponsiveContainer>
+      )}
 
       <div className="mt-4 pt-4 border-t border-slate-700">
         <div className="flex items-center justify-between">

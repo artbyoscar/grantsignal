@@ -31,16 +31,16 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
   ]
 
   return (
-    <div className="flex items-center gap-2">
-      <Calendar className="h-4 w-4 text-slate-400" />
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+      <Calendar className="h-4 w-4 text-slate-400 hidden sm:block" />
 
       {!isCustom ? (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {presets.map((preset) => (
             <button
               key={preset.label}
               onClick={() => onChange(preset.getValue())}
-              className="px-3 py-1.5 text-sm rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition"
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition whitespace-nowrap"
             >
               {preset.label}
             </button>
@@ -53,7 +53,7 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
             value={value.startDate}

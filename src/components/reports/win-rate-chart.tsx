@@ -48,10 +48,17 @@ export function WinRateChart({ data, dateRange }: WinRateChartProps) {
         <div className="text-sm text-slate-400">Current Win Rate</div>
       </div>
 
-      {/* Chart */}
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+      {/* Chart or Empty State */}
+      {data.length === 0 ? (
+        <div className="h-64 flex flex-col items-center justify-center text-slate-400">
+          <Info className="h-12 w-12 mb-3 opacity-50" />
+          <p className="text-sm">No win rate data available</p>
+          <p className="text-xs text-slate-500 mt-1">Data will appear once grants are awarded or declined</p>
+        </div>
+      ) : (
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
             <defs>
               <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
@@ -109,6 +116,7 @@ export function WinRateChart({ data, dateRange }: WinRateChartProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      )}
     </div>
   );
 }

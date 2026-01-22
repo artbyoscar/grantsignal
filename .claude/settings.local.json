@@ -47,7 +47,9 @@
       "Bash(then echo \"=== Checking for AWS variables in .env ===\")",
       "Bash(else echo \".env file does not exist\")",
       "Bash(then echo \"=== .env file exists ===\")",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "Bash(timeout /t 10)",
+      "Bash(powershell:*)"
     ]
   }
 }

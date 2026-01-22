@@ -1,5 +1,7 @@
 'use client'
 
+import { TrendingUp } from 'lucide-react'
+
 interface PipelineFunnelProps {
   stages: { name: string; value: number; count: number; color: string }[]
   total: number
@@ -18,7 +20,14 @@ export function PipelineFunnel({ stages, total }: PipelineFunnelProps) {
         </span>
       </div>
 
-      <div className="space-y-4">
+      {stages.length === 0 ? (
+        <div className="min-h-[300px] flex flex-col items-center justify-center text-slate-400">
+          <TrendingUp className="h-12 w-12 mb-3 opacity-50" />
+          <p className="text-sm">No pipeline data available</p>
+          <p className="text-xs text-slate-500 mt-1">Create grants to see your pipeline</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
         {stages.map((stage, index) => {
           const widthPercentage = (stage.value / maxValue) * 100
           const formattedValue = stage.value >= 1000000
@@ -61,6 +70,7 @@ export function PipelineFunnel({ stages, total }: PipelineFunnelProps) {
           )
         })}
       </div>
+      )}
 
       {/* Total section */}
       <div className="mt-6 pt-4 border-t border-slate-700">
