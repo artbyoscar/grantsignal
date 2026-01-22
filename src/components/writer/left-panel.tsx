@@ -1,93 +1,69 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { FileText, Brain, Building2, ChevronDown } from 'lucide-react';
+import { RFPRequirements } from "./rfp-requirements";
+import { MemoryAssist, type MemoryResult } from "./memory-assist";
+import { FunderIntelligence } from "./funder-intelligence";
 
-type PanelSection = 'rfp' | 'memory' | 'funder';
+interface RFPSection {
+  id: string;
+  name: string;
+  wordLimit: number;
+  currentWords: number;
+  isComplete: boolean;
+  isActive: boolean;
+}
 
-export function LeftPanel() {
-  const [expandedSection, setExpandedSection] = useState<PanelSection>('rfp');
+interface FunderIntelProps {
+  funderName: string;
+  focus: string[];
+  avgGrantSize: number;
+  keyPriorities: string[];
+}
 
-  const toggleSection = (section: PanelSection) => {
-    setExpandedSection(expandedSection === section ? 'rfp' : section);
-  };
+interface LeftPanelProps {
+  rfpSections: RFPSection[];
+  memoryResults: MemoryResult[];
+  funderInfo: FunderIntelProps;
+  onSectionClick: (sectionId: string) => void;
+  onMemorySearch: (query: string) => void;
+  onMemoryInsert: (result: MemoryResult) => void;
+  memorySearchQuery: string;
+  isSearchingMemory: boolean;
+}
 
+export function LeftPanel({
+  rfpSections,
+  memoryResults,
+  funderInfo,
+  onSectionClick,
+  onMemorySearch,
+  onMemoryInsert,
+  memorySearchQuery,
+  isSearchingMemory,
+}: LeftPanelProps) {
   return (
-    <div className="h-full flex flex-col">
+    <div className="w-80 overflow-y-auto max-h-screen space-y-4 p-4">
       {/* RFP Requirements */}
-      <div className="border-b border-slate-700">
-        <button
-          onClick={() => toggleSection('rfp')}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-slate-100">RFP Requirements</span>
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-slate-400 transition-transform ${
-              expandedSection === 'rfp' ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-        {expandedSection === 'rfp' && (
-          <div className="px-4 py-3 space-y-2">
-            <div className="text-xs text-slate-400">
-              Key requirements from the RFP will appear here
-            </div>
-          </div>
-        )}
-      </div>
+      <RFPRequirements sections={rfpSections} onSectionClick={onSectionClick} />
 
       {/* Memory Assist */}
-      <div className="border-b border-slate-700">
-        <button
-          onClick={() => toggleSection('memory')}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Brain className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-slate-100">Memory Assist</span>
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-slate-400 transition-transform ${
-              expandedSection === 'memory' ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-        {expandedSection === 'memory' && (
-          <div className="px-4 py-3 space-y-2">
-            <div className="text-xs text-slate-400">
-              Relevant past proposals and templates will appear here
-            </div>
-          </div>
-        )}
-      </div>
+      <MemoryAssist
+        results={memoryResults}
+        searchQuery={memorySearchQuery}
+        onSearchChange={onMemorySearch}
+        onInsert={onMemoryInsert}
+        isSearching={isSearchingMemory}
+      />
 
       {/* Funder Intelligence */}
-      <div className="border-b border-slate-700">
-        <button
-          onClick={() => toggleSection('funder')}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-medium text-slate-100">Funder Intelligence</span>
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-slate-400 transition-transform ${
-              expandedSection === 'funder' ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-        {expandedSection === 'funder' && (
-          <div className="px-4 py-3 space-y-2">
-            <div className="text-xs text-slate-400">
-              Funder preferences and insights will appear here
-            </div>
-          </div>
-        )}
-      </div>
+      <FunderIntelligence
+        funderName={funderInfo.funderName}
+        focus={funderInfo.focus}
+        avgGrantSize={funderInfo.avgGrantSize}
+        keyPriorities={funderInfo.keyPriorities}
+      />
     </div>
   );
 }
+
+export type { LeftPanelProps, RFPSection, FunderIntelProps, MemoryResult };
