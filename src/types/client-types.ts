@@ -5,6 +5,11 @@
  * DO NOT import from @prisma/client in client components - use these types instead.
  */
 
+import type { AppRouter } from '@/server/routers/_app'
+import type { inferRouterOutputs } from '@trpc/server'
+
+type RouterOutput = inferRouterOutputs<AppRouter>
+
 // ============================================================================
 // Grant Status
 // ============================================================================
@@ -54,114 +59,16 @@ export type FunderType = typeof FunderType[keyof typeof FunderType]
 // ============================================================================
 
 /**
- * Grant type as returned by api.grants.list and api.grants.byId
+ * Grant type as returned by api.grants.list
  *
- * This interface matches EXACTLY what the API returns, including:
- * - All Grant model fields from the database
- * - Included relations (funder, opportunity, program, assignedTo)
- * - Aggregated counts (_count)
- *
- * IMPORTANT: The Grant model does NOT have a 'title' field.
- * The title comes from grant.opportunity.title
+ * This is inferred directly from the tRPC router output to ensure type safety.
+ * Superjson automatically transforms Prisma Decimal to number.
  */
-export interface Grant {
-  // Core fields
-  id: string
-  organizationId: string
-  status: GrantStatus
-
-  // Money fields (Prisma Decimal becomes number in JS)
-  amountRequested: number | null
-  amountAwarded: number | null
-
-  // Date fields
-  deadline: Date | null
-  submittedAt: Date | null
-  awardedAt: Date | null
-  startDate: Date | null
-  endDate: Date | null
-  assignedAt: Date | null
-  createdAt: Date
-  updatedAt: Date
-
-  // Foreign keys
-  assignedToId: string | null  // Note: NOT 'assigneeId'
-  funderId: string | null
-  opportunityId: string | null
-  programId: string | null
-
-  // Text fields
-  notes: string | null
-
-  // Relations (from api.grants.list include)
-  funder?: {
-    id: string
-    name: string
-    type: FunderType
-  } | null
-
-  opportunity?: {
-    id: string
-    title: string
-    deadline: Date | null
-  } | null
-
-  program?: {
-    id: string
-    name: string
-  } | null
-
-  assignedTo?: {
-    id: string
-    displayName: string | null
-    avatarUrl: string | null
-    clerkUserId: string
-  } | null
-
-  _count?: {
-    documents: number
-    commitments: number
-  }
-}
+export type Grant = RouterOutput['grants']['list']['grants'][number]
 
 /**
- * Extended Grant type with fit scores (from api.grants.byId)
+ * Grant type as returned by api.grants.byId
  *
- * When fetching a single grant with byId, the opportunity includes fitScores
+ * This includes full details with fit scores, documents, and commitments.
  */
-export interface GrantWithFitScores extends Grant {
-  opportunity?: {
-    id: string
-    title: string
-    deadline: Date | null
-    fitScores?: Array<{
-      id: string
-      overallScore: number
-      missionScore: number
-      capacityScore: number
-      historyScore: number
-      reasoning: string | null
-      createdAt: Date
-    }>
-  } | null
-
-  // Additional fields from byId that include more details
-  documents?: Array<{
-    id: string
-    name: string
-    url: string
-    type: string
-    createdAt: Date
-  }>
-
-  commitments?: Array<{
-    id: string
-    title: string
-    dueDate: Date | null
-    status: string
-    conflicts?: Array<{
-      id: string
-      status: string
-    }>
-  }>
-}
+export type GrantWithDetails = RouterOutput['grants']['byId']
