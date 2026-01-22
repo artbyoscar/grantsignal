@@ -1,4 +1,3 @@
-const pdfParse = require('pdf-parse')
 import mammoth from 'mammoth'
 import { confidenceScoring } from '../ai/confidence-scoring'
 import type { ParsedDocumentMetadata, ParseConfidenceResult } from '@/types/confidence'
@@ -68,6 +67,9 @@ async function parsePDF(buffer: Buffer): Promise<ParseResult> {
   const warnings: string[] = []
 
   try {
+    // Dynamic import to avoid loading pdf-parse at build time
+    const pdfParseModule = await import('pdf-parse') as any
+    const pdfParse = pdfParseModule.default || pdfParseModule
     const data = await pdfParse(buffer)
     const text = data.text.trim()
     const pageCount = data.numpages
