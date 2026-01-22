@@ -23,16 +23,15 @@ export function ApplyVoiceModal({
   const [originalConfidence, setOriginalConfidence] = useState<number | null>(null)
   const [rewrittenConfidence, setRewrittenConfidence] = useState<number | null>(null)
 
-  const applyVoiceMutation = api.voice.applyToText.useMutation()
-
+  // TODO: Implement voice.applyToText endpoint
   const handleRewrite = async () => {
     setIsRewriting(true)
     try {
-      const result = await applyVoiceMutation.mutateAsync({ text: selectedText })
-      setRewrittenText(result.rewritten)
-      // Set confidence scores (from API response or mock values)
-      setOriginalConfidence(result.originalConfidence || 65)
-      setRewrittenConfidence(result.rewrittenConfidence || 92)
+      // TODO: Replace with actual API call when voice router is implemented
+      // const result = await api.voice.applyToText.mutateAsync({ text: selectedText })
+      toast.error('Voice rewriting is not yet implemented.')
+      setIsRewriting(false)
+      return
     } catch (error) {
       toast.error('Failed to apply voice. Please try again.')
       console.error('Apply voice error:', error)

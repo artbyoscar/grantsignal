@@ -30,8 +30,8 @@ export const GET = createRestHandler(
     });
 
     const summary = await caller.reports.getExecutiveSummary({
-      startDate: params.startDate ? new Date(params.startDate) : undefined,
-      endDate: params.endDate ? new Date(params.endDate) : undefined,
+      startDate: params.startDate,
+      endDate: params.endDate,
     });
 
     return summary;

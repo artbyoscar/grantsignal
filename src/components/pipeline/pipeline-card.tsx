@@ -6,8 +6,11 @@ import { useDraggable } from '@dnd-kit/core'
 import { GrantStatus } from '@prisma/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { api } from '@/lib/trpc/client'
+import type { inferRouterOutputs } from '@trpc/server'
+import type { AppRouter } from '@/server/routers/_app'
 
-type Grant = NonNullable<ReturnType<typeof api.grants.list.useQuery>['data']>['grants'][number]
+type RouterOutputs = inferRouterOutputs<AppRouter>
+type Grant = RouterOutputs['grants']['list']['grants'][number]
 
 type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
 
@@ -93,7 +96,7 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false }
 
   const classes = colorClasses[color]
   const deadlineInfo = getDeadlineInfo(grant.opportunity?.deadline || grant.deadline)
-  const fitScore = grant.opportunity?.fitScores?.[0]
+  const fitScore = (grant.opportunity as any)?.fitScores?.[0]
   const isWritingStage = grant.status === GrantStatus.WRITING
 
   const style = transform
@@ -155,7 +158,7 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false }
       <div className="mb-2">
         <span className="text-xs text-slate-400">Amount Requested</span>
         <p className="text-lg font-semibold text-white">
-          {formatCurrency(grant.amountRequested)}
+          {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
         </p>
       </div>
 
@@ -226,7 +229,7 @@ interface GrantCardProps {
 export function GrantCard({ grant, color, progress, isFlagged = false }: GrantCardProps) {
   const classes = colorClasses[color]
   const deadlineInfo = getDeadlineInfo(grant.opportunity?.deadline || grant.deadline)
-  const fitScore = grant.opportunity?.fitScores?.[0]
+  const fitScore = (grant.opportunity as any)?.fitScores?.[0]
   const isWritingStage = grant.status === GrantStatus.WRITING
 
   return (
@@ -269,7 +272,7 @@ export function GrantCard({ grant, color, progress, isFlagged = false }: GrantCa
       <div className="mb-2">
         <span className="text-xs text-slate-400">Amount Requested</span>
         <p className="text-lg font-semibold text-white">
-          {formatCurrency(grant.amountRequested)}
+          {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
         </p>
       </div>
 

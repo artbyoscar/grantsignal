@@ -395,7 +395,7 @@ export const teamRouter = router({
       // Can't remove yourself
       const currentUser = await ctx.db.organizationUser.findFirst({
         where: {
-          clerkUserId: ctx.auth.userId,
+          clerkUserId: ctx.auth.userId!,
           organizationId: ctx.organizationId,
         },
       });
@@ -473,7 +473,7 @@ export const teamRouter = router({
       // Can't change your own role
       const currentUser = await ctx.db.organizationUser.findFirst({
         where: {
-          clerkUserId: ctx.auth.userId,
+          clerkUserId: ctx.auth.userId!,
           organizationId: ctx.organizationId,
         },
       });

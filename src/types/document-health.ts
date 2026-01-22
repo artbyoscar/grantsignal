@@ -24,7 +24,7 @@ export interface DocumentHealthItem {
   type: DocumentType
   status: ProcessingStatus
   confidenceScore: number | null
-  uploadedAt: Date
+  createdAt: Date
   processedAt: Date | null
   mimeType: string | null
   size: number

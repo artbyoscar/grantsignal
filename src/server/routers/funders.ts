@@ -301,7 +301,7 @@ export const fundersRouter = router({
             totalReceived,
             grantCount: grants.length,
             latestYear: latestGrant.year,
-            latestAmount: Number(latestGrant.latestAmount),
+            latestAmount: Number(latestGrant.amount),
             purposes: [...new Set(grants.map(g => g.purpose).filter(Boolean))],
           }
         })

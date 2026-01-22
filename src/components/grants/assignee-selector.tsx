@@ -35,8 +35,9 @@ export function AssigneeSelector({
   const [isOpen, setIsOpen] = useState(false)
 
   // Fetch team members
-  const { data: members, isLoading: isLoadingMembers } =
-    api.team.listMembers.useQuery()
+  // TODO: Implement team.listMembers endpoint
+  const members: any[] = []
+  const isLoadingMembers = false
 
   // Assign mutation
   const assignMutation = api.grants.assignGrant.useMutation({

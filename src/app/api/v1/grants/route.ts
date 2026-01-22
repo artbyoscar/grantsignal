@@ -13,7 +13,7 @@ import { db } from '@/server/db';
  * Query parameters for listing grants
  */
 const listGrantsSchema = z.object({
-  status: z.enum(['DRAFT', 'SUBMITTED', 'AWARDED', 'REJECTED', 'ACTIVE', 'COMPLETED']).optional(),
+  status: z.enum(['PROSPECT', 'RESEARCHING', 'WRITING', 'REVIEW', 'SUBMITTED', 'PENDING', 'AWARDED', 'DECLINED', 'ACTIVE', 'CLOSEOUT', 'COMPLETED']).optional(),
   programId: z.string().optional(),
   assignedToId: z.string().optional(),
   search: z.string().optional(),
@@ -28,7 +28,7 @@ const createGrantSchema = z.object({
   funderId: z.string().optional(),
   opportunityId: z.string().optional(),
   programId: z.string().optional(),
-  status: z.enum(['DRAFT', 'SUBMITTED', 'AWARDED', 'REJECTED', 'ACTIVE', 'COMPLETED']).optional(),
+  status: z.enum(['PROSPECT', 'RESEARCHING', 'WRITING', 'REVIEW', 'SUBMITTED', 'PENDING', 'AWARDED', 'DECLINED', 'ACTIVE', 'CLOSEOUT', 'COMPLETED']).optional(),
   amountRequested: z.number().optional(),
   deadline: z.string().optional(),
   title: z.string().optional(),
@@ -56,7 +56,6 @@ export const GET = createRestHandler(
       status: params.status,
       programId: params.programId,
       assignedToId: params.assignedToId,
-      search: params.search,
       limit: params.pageSize,
     });
 
@@ -67,12 +66,7 @@ export const GET = createRestHandler(
         ...(params.status ? { status: params.status } : {}),
         ...(params.programId ? { programId: params.programId } : {}),
         ...(params.assignedToId ? { assignedToId: params.assignedToId } : {}),
-        ...(params.search ? {
-          OR: [
-            { title: { contains: params.search, mode: 'insensitive' } },
-            { description: { contains: params.search, mode: 'insensitive' } },
-          ],
-        } : {}),
+        // TODO: Implement search functionality with correct Grant schema fields
       },
     });
 

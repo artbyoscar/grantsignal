@@ -46,7 +46,7 @@ export async function verifyInvitationToken(
 ): Promise<InvitationTokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as InvitationTokenPayload;
+    return payload as unknown as InvitationTokenPayload;
   } catch (error) {
     // Token is invalid or expired
     return null;

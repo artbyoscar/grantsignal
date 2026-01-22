@@ -57,12 +57,16 @@ export const sendWeeklyDigest = inngest.createFunction(
         ).length;
 
         const upcomingDeadlines = org.grants.filter(
-          (g) => g.deadline && g.deadline >= now && g.deadline <= sevenDaysFromNow
+          (g) => {
+            if (!g.deadline) return false;
+            const deadline = new Date(g.deadline);
+            return deadline >= now && deadline <= sevenDaysFromNow;
+          }
         );
 
         const recentActivity = org.grants
-          .filter((g) => g.updatedAt >= sevenDaysAgo)
-          .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+          .filter((g) => new Date(g.updatedAt) >= sevenDaysAgo)
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
           .slice(0, 5);
 
         // Get week range for the digest
@@ -82,7 +86,7 @@ export const sendWeeklyDigest = inngest.createFunction(
           if (prefs.digestFrequency === 'DAILY') continue;
 
           try {
-            const emailHtml = render(
+            const emailHtml = await render(
               WeeklyDigestEmail({
                 userName: 'there', // Could fetch from Clerk if needed
                 weekRange,
@@ -97,7 +101,7 @@ export const sendWeeklyDigest = inngest.createFunction(
                   title: g.funder?.name || 'Grant',
                   funderName: g.funder?.name || 'Unknown',
                   status: g.status,
-                  deadline: g.deadline?.toLocaleDateString(),
+                  deadline: g.deadline ? new Date(g.deadline).toLocaleDateString() : undefined,
                 })),
                 recentActivity: recentActivity.map((g) => ({
                   id: g.id,
@@ -107,7 +111,7 @@ export const sendWeeklyDigest = inngest.createFunction(
                   amount: g.amountAwarded ? Number(g.amountAwarded) : undefined,
                 })),
                 dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-              })
+              }) as any
             );
 
             await resend.emails.send({

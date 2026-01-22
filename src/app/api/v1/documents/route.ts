@@ -14,7 +14,7 @@ import { db } from '@/server/db';
  */
 const listDocumentsSchema = z.object({
   grantId: z.string().optional(),
-  type: z.enum(['GRANT_APPLICATION', 'AWARD_LETTER', 'REPORT', 'AGREEMENT', 'BUDGET', 'OTHER']).optional(),
+  type: z.enum(['PROPOSAL', 'LOI', 'AWARD_LETTER', 'REPORT', 'AGREEMENT', 'BUDGET', 'ANNUAL_REPORT', 'STRATEGIC_PLAN', 'EVALUATION', 'OTHER']).optional(),
   status: z.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED']).optional(),
   search: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -29,7 +29,7 @@ const createUploadSchema = z.object({
   fileSize: z.number(),
   mimeType: z.string(),
   grantId: z.string().optional(),
-  type: z.enum(['GRANT_APPLICATION', 'AWARD_LETTER', 'REPORT', 'AGREEMENT', 'BUDGET', 'OTHER']).optional(),
+  type: z.enum(['PROPOSAL', 'LOI', 'AWARD_LETTER', 'REPORT', 'AGREEMENT', 'BUDGET', 'ANNUAL_REPORT', 'STRATEGIC_PLAN', 'EVALUATION', 'OTHER']).optional(),
 });
 
 /**
@@ -91,9 +91,9 @@ export const POST = createRestHandler(
     const result = await caller.documents.createUploadUrl({
       fileName: body.fileName,
       fileSize: body.fileSize,
-      mimeType: body.mimeType,
+      fileType: body.mimeType,
       grantId: body.grantId,
-      type: body.type,
+      documentType: body.type || 'OTHER',
     });
 
     return result;

@@ -66,7 +66,11 @@ export const processDocument = inngest.createFunction(
       console.log(`Parsing document ${documentId} (${mimeType})`)
 
       try {
-        const result = await parseDocument(buffer, mimeType)
+        // Convert buffer back if it was serialized
+        const actualBuffer = Buffer.isBuffer(buffer)
+          ? buffer
+          : Buffer.from((buffer as any).data || buffer)
+        const result = await parseDocument(actualBuffer, mimeType)
         console.log(
           `Document parsed: ${result.metadata.wordCount} words, ${result.confidence}% confidence`
         )
@@ -98,7 +102,7 @@ export const processDocument = inngest.createFunction(
           data: {
             extractedText: parseResult.text,
             confidenceScore: Math.round(parseResult.confidence),
-            parseWarnings: parseResult.warnings.length > 0 ? parseResult.warnings : null,
+            parseWarnings: parseResult.warnings.length > 0 ? parseResult.warnings : undefined,
             metadata: parseResult.metadata,
             status,
             processedAt: new Date(),

@@ -65,7 +65,7 @@ export const auditRouter = router({
           data: {
             organizationId: ctx.organizationId,
             grantId: input.grantId,
-            userId: ctx.auth.userId,
+            userId: ctx.auth.userId!,
             sectionId: input.sectionId,
             prompt: input.prompt,
             content: input.content,

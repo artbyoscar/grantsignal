@@ -168,21 +168,13 @@ export function FitOpportunitiesWidget() {
                 className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 hover:bg-slate-900/70 hover:border-slate-600 transition-all group"
               >
                 <div className="flex items-start gap-4">
-                  {/* Funder Logo/Initial */}
+                  {/* Funder Initial */}
                   <div className="flex-shrink-0">
-                    {opportunity.funder?.logoUrl ? (
-                      <img
-                        src={opportunity.funder.logoUrl}
-                        alt={opportunity.funder.name}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-slate-700 flex items-center justify-center">
-                        <span className="text-lg font-semibold text-slate-300">
-                          {opportunity.funder?.name?.[0] || '?'}
-                        </span>
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-lg bg-slate-700 flex items-center justify-center">
+                      <span className="text-lg font-semibold text-slate-300">
+                        {opportunity.funder?.name?.[0] || '?'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Content */}

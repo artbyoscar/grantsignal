@@ -522,7 +522,7 @@ export const documentsRouter = router({
         data: {
           status: ProcessingStatus.PROCESSING,
           confidenceScore: null,
-          parseWarnings: null,
+          parseWarnings: undefined,
         },
       })
 

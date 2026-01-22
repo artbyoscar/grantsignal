@@ -13,17 +13,27 @@ interface MemorySearchProps {
 
 const documentTypeLabels: Record<DocumentType, string> = {
   [DocumentType.PROPOSAL]: 'Proposal',
+  [DocumentType.LOI]: 'LOI',
   [DocumentType.REPORT]: 'Report',
   [DocumentType.BUDGET]: 'Budget',
   [DocumentType.AWARD_LETTER]: 'Award Letter',
+  [DocumentType.AGREEMENT]: 'Agreement',
+  [DocumentType.ANNUAL_REPORT]: 'Annual Report',
+  [DocumentType.STRATEGIC_PLAN]: 'Strategic Plan',
+  [DocumentType.EVALUATION]: 'Evaluation',
   [DocumentType.OTHER]: 'Other',
 }
 
 const documentTypeColors: Record<DocumentType, string> = {
   [DocumentType.PROPOSAL]: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  [DocumentType.LOI]: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
   [DocumentType.REPORT]: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   [DocumentType.BUDGET]: 'bg-green-500/10 text-green-400 border-green-500/20',
   [DocumentType.AWARD_LETTER]: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  [DocumentType.AGREEMENT]: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+  [DocumentType.ANNUAL_REPORT]: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+  [DocumentType.STRATEGIC_PLAN]: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+  [DocumentType.EVALUATION]: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
   [DocumentType.OTHER]: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
 }
 
@@ -143,10 +153,10 @@ export function MemorySearch({ onInsert }: MemorySearchProps) {
                       </div>
                       <span
                         className={`px-2 py-0.5 text-xs font-medium rounded border flex-shrink-0 ${
-                          documentTypeColors[result.document.type]
+                          documentTypeColors[result.document.type as DocumentType]
                         }`}
                       >
-                        {documentTypeLabels[result.document.type]}
+                        {documentTypeLabels[result.document.type as DocumentType]}
                       </span>
                     </div>
 

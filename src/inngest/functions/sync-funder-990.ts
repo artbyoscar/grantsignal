@@ -85,7 +85,7 @@ export const syncFunder990 = inngest.createFunction(
             grantSizeMedian: grantStats.median,
             programAreas: nteeInfo
               ? [nteeInfo.category, nteeInfo.description]
-              : null,
+              : undefined,
             historicalData: {
               filings: funderData.historicalFilings,
               lastFiveYears: funderData.historicalFilings.slice(0, 5),

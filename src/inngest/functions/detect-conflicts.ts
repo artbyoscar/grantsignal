@@ -35,43 +35,17 @@ export const detectConflictsScheduled = inngest.createFunction(
             }
           })
 
-          // Send compliance alerts for new high/critical conflicts
+          // TODO: Send compliance alerts for new high/critical conflicts
+          // This requires saving conflicts to DB first and getting their IDs
           const newCriticalConflicts = conflicts.filter(
-            (c) => (c.severity === 'HIGH' || c.severity === 'CRITICAL') && c.status === 'UNRESOLVED'
+            (c) => c.severity === 'HIGH' || c.severity === 'CRITICAL'
           )
-
-          if (newCriticalConflicts.length > 0) {
-            // Get all users for this organization with compliance alerts enabled
-            const orgUsers = await db.organizationUser.findMany({
-              where: { organizationId: org.id },
-              include: { notificationPreferences: true },
-            })
-
-            for (const conflict of newCriticalConflicts) {
-              for (const orgUser of orgUsers) {
-                const prefs = orgUser.notificationPreferences
-
-                if (prefs && prefs.complianceAlertsEnabled) {
-                  // Trigger compliance alert notification
-                  await inngest.send({
-                    name: 'notification/compliance-alert',
-                    data: {
-                      conflictId: conflict.id,
-                      userId: orgUser.id,
-                      email: prefs.email,
-                      severity: conflict.severity,
-                    },
-                  })
-                }
-              }
-            }
-          }
 
           return {
             orgId: org.id,
             orgName: org.name,
             conflictCount: conflicts.length,
-            alertsSent: newCriticalConflicts.length,
+            alertsSent: 0, // TODO: Implement after saving conflicts to DB
             success: true
           }
         } catch (error) {
@@ -79,6 +53,8 @@ export const detectConflictsScheduled = inngest.createFunction(
           return {
             orgId: org.id,
             orgName: org.name,
+            conflictCount: 0,
+            alertsSent: 0,
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
           }

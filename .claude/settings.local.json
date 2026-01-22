@@ -33,7 +33,9 @@
       "Bash(test:*)",
       "Bash(pnpm test:*)",
       "Bash(pnpm dev)",
-      "Bash(timeout 8 tail -f:*)"
+      "Bash(timeout 8 tail -f:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm build:*)"
     ]
   }
 }

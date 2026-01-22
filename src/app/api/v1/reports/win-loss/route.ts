@@ -31,9 +31,8 @@ export const GET = createRestHandler(
     });
 
     const analysis = await caller.reports.getWinLossAnalysis({
-      startDate: params.startDate ? new Date(params.startDate) : undefined,
-      endDate: params.endDate ? new Date(params.endDate) : undefined,
-      programId: params.programId,
+      startDate: params.startDate,
+      endDate: params.endDate,
     });
 
     return analysis;

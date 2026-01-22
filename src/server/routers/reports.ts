@@ -134,7 +134,6 @@ export const reportsRouter = router({
         dateRange: { startDate, endDate },
         keyMetrics: {
           totalSubmitted: submittedGrants.length,
-          totalAwarded: awardedGrants.length,
           winRate: Math.round(winRate * 10) / 10,
           totalRequested,
           totalAwarded,
@@ -536,7 +535,7 @@ export const reportsRouter = router({
       const noProgramGrants = allGrants.filter((g) => !g.programId)
       if (noProgramGrants.length > 0) {
         byProgram.push({
-          programId: null,
+          programId: 'unassigned',
           programName: 'No Program Assigned',
           active: noProgramGrants.filter((g) =>
             ['PROSPECT', 'RESEARCHING', 'WRITING', 'REVIEW'].includes(g.status)

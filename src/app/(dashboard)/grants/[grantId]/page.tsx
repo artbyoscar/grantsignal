@@ -135,7 +135,7 @@ export default function GrantDetailPage() {
                 <div>
                   <p className="text-xs text-slate-400 mb-1">Amount Requested</p>
                   <p className="text-xl font-bold text-white">
-                    {formatCurrency(grant.amountRequested)}
+                    {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
                   </p>
                 </div>
               </div>

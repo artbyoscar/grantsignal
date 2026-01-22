@@ -11,7 +11,6 @@ interface KeyMetrics {
   totalAwarded: number
   winRate: number
   totalRequested: number
-  totalAwarded: number
 }
 
 interface PipelineItem {

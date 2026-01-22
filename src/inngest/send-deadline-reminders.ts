@@ -56,7 +56,7 @@ export const sendDeadlineReminders = inngest.createFunction(
         if (!grant.deadline) continue;
 
         const daysUntilDeadline = Math.ceil(
-          (grant.deadline.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          (new Date(grant.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
         );
 
         // For each user in the organization
@@ -70,15 +70,15 @@ export const sendDeadlineReminders = inngest.createFunction(
           if (!prefs.reminderThresholds.includes(daysUntilDeadline)) continue;
 
           try {
-            const emailHtml = render(
+            const emailHtml = await render(
               DeadlineReminderEmail({
                 grantTitle: grant.funder?.name || 'Grant',
                 funderName: grant.funder?.name || 'Unknown Funder',
-                deadline: grant.deadline.toLocaleDateString(),
+                deadline: new Date(grant.deadline).toLocaleDateString(),
                 daysUntilDeadline,
                 grantStatus: grant.status,
                 grantUrl: `${process.env.NEXT_PUBLIC_APP_URL}/pipeline`,
-              })
+              }) as any
             );
 
             await resend.emails.send({

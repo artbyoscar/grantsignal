@@ -194,7 +194,7 @@ ${input.sectionId ? `# Section\n\nYou are writing the "${input.sectionId}" secti
           data: {
             organizationId: ctx.organizationId,
             grantId: input.grantId,
-            userId: ctx.auth.userId,
+            userId: ctx.auth.userId!,
             sectionId: input.sectionId,
             prompt: input.prompt,
             content,

@@ -131,7 +131,7 @@ export async function checkRateLimit(
   db: PrismaClient
 ): Promise<RateLimitResult> {
   // Load rate limit configuration from database
-  let rateLimits = apiKey.rateLimits
+  let rateLimits = (apiKey as any).rateLimits
 
   if (!rateLimits) {
     // Load from database if not included in the API key

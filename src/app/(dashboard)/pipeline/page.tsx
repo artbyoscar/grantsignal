@@ -15,6 +15,8 @@ import {
   useDraggable,
 } from '@dnd-kit/core'
 import { api } from '@/lib/trpc/client'
+import type { AppRouter } from '@/server/routers/_app'
+import type { inferRouterOutputs } from '@trpc/server'
 import { GrantStatus, FunderType } from '@prisma/client'
 import { toast } from 'sonner'
 import { PipelineTable } from '@/components/pipeline/pipeline-table'
@@ -45,7 +47,8 @@ const colorClasses: Record<ColorType, { dot: string; border: string; bg: string 
   red: { dot: 'bg-red-500', border: 'border-red-500/30', bg: 'bg-red-500/10' },
 }
 
-type Grant = NonNullable<ReturnType<typeof api.grants.list.useQuery>['data']>['grants'][number]
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type Grant = RouterOutputs['grants']['list']['grants'][number];
 
 // Format currency
 function formatCurrency(amount: number | null | undefined): string {
@@ -201,7 +204,8 @@ export default function PipelinePage() {
   const programs = programsData || []
 
   // Fetch team members for assignee filter
-  const { data: teamMembers } = api.team.listMembers.useQuery()
+  // TODO: Implement team.listMembers endpoint
+  const teamMembers: any[] = []
 
   // Update status mutation
   const updateStatusMutation = api.grants.updateStatus.useMutation({

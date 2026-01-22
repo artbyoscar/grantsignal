@@ -21,8 +21,7 @@ export function VoiceConsistencyIndicator({
     suggestions: string[]
   } | null>(null)
 
-  const analyzeConsistencyMutation = api.voice.analyzeConsistency.useMutation()
-
+  // TODO: Implement voice.analyzeConsistency endpoint
   useEffect(() => {
     // Debounce analysis - only analyze if text is substantial
     if (!text || text.trim().length < 50) {
@@ -40,16 +39,8 @@ export function VoiceConsistencyIndicator({
   const performAnalysis = async () => {
     if (!text || text.trim().length < 50) return
 
-    setIsAnalyzing(true)
-    try {
-      const result = await analyzeConsistencyMutation.mutateAsync({ text })
-      setConsistencyData(result)
-    } catch (error) {
-      console.error('Voice consistency analysis failed:', error)
-      setConsistencyData(null)
-    } finally {
-      setIsAnalyzing(false)
-    }
+    // TODO: Replace with actual API call when voice router is implemented
+    setConsistencyData(null)
   }
 
   if (!text || text.trim().length < 50) {

@@ -200,7 +200,7 @@ export const webhookDelivery = inngest.createFunction(
     });
 
     // Step 5: Schedule retry if needed
-    if (!result.success && result.shouldRetry) {
+    if (!result.success && 'shouldRetry' in result && result.shouldRetry) {
       const backoffMs = calculateBackoff(delivery.attempts + 1);
       await step.sleep('backoff', backoffMs);
 

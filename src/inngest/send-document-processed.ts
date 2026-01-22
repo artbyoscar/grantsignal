@@ -45,7 +45,7 @@ export const sendDocumentProcessed = inngest.createFunction(
           }
         }
 
-        const emailHtml = render(
+        const emailHtml = await render(
           DocumentProcessedEmail({
             documentName: document.name,
             documentType: document.type,
@@ -55,7 +55,7 @@ export const sendDocumentProcessed = inngest.createFunction(
             extractedCommitments: document.sourceCommitments.length,
             warnings: warnings.length > 0 ? warnings : undefined,
             documentUrl: `${process.env.NEXT_PUBLIC_APP_URL}/documents`,
-          })
+          }) as any
         );
 
         const statusEmoji =

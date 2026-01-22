@@ -1,4 +1,4 @@
-import pdf from 'pdf-parse'
+import * as pdfParse from 'pdf-parse'
 import mammoth from 'mammoth'
 import { confidenceScoring } from '../ai/confidence-scoring'
 import type { ParsedDocumentMetadata, ParseConfidenceResult } from '@/types/confidence'
@@ -68,7 +68,7 @@ async function parsePDF(buffer: Buffer): Promise<ParseResult> {
   const warnings: string[] = []
 
   try {
-    const data = await pdf(buffer)
+    const data = await pdfParse(buffer)
     const text = data.text.trim()
     const pageCount = data.numpages
     const wordCount = countWords(text)

@@ -33,7 +33,7 @@ export function RichEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Calculate word and character counts
   const wordCount = value

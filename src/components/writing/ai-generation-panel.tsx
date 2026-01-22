@@ -5,7 +5,7 @@ import { Loader2, X, AlertTriangle } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { toast } from 'sonner'
 import { AIContentWrapper } from '@/components/ai/ai-content-wrapper'
-import type { Source as TrustSource } from '@/components/ai/ai-content-wrapper'
+import type { Source as TrustSource } from '@/types/source'
 
 export interface Source {
   documentId: string
@@ -28,10 +28,11 @@ type GenerationMode = 'memory_assist' | 'ai_draft'
 function convertToTrustSource(source: Source, index: number): TrustSource {
   return {
     id: `${source.documentId}-${source.chunkIndex}`,
-    title: source.documentName,
-    excerpt: source.text.slice(0, 150) + (source.text.length > 150 ? '...' : ''),
-    relevanceScore: source.score,
+    documentName: source.documentName,
     documentId: source.documentId,
+    documentType: 'other',
+    relevanceScore: source.score,
+    excerpt: source.text.slice(0, 150) + (source.text.length > 150 ? '...' : ''),
   }
 }
 

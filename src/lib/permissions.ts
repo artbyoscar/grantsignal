@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { UserRole } from "@prisma/client";
-import type { Context } from "~/server/context";
+import type { Context } from "@/server/context";
 
 /**
  * Permission middleware to require specific roles for tRPC procedures

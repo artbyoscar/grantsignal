@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { trpc } from '@/lib/trpc-client';
+import { api } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const WEBHOOK_EVENTS = [
   {
@@ -39,7 +39,6 @@ const WEBHOOK_EVENTS = [
 ] as const;
 
 export default function WebhooksPage() {
-  const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedWebhook, setSelectedWebhook] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -49,81 +48,71 @@ export default function WebhooksPage() {
   });
 
   // Queries
-  const { data: webhooks, isLoading } = trpc.webhooks.list.useQuery();
-  const utils = trpc.useContext();
+  const { data: webhooks, isLoading } = api.webhooks.list.useQuery();
+  const utils = api.useContext();
 
   // Mutations
-  const createMutation = trpc.webhooks.create.useMutation({
+  const createMutation = api.webhooks.create.useMutation({
     onSuccess: () => {
       utils.webhooks.list.invalidate();
       setIsCreateOpen(false);
       setFormData({ name: '', url: '', subscribedEvents: [] });
-      toast({
-        title: 'Webhook created',
+      toast.success('Webhook created', {
         description: 'Your webhook has been created successfully.',
       });
     },
     onError: (error) => {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: error.message,
-        variant: 'destructive',
       });
     },
   });
 
-  const pauseMutation = trpc.webhooks.pause.useMutation({
+  const pauseMutation = api.webhooks.pause.useMutation({
     onSuccess: () => {
       utils.webhooks.list.invalidate();
-      toast({
-        title: 'Webhook paused',
+      toast.success('Webhook paused', {
         description: 'The webhook has been paused.',
       });
     },
   });
 
-  const resumeMutation = trpc.webhooks.resume.useMutation({
+  const resumeMutation = api.webhooks.resume.useMutation({
     onSuccess: () => {
       utils.webhooks.list.invalidate();
-      toast({
-        title: 'Webhook resumed',
+      toast.success('Webhook resumed', {
         description: 'The webhook has been resumed.',
       });
     },
   });
 
-  const deleteMutation = trpc.webhooks.delete.useMutation({
+  const deleteMutation = api.webhooks.delete.useMutation({
     onSuccess: () => {
       utils.webhooks.list.invalidate();
-      toast({
-        title: 'Webhook deleted',
+      toast.success('Webhook deleted', {
         description: 'The webhook has been deleted.',
       });
     },
   });
 
-  const regenerateSecretMutation = trpc.webhooks.regenerateSecret.useMutation({
+  const regenerateSecretMutation = api.webhooks.regenerateSecret.useMutation({
     onSuccess: () => {
       utils.webhooks.list.invalidate();
-      toast({
-        title: 'Secret regenerated',
+      toast.success('Secret regenerated', {
         description: 'The signing secret has been regenerated.',
       });
     },
   });
 
-  const testMutation = trpc.webhooks.test.useMutation({
+  const testMutation = api.webhooks.test.useMutation({
     onSuccess: (data) => {
       if (data.success) {
-        toast({
-          title: 'Test successful',
+        toast.success('Test successful', {
           description: `Webhook responded with ${data.status} ${data.statusText}`,
         });
       } else {
-        toast({
-          title: 'Test failed',
+        toast.error('Test failed', {
           description: data.error || `HTTP ${data.status}`,
-          variant: 'destructive',
         });
       }
     },
@@ -131,10 +120,8 @@ export default function WebhooksPage() {
 
   const handleCreate = () => {
     if (!formData.name || !formData.url || formData.subscribedEvents.length === 0) {
-      toast({
-        title: 'Validation error',
+      toast.error('Validation error', {
         description: 'Please fill in all required fields.',
-        variant: 'destructive',
       });
       return;
     }
@@ -234,8 +221,8 @@ export default function WebhooksPage() {
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreate} disabled={createMutation.isLoading}>
-                {createMutation.isLoading ? 'Creating...' : 'Create Webhook'}
+              <Button onClick={handleCreate} disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Creating...' : 'Create Webhook'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -284,7 +271,7 @@ export default function WebhooksPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => testMutation.mutate({ id: webhook.id })}
-                      disabled={testMutation.isLoading}
+                      disabled={testMutation.isPending}
                     >
                       <TestTube className="h-4 w-4" />
                     </Button>

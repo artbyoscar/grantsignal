@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
-import { trpc } from '@/lib/trpc/client'
+import { api } from '@/lib/trpc/client'
 import {
   Building2,
   DollarSign,
@@ -29,12 +29,12 @@ export default function FunderProfilePage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
 
   // Fetch funder data
-  const { data: funder, isLoading, refetch } = trpc.funders.getById.useQuery({ funderId })
-  const { data: givingHistory } = trpc.funders.getGivingHistory.useQuery({ funderId })
-  const { data: peerIntel } = trpc.funders.getPeerIntelligence.useQuery({ funderId })
+  const { data: funder, isLoading, refetch } = api.funders.getById.useQuery({ funderId })
+  const { data: givingHistory } = api.funders.getGivingHistory.useQuery({ funderId })
+  const { data: peerIntel } = api.funders.getPeerIntelligence.useQuery({ funderId })
 
   // Sync mutation
-  const syncMutation = trpc.funders.sync990.useMutation({
+  const syncMutation = api.funders.sync990.useMutation({
     onSuccess: () => {
       setTimeout(() => refetch(), 3000) // Refetch after a delay
     },

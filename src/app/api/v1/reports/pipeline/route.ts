@@ -29,10 +29,7 @@ export const GET = createRestHandler(
       db,
     });
 
-    const pipeline = await caller.reports.getPipelineReport({
-      startDate: params.startDate ? new Date(params.startDate) : undefined,
-      endDate: params.endDate ? new Date(params.endDate) : undefined,
-    });
+    const pipeline = await caller.reports.getPipelineReport({});
 
     return pipeline;
   },

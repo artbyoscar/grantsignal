@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Circle } from "lucide-react";
-import { cn } from "~/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface Section {
   name: string;

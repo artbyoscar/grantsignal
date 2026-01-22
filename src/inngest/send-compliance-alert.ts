@@ -47,7 +47,7 @@ export const sendComplianceAlert = inngest.createFunction(
             return grantId;
           });
 
-        const emailHtml = render(
+        const emailHtml = await render(
           ComplianceAlertEmail({
             alertType: 'CONFLICT_DETECTED',
             severity: conflict.severity as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
@@ -56,7 +56,7 @@ export const sendComplianceAlert = inngest.createFunction(
             affectedGrants,
             actionRequired: conflict.suggestedResolution || 'Please review this conflict in the compliance dashboard.',
             complianceUrl: `${process.env.NEXT_PUBLIC_APP_URL}/compliance`,
-          })
+          }) as any
         );
 
         await resend.emails.send({

@@ -128,34 +128,22 @@ export default function DashboardPage() {
             <StatCard
               label="Active Grants"
               value={stats?.activeGrants.toString() || '0'}
-              trend={{
-                value: stats?.activeGrants === 0 ? 'No active grants' : 'Currently active',
-                direction: 'neutral',
-              }}
+              trendLabel={stats?.activeGrants === 0 ? 'No active grants' : 'Currently active'}
             />
             <StatCard
               label="Pending Decisions"
               value={stats?.pendingDecisions.toString() || '0'}
-              trend={{
-                value: stats?.pendingDecisions === 0 ? 'No pending' : 'Awaiting response',
-                direction: 'neutral',
-              }}
+              trendLabel={stats?.pendingDecisions === 0 ? 'No pending' : 'Awaiting response'}
             />
             <StatCard
               label="YTD Awarded"
               value={`$${stats?.ytdAwarded.toLocaleString() || '0'}`}
-              trend={{
-                value: stats?.ytdAwarded === 0 ? 'Start applying!' : 'This year',
-                direction: 'neutral',
-              }}
+              trendLabel={stats?.ytdAwarded === 0 ? 'Start applying!' : 'This year'}
             />
             <StatCard
               label="Win Rate"
               value={`${stats?.winRate.toFixed(0) || '0'}%`}
-              trend={{
-                value: stats?.winRate === 0 ? 'No data yet' : 'Success rate',
-                direction: 'neutral',
-              }}
+              trendLabel={stats?.winRate === 0 ? 'No data yet' : 'Success rate'}
             />
           </>
         )}

@@ -276,8 +276,7 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
             {/* Progress Steps */}
             <div className="w-full max-w-md space-y-3">
               <div className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                analysisStep === 'parsing' ? 'bg-blue-900/30 border border-blue-800' :
-                analysisStep === 'scoring' || analysisStep === 'complete' ? 'bg-slate-900' : 'bg-slate-900'
+                analysisStep === 'parsing' ? 'bg-blue-900/30 border border-blue-800' : 'bg-slate-900'
               }`}>
                 {analysisStep === 'parsing' ? (
                   <Loader2 className="w-5 h-5 text-blue-400 animate-spin flex-shrink-0" />
@@ -292,11 +291,11 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
 
               <div className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                 analysisStep === 'scoring' ? 'bg-blue-900/30 border border-blue-800' :
-                analysisStep === 'complete' ? 'bg-slate-900' : 'bg-slate-900 opacity-50'
+                ['complete', 'error'].includes(analysisStep as string) ? 'bg-slate-900' : 'bg-slate-900 opacity-50'
               }`}>
                 {analysisStep === 'scoring' ? (
                   <Loader2 className="w-5 h-5 text-blue-400 animate-spin flex-shrink-0" />
-                ) : analysisStep === 'complete' ? (
+                ) : ['complete', 'error'].includes(analysisStep as string) ? (
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                 ) : (
                   <div className="w-5 h-5 rounded-full border-2 border-slate-600 flex-shrink-0" />

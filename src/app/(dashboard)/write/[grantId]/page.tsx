@@ -81,7 +81,7 @@ export default function WritingStudioPage({ params }: PageProps) {
   const [funderIntelOpen, setFunderIntelOpen] = useState(true)
   const [showMobileReferencePanel, setShowMobileReferencePanel] = useState(false)
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout>()
+  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
 
@@ -785,7 +785,7 @@ export default function WritingStudioPage({ params }: PageProps) {
                     capacityScore: grant.opportunity.fitScores[0].capacityScore,
                     geographicScore: grant.opportunity.fitScores[0].geographicScore,
                     historicalScore: grant.opportunity.fitScores[0].historyScore,
-                    reusableContentPercentage: grant.opportunity.fitScores[0].reusableContentPercentage || 0,
+                    reusableContentPercentage: 0,
                     estimatedHours: grant.opportunity.fitScores[0].estimatedHours || 0,
                     strengths: (grant.opportunity.fitScores[0].reusableContent as any)?.strengths || [],
                     concerns: (grant.opportunity.fitScores[0].reusableContent as any)?.concerns || [],

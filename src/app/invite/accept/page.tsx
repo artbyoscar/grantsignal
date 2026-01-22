@@ -74,7 +74,7 @@ function AcceptInviteContent() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Loading invitation...</p>
+          <p className="text-slate-600">Loading invitation?...</p>
         </div>
       </div>
     )
@@ -102,8 +102,8 @@ function AcceptInviteContent() {
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Welcome to the Team!</h1>
           <p className="text-slate-600 mb-4">
-            You've successfully joined <strong>{invitation.organizationName}</strong> as a{' '}
-            <strong>{invitation.role.toLowerCase()}</strong>.
+            You've successfully joined <strong>{invitation?.organizationName}</strong> as a{' '}
+            <strong>{invitation?.role?.toLowerCase()}</strong>.
           </p>
           <p className="text-sm text-slate-500">Redirecting to dashboard...</p>
         </div>
@@ -120,7 +120,7 @@ function AcceptInviteContent() {
             <Mail className="w-16 h-16 text-blue-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-slate-900 mb-2">You're Invited!</h1>
             <p className="text-slate-600">
-              You've been invited to join <strong>{invitation.organizationName}</strong>
+              You've been invited to join <strong>{invitation?.organizationName}</strong>
             </p>
           </div>
 
@@ -129,14 +129,14 @@ function AcceptInviteContent() {
               <Shield className="w-5 h-5 text-slate-600" />
               <div>
                 <p className="text-sm font-medium text-slate-900">Role</p>
-                <p className="text-sm text-slate-600">{invitation.role}</p>
+                <p className="text-sm text-slate-600">{invitation?.role}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Mail className="w-5 h-5 text-slate-600" />
               <div>
                 <p className="text-sm font-medium text-slate-900">Email</p>
-                <p className="text-sm text-slate-600">{invitation.email}</p>
+                <p className="text-sm text-slate-600">{invitation?.email}</p>
               </div>
             </div>
           </div>
@@ -154,9 +154,11 @@ function AcceptInviteContent() {
             </Link>
           </div>
 
-          <p className="text-xs text-slate-500 text-center mt-4">
-            This invitation expires on {new Date(invitation.expiresAt).toLocaleDateString()}
-          </p>
+          {invitation?.expiresAt && (
+            <p className="text-xs text-slate-500 text-center mt-4">
+              This invitation expires on {new Date(invitation.expiresAt).toLocaleDateString()}
+            </p>
+          )}
         </div>
       </div>
     )

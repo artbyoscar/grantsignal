@@ -73,10 +73,10 @@ export const PUT = createRestHandler(
       return document;
     } catch (e) {
       // If not confirm upload, try status update
-      ctx.request = ctx.request.clone(); // Clone to re-read body
+      ctx.request = ctx.request.clone() as NextRequest; // Clone to re-read body
       const body = await parseJsonBody(ctx.request, updateStatusSchema);
       const document = await caller.documents.updateStatus({
-        id: params.id,
+        documentId: params.id,
         status: body.status,
       });
       return document;

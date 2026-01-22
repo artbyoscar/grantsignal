@@ -123,7 +123,7 @@ function DocumentRow({
 }) {
   const [showActions, setShowActions] = useState(false)
   const Icon = getFileIcon(document.mimeType)
-  const uploadDate = formatDistanceToNow(new Date(document.uploadedAt), { addSuffix: true })
+  const uploadDate = formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })
 
   return (
     <TableRow className="group hover:bg-slate-800/50">
@@ -145,7 +145,7 @@ function DocumentRow({
       {/* Upload Date */}
       <TableCell>
         <div className="text-sm text-slate-400">
-          {new Date(document.uploadedAt).toLocaleDateString('en-US', {
+          {new Date(document.createdAt).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

@@ -47,7 +47,7 @@ export function ResolveConflictModal({ conflict, onClose, onResolved }: Props) {
 
     resolveMutation.mutate({
       conflictId: conflict.id,
-      resolution: 'FLAGGED',
+      resolution: 'RESOLVED',
       notes: notes.trim()
     })
   }
@@ -60,7 +60,7 @@ export function ResolveConflictModal({ conflict, onClose, onResolved }: Props) {
 
     resolveMutation.mutate({
       conflictId: conflict.id,
-      resolution: 'IGNORE',
+      resolution: 'IGNORED',
       notes: notes.trim()
     })
   }

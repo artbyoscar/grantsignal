@@ -84,7 +84,7 @@ export const complianceRouter = router({
           organizationId: ctx.organizationId,
           actionType: 'SCAN_COMPLETED',
           description: `Batch extracted commitments from ${grants.length} grants`,
-          performedBy: ctx.auth.userId,
+          performedBy: ctx.auth.userId!,
           metadata: { grantCount: grants.length, results },
         },
       })
@@ -261,7 +261,7 @@ export const complianceRouter = router({
         input.conflictId,
         input.resolution,
         input.notes,
-        ctx.auth.userId
+        ctx.auth.userId!
       );
       return { success: true };
     }),

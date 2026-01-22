@@ -22,29 +22,35 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [ein, setEin] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showCreateForm, setShowCreateForm] = useState(false)
 
-  const searchMutation = api.funders.search.useMutation()
   const createMutation = api.funders.create.useMutation()
+
+  // Use query with enabled: false so it doesn't auto-fetch
+  const searchQuery_trpc = api.funders.search.useQuery(
+    {
+      query: searchQuery.trim(),
+      limit: 10,
+    },
+    {
+      enabled: false,
+    }
+  )
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
 
-    setIsSearching(true)
     setError(null)
     setSearchResults([])
     setShowCreateForm(false)
 
     try {
-      const results = await searchMutation.mutateAsync({
-        query: searchQuery.trim(),
-        limit: 10,
-      })
+      // Manually trigger the search
+      const { data } = await searchQuery_trpc.refetch()
 
+      const results = data || []
       setSearchResults(results)
 
       if (results.length === 0) {
@@ -53,8 +59,6 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
     } catch (err) {
       setError('Failed to search funders. Please try again.')
       console.error(err)
-    } finally {
-      setIsSearching(false)
     }
   }
 
@@ -67,7 +71,6 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
       return
     }
 
-    setIsCreating(true)
     setError(null)
 
     try {
@@ -84,8 +87,6 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
     } catch (err) {
       setError('Failed to create funder. Please try again.')
       console.error(err)
-    } finally {
-      setIsCreating(false)
     }
   }
 
@@ -95,7 +96,7 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isSearching) {
+    if (e.key === 'Enter' && !searchQuery_trpc.isLoading) {
       handleSearch()
     }
   }
@@ -134,14 +135,14 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
                 onKeyPress={handleKeyPress}
                 placeholder="e.g., Gates Foundation or 12-3456789"
                 className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
-                disabled={isSearching || isCreating}
+                disabled={searchQuery_trpc.isLoading || createMutation.isPending}
               />
               <button
                 onClick={handleSearch}
-                disabled={isSearching || isCreating || !searchQuery.trim()}
+                disabled={searchQuery_trpc.isLoading || createMutation.isPending || !searchQuery.trim()}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {isSearching ? (
+                {searchQuery_trpc.isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Searching...
@@ -237,7 +238,7 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                        disabled={isCreating}
+                        disabled={createMutation.isPending}
                       />
                     </div>
 
@@ -251,7 +252,7 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
                         onChange={e => setEin(e.target.value)}
                         placeholder="12-3456789"
                         className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
-                        disabled={isCreating}
+                        disabled={createMutation.isPending}
                       />
                       <p className="text-xs text-slate-400 mt-1">
                         Format: 12-3456789. If provided, we'll fetch 990 data automatically.
@@ -260,10 +261,10 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
 
                     <button
                       onClick={handleCreateFunder}
-                      disabled={isCreating || !searchQuery.trim()}
+                      disabled={createMutation.isPending || !searchQuery.trim()}
                       className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      {isCreating ? (
+                      {createMutation.isPending ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Creating & Syncing 990 Data...
@@ -282,7 +283,7 @@ export function ResearchFunderModal({ isOpen, onClose }: ResearchFunderModalProp
           )}
 
           {/* Empty State */}
-          {!isSearching && !searchResults.length && !showCreateForm && (
+          {!searchQuery_trpc.isLoading && !searchResults.length && !showCreateForm && (
             <div className="text-center py-12">
               <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
               <p className="text-slate-400">

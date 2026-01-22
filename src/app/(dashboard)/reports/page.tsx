@@ -165,30 +165,24 @@ export default function ReportsPage() {
       ) : stats ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="Total Grants"
+            label="Total Grants"
             value={stats.totalGrants}
-            icon={<FileText className="w-5 h-5" />}
-            description="Across all statuses"
+            trendLabel="Across all statuses"
           />
           <StatCard
-            title="Total Awarded YTD"
+            label="Total Awarded YTD"
             value={`$${(stats.ytdAwarded / 1000000).toFixed(1)}M`}
-            icon={<DollarSign className="w-5 h-5" />}
-            description="Current year funding"
-            trend={stats.ytdAwarded > 0 ? { value: 100, isPositive: true } : undefined}
+            trendLabel="Current year funding"
           />
           <StatCard
-            title="Win Rate"
+            label="Win Rate"
             value={`${stats.winRate.toFixed(0)}%`}
-            icon={<Target className="w-5 h-5" />}
-            description="Success rate"
-            trend={stats.winRate > 50 ? { value: stats.winRate, isPositive: true } : undefined}
+            trendLabel="Success rate"
           />
           <StatCard
-            title="Active Pipeline Value"
+            label="Active Pipeline Value"
             value={`$${(stats.pipelineValue / 1000000).toFixed(1)}M`}
-            icon={<TrendingUp className="w-5 h-5" />}
-            description="Potential funding"
+            trendLabel="Potential funding"
           />
         </div>
       ) : null}

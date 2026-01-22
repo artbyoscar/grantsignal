@@ -9,8 +9,11 @@ import { exportAndDownloadGrants } from '@/lib/export'
 import { toast } from 'sonner'
 import { AssigneeSelector } from '@/components/grants/assignee-selector'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import type { inferRouterOutputs } from '@trpc/server'
+import type { AppRouter } from '@/server/routers/_app'
 
-type Grant = NonNullable<ReturnType<typeof api.grants.list.useQuery>['data']>['grants'][number]
+type RouterOutputs = inferRouterOutputs<AppRouter>
+type Grant = RouterOutputs['grants']['list']['grants'][number]
 
 type Tab = 'all' | 'active' | 'awarded' | 'declined' | 'completed'
 
@@ -184,8 +187,8 @@ export function PipelineTable({ grants }: PipelineTableProps) {
           bValue = getDaysRemaining(b.opportunity?.deadline || b.deadline) ?? 999999
           break
         case 'fitScore':
-          aValue = a.opportunity?.fitScores?.[0]?.overallScore ?? -1
-          bValue = b.opportunity?.fitScores?.[0]?.overallScore ?? -1
+          aValue = (a.opportunity as any)?.fitScores?.[0]?.overallScore ?? -1
+          bValue = (b.opportunity as any)?.fitScores?.[0]?.overallScore ?? -1
           break
         default:
           return 0
@@ -499,7 +502,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm font-medium text-white">
-                        {formatCurrency(grant.amountRequested)}
+                        {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -531,7 +534,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                     </td>
                     <td className="px-4 py-3">
                       {(() => {
-                        const fitScore = grant.opportunity?.fitScores?.[0]
+                        const fitScore = (grant.opportunity as any)?.fitScores?.[0]
                         if (!fitScore) {
                           return <span className="text-sm text-slate-500">—</span>
                         }

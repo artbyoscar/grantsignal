@@ -6,13 +6,13 @@ import { clerkClient } from '@clerk/nextjs/server';
 export const notificationsRouter = router({
   // Get current user's notification preferences
   getPreferences: publicProcedure.query(async ({ ctx }) => {
-    if (!ctx.userId) {
+    if (!ctx.auth.userId) {
       throw new TRPCError({ code: 'UNAUTHORIZED' });
     }
 
     // Find the organization user record
     const orgUser = await ctx.db.organizationUser.findFirst({
-      where: { clerkUserId: ctx.userId },
+      where: { clerkUserId: ctx.auth.userId },
       include: { notificationPreferences: true },
     });
 
@@ -27,7 +27,7 @@ export const notificationsRouter = router({
     if (!orgUser.notificationPreferences) {
       // Get user email from Clerk
       const client = await clerkClient();
-      const user = await client.users.getUser(ctx.userId);
+      const user = await client.users.getUser(ctx.auth.userId);
       const email = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId)?.emailAddress;
 
       return {
@@ -58,13 +58,13 @@ export const notificationsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.userId) {
+      if (!ctx.auth.userId) {
         throw new TRPCError({ code: 'UNAUTHORIZED' });
       }
 
       // Find the organization user record
       const orgUser = await ctx.db.organizationUser.findFirst({
-        where: { clerkUserId: ctx.userId },
+        where: { clerkUserId: ctx.auth.userId },
       });
 
       if (!orgUser) {
@@ -76,7 +76,7 @@ export const notificationsRouter = router({
 
       // Get user email from Clerk
       const client = await clerkClient();
-      const user = await client.users.getUser(ctx.userId);
+      const user = await client.users.getUser(ctx.auth.userId);
       const email = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId)?.emailAddress;
 
       if (!email) {
@@ -142,13 +142,13 @@ export const notificationsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      if (!ctx.userId) {
+      if (!ctx.auth.userId) {
         throw new TRPCError({ code: 'UNAUTHORIZED' });
       }
 
       // Find the organization user record
       const orgUser = await ctx.db.organizationUser.findFirst({
-        where: { clerkUserId: ctx.userId },
+        where: { clerkUserId: ctx.auth.userId },
       });
 
       if (!orgUser) {
@@ -190,13 +190,13 @@ export const notificationsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.userId) {
+      if (!ctx.auth.userId) {
         throw new TRPCError({ code: 'UNAUTHORIZED' });
       }
 
       // Find the organization user record
       const orgUser = await ctx.db.organizationUser.findFirst({
-        where: { clerkUserId: ctx.userId },
+        where: { clerkUserId: ctx.auth.userId },
         include: { notificationPreferences: true },
       });
 

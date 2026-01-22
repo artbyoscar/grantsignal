@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
+import { api } from '@/lib/trpc/client';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -12,14 +12,14 @@ import { Bell, Mail, CheckCircle2, AlertTriangle, FileCheck, Clock } from 'lucid
 import { toast } from 'sonner';
 
 export default function NotificationsSettingsPage() {
-  const utils = trpc.useUtils();
+  const utils = api.useUtils();
   const [isSaving, setIsSaving] = useState(false);
 
   // Fetch current preferences
-  const { data: preferences, isLoading } = trpc.notifications.getPreferences.useQuery();
+  const { data: preferences, isLoading } = api.notifications.getPreferences.useQuery();
 
   // Mutation to update preferences
-  const updatePreferences = trpc.notifications.updatePreferences.useMutation({
+  const updatePreferences = api.notifications.updatePreferences.useMutation({
     onSuccess: () => {
       toast.success('Notification preferences updated');
       utils.notifications.getPreferences.invalidate();
@@ -32,7 +32,7 @@ export default function NotificationsSettingsPage() {
   });
 
   // Test notification mutation
-  const sendTestNotification = trpc.notifications.sendTestNotification.useMutation({
+  const sendTestNotification = api.notifications.sendTestNotification.useMutation({
     onSuccess: () => {
       toast.success('Test notification sent! Check your email.');
     },
@@ -359,7 +359,7 @@ export default function NotificationsSettingsPage() {
 }
 
 function NotificationHistory() {
-  const { data, isLoading } = trpc.notifications.getNotificationLogs.useQuery({
+  const { data, isLoading } = api.notifications.getNotificationLogs.useQuery({
     limit: 20,
     offset: 0,
   });
