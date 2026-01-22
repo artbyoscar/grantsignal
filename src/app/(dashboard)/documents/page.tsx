@@ -6,6 +6,7 @@ import { api } from '@/lib/trpc/client'
 import { DocumentType, ProcessingStatus } from '@/types/client-types'
 import { DocumentCard, DocumentCardSkeleton } from '@/components/documents/document-card'
 import { toast } from 'sonner'
+import { uploadToS3 } from '@/lib/upload'
 
 const documentTypes = [
   { name: 'All Documents', value: undefined, icon: FileText },
@@ -130,56 +131,33 @@ export default function DocumentsPage() {
         prev.map(f => (f.id === uploadId ? { ...f, documentId } : f))
       )
 
-      // Step 2: Upload file to S3
-      const xhr = new XMLHttpRequest()
-
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const progress = Math.round((e.loaded / e.total) * 100)
-          setUploadingFiles(prev =>
-            prev.map(f => (f.id === uploadId ? { ...f, progress } : f))
-          )
-        }
+      // Step 2: Upload file to S3 with progress tracking
+      await uploadToS3(file, uploadUrl, (progress) => {
+        setUploadingFiles(prev =>
+          prev.map(f => (f.id === uploadId ? { ...f, progress } : f))
+        )
       })
 
-      xhr.addEventListener('load', async () => {
-        if (xhr.status === 200) {
-          // Step 3: Confirm upload and trigger processing
-          setUploadingFiles(prev =>
-            prev.map(f => (f.id === uploadId ? { ...f, status: 'processing', progress: 100 } : f))
-          )
+      // Step 3: Confirm upload and trigger processing
+      setUploadingFiles(prev =>
+        prev.map(f => (f.id === uploadId ? { ...f, status: 'processing', progress: 100 } : f))
+      )
 
-          try {
-            await confirmUploadMutation.mutateAsync({ documentId })
+      await confirmUploadMutation.mutateAsync({ documentId })
 
-            setUploadingFiles(prev =>
-              prev.map(f => (f.id === uploadId ? { ...f, status: 'complete' } : f))
-            )
+      setUploadingFiles(prev =>
+        prev.map(f => (f.id === uploadId ? { ...f, status: 'complete' } : f))
+      )
 
-            toast.success(`${file.name} uploaded successfully`)
+      toast.success(`${file.name} uploaded successfully`)
 
-            // Refresh document list
-            refetch()
+      // Refresh document list
+      refetch()
 
-            // Remove from uploading list after a delay
-            setTimeout(() => {
-              setUploadingFiles(prev => prev.filter(f => f.id !== uploadId))
-            }, 2000)
-          } catch (error) {
-            throw new Error('Failed to confirm upload')
-          }
-        } else {
-          throw new Error('Upload failed')
-        }
-      })
-
-      xhr.addEventListener('error', () => {
-        throw new Error('Network error during upload')
-      })
-
-      xhr.open('PUT', uploadUrl)
-      xhr.setRequestHeader('Content-Type', file.type)
-      xhr.send(file)
+      // Remove from uploading list after a delay
+      setTimeout(() => {
+        setUploadingFiles(prev => prev.filter(f => f.id !== uploadId))
+      }, 2000)
     } catch (error) {
       console.error('Upload error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Upload failed'

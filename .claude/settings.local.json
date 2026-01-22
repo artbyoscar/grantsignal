@@ -42,7 +42,12 @@
       "Bash(git status:*)",
       "Bash(pnpm exec tsc:*)",
       "Bash(if exist nul echo File exists)",
-      "Bash(pnpm next build:*)"
+      "Bash(pnpm next build:*)",
+      "Bash(if [ -f .env ])",
+      "Bash(then echo \"=== Checking for AWS variables in .env ===\")",
+      "Bash(else echo \".env file does not exist\")",
+      "Bash(then echo \"=== .env file exists ===\")",
+      "Bash(pnpm run build:*)"
     ]
   }
 }
