@@ -132,45 +132,36 @@ export function ReportsDashboard({
           <ReportTypeCard
             title="Annual Report"
             description="Comprehensive funding summary for the year"
-            icon="file"
-            lastGenerated={new Date('2024-01-15')}
             onGenerate={() => handleGenerateReport('annual')}
             isGenerating={generatingReport === 'annual'}
           />
           <ReportTypeCard
             title="Quarterly Summary"
             description="Q4 2024 grants and outcomes"
-            icon="calendar"
-            lastGenerated={new Date('2024-10-01')}
             onGenerate={() => handleGenerateReport('quarterly')}
             isGenerating={generatingReport === 'quarterly'}
           />
           <ReportTypeCard
             title="Program Analysis"
             description="Detailed breakdown by program area"
-            icon="download"
-            lastGenerated={new Date('2024-09-15')}
             onGenerate={() => handleGenerateReport('program')}
             isGenerating={generatingReport === 'program'}
           />
           <ReportTypeCard
             title="Funder Report"
             description="Engagement and success metrics by funder"
-            icon="file"
             onGenerate={() => handleGenerateReport('funder')}
             isGenerating={generatingReport === 'funder'}
           />
           <ReportTypeCard
             title="Win/Loss Analysis"
             description="Success factors and improvement areas"
-            icon="download"
             onGenerate={() => handleGenerateReport('winloss')}
             isGenerating={generatingReport === 'winloss'}
           />
           <ReportTypeCard
             title="Custom Report"
             description="Build a custom report with selected metrics"
-            icon="calendar"
             onGenerate={() => handleGenerateReport('custom')}
             isGenerating={generatingReport === 'custom'}
           />
