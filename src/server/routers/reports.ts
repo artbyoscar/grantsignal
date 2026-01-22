@@ -621,4 +621,327 @@ export const reportsRouter = router({
       totalValue: statusGroups.reduce((sum, g) => sum + g.totalValue, 0),
     }
   }),
+
+  /**
+   * Get win rate data by month
+   */
+  getWinRateData: orgProcedure
+    .input(
+      z.object({
+        months: z.number().min(1).max(24).default(12),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { months } = input
+      const now = new Date()
+      const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1)
+
+      // Get all grants with AWARDED or DECLINED status
+      const grants = await ctx.db.grant.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          status: { in: ['AWARDED', 'DECLINED'] },
+          updatedAt: { gte: startDate },
+        },
+        select: {
+          status: true,
+          awardedAt: true,
+          updatedAt: true,
+        },
+      })
+
+      // Group by month and calculate win rate
+      const monthlyData = new Map<string, { awarded: number; declined: number }>()
+
+      grants.forEach((grant) => {
+        const date = grant.status === 'AWARDED' && grant.awardedAt ? grant.awardedAt : grant.updatedAt
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+
+        const existing = monthlyData.get(monthKey) || { awarded: 0, declined: 0 }
+        if (grant.status === 'AWARDED') {
+          existing.awarded++
+        } else {
+          existing.declined++
+        }
+        monthlyData.set(monthKey, existing)
+      })
+
+      // Convert to array and calculate win rate
+      const result = Array.from(monthlyData.entries())
+        .map(([month, data]) => ({
+          month,
+          rate: data.awarded + data.declined > 0
+            ? Math.round((data.awarded / (data.awarded + data.declined)) * 100)
+            : 0,
+          awarded: data.awarded,
+          declined: data.declined,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month))
+
+      return result
+    }),
+
+  /**
+   * Get funding by program area
+   */
+  getFundingByProgram: orgProcedure.query(async ({ ctx }) => {
+    const grants = await ctx.db.grant.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+        status: 'AWARDED',
+        amountAwarded: { not: null },
+      },
+      include: {
+        program: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    })
+
+    // Group by program and sum amounts
+    const programMap = new Map<string, { name: string; value: number; count: number }>()
+
+    grants.forEach((grant) => {
+      const programName = grant.program?.name || 'Unassigned'
+      const existing = programMap.get(programName) || { name: programName, value: 0, count: 0 }
+      existing.value += Number(grant.amountAwarded || 0)
+      existing.count++
+      programMap.set(programName, existing)
+    })
+
+    // Define color palette for programs
+    const colors = [
+      'hsl(var(--chart-1))',
+      'hsl(var(--chart-2))',
+      'hsl(var(--chart-3))',
+      'hsl(var(--chart-4))',
+      'hsl(var(--chart-5))',
+    ]
+
+    return Array.from(programMap.values())
+      .map((item, index) => ({
+        ...item,
+        color: colors[index % colors.length],
+      }))
+      .sort((a, b) => b.value - a.value)
+  }),
+
+  /**
+   * Get pipeline by stage
+   */
+  getPipelineByStage: orgProcedure.query(async ({ ctx }) => {
+    const grants = await ctx.db.grant.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+      },
+      select: {
+        status: true,
+        amountRequested: true,
+        amountAwarded: true,
+      },
+    })
+
+    // Define pipeline stages with colors
+    const stageConfig: Record<GrantStatus, { label: string; color: string }> = {
+      PROSPECT: { label: 'Prospect', color: 'hsl(var(--chart-1))' },
+      RESEARCHING: { label: 'Researching', color: 'hsl(var(--chart-2))' },
+      WRITING: { label: 'Writing', color: 'hsl(var(--chart-3))' },
+      REVIEW: { label: 'Review', color: 'hsl(var(--chart-4))' },
+      SUBMITTED: { label: 'Submitted', color: 'hsl(var(--chart-5))' },
+      PENDING: { label: 'Pending', color: 'hsl(var(--chart-1))' },
+      AWARDED: { label: 'Awarded', color: 'hsl(142 71% 45%)' },
+      DECLINED: { label: 'Declined', color: 'hsl(0 72% 51%)' },
+      ACTIVE: { label: 'Active', color: 'hsl(var(--chart-2))' },
+      CLOSEOUT: { label: 'Closeout', color: 'hsl(var(--chart-3))' },
+      COMPLETED: { label: 'Completed', color: 'hsl(var(--chart-4))' },
+    }
+
+    // Group by status
+    const stageMap = new Map<GrantStatus, { count: number; value: number }>()
+
+    grants.forEach((grant) => {
+      const existing = stageMap.get(grant.status) || { count: 0, value: 0 }
+      existing.count++
+      const amount = grant.status === 'AWARDED'
+        ? Number(grant.amountAwarded || 0)
+        : Number(grant.amountRequested || 0)
+      existing.value += amount
+      stageMap.set(grant.status, existing)
+    })
+
+    return Object.entries(stageConfig)
+      .map(([status, config]) => {
+        const data = stageMap.get(status as GrantStatus) || { count: 0, value: 0 }
+        return {
+          name: config.label,
+          status: status as GrantStatus,
+          count: data.count,
+          value: data.value,
+          color: config.color,
+        }
+      })
+      .filter((stage) => stage.count > 0)
+      .sort((a, b) => b.value - a.value)
+  }),
+
+  /**
+   * Get top funders by awarded amount
+   */
+  getTopFunders: orgProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { limit } = input
+
+      const grants = await ctx.db.grant.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          status: 'AWARDED',
+          amountAwarded: { not: null },
+        },
+        include: {
+          funder: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+        },
+      })
+
+      // Group by funder and sum amounts
+      const funderMap = new Map<string, {
+        id: string
+        name: string
+        type: FunderType | null
+        totalAwarded: number
+        grantCount: number
+      }>()
+
+      grants.forEach((grant) => {
+        if (!grant.funder) return
+
+        const existing = funderMap.get(grant.funder.id) || {
+          id: grant.funder.id,
+          name: grant.funder.name,
+          type: grant.funder.type,
+          totalAwarded: 0,
+          grantCount: 0,
+        }
+        existing.totalAwarded += Number(grant.amountAwarded || 0)
+        existing.grantCount++
+        funderMap.set(grant.funder.id, existing)
+      })
+
+      return Array.from(funderMap.values())
+        .sort((a, b) => b.totalAwarded - a.totalAwarded)
+        .slice(0, limit)
+    }),
+
+  /**
+   * Get year-over-year comparison
+   */
+  getYoYComparison: orgProcedure.query(async ({ ctx }) => {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const lastYear = currentYear - 1
+    const twoYearsAgo = currentYear - 2
+
+    // Get grants from last 2 years
+    const startDate = new Date(twoYearsAgo, 0, 1)
+
+    const grants = await ctx.db.grant.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+        status: 'AWARDED',
+        awardedAt: { gte: startDate },
+      },
+      select: {
+        awardedAt: true,
+        amountAwarded: true,
+      },
+    })
+
+    // Group by quarter and year
+    const quarterData = new Map<string, { year: number; quarter: number; count: number; amount: number }>()
+
+    grants.forEach((grant) => {
+      if (!grant.awardedAt) return
+
+      const date = grant.awardedAt
+      const year = date.getFullYear()
+      const quarter = Math.floor(date.getMonth() / 3) + 1
+      const key = `${year}-Q${quarter}`
+
+      const existing = quarterData.get(key) || { year, quarter, count: 0, amount: 0 }
+      existing.count++
+      existing.amount += Number(grant.amountAwarded || 0)
+      quarterData.set(key, existing)
+    })
+
+    // Convert to array and organize by quarter for comparison
+    const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
+    const comparison = quarters.map((quarter) => {
+      const quarterNum = parseInt(quarter.substring(1))
+      const lastYearData = quarterData.get(`${lastYear}-${quarter}`) || { count: 0, amount: 0 }
+      const currentYearData = quarterData.get(`${currentYear}-${quarter}`) || { count: 0, amount: 0 }
+
+      return {
+        quarter,
+        lastYear: {
+          year: lastYear,
+          count: lastYearData.count,
+          amount: lastYearData.amount,
+        },
+        currentYear: {
+          year: currentYear,
+          count: currentYearData.count,
+          amount: currentYearData.amount,
+        },
+        change: lastYearData.count > 0
+          ? Math.round(((currentYearData.count - lastYearData.count) / lastYearData.count) * 100)
+          : currentYearData.count > 0 ? 100 : 0,
+      }
+    })
+
+    return comparison
+  }),
+
+  /**
+   * Generate report (mock implementation)
+   */
+  generateReport: orgProcedure
+    .input(
+      z.object({
+        type: z.enum(['monthly', 'executive', 'pipeline', 'winrate', 'funder']),
+        dateRange: z.object({
+          startDate: z.string(),
+          endDate: z.string(),
+        }).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { type, dateRange } = input
+
+      // For now, return mock success response
+      // In the future, this will generate PDF/CSV reports
+      return {
+        success: true,
+        message: `${type} report generation initiated`,
+        reportType: type,
+        dateRange: dateRange || {
+          startDate: new Date(new Date().getFullYear(), 0, 1).toISOString(),
+          endDate: new Date().toISOString(),
+        },
+        // Future: will return PDF buffer or download URL
+        downloadUrl: null,
+      }
+    }),
 })

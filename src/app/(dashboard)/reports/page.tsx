@@ -1,258 +1,185 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, TrendingUp, Target, Award, DollarSign, Calendar } from 'lucide-react'
-import { MonthlySummary } from '@/components/reports/monthly-summary'
-import { ExecutiveSummary } from '@/components/reports/executive-summary'
-import { StatCard } from '@/components/dashboard/stat-card'
+import { FileText, Target, Award, ClipboardList, CheckSquare } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { api } from '@/lib/trpc/client'
-
-type ReportType = 'monthly' | 'executive' | 'pipeline' | 'winrate' | 'funder' | null
+import { DateRangeSelector } from '@/components/reports/date-range-selector'
+import { ExportButtons } from '@/components/reports/export-buttons'
+import { WinRateChart } from '@/components/reports/win-rate-chart'
+import { FundingByProgramChart } from '@/components/reports/funding-by-program-chart'
+import { PipelineFunnel } from '@/components/reports/pipeline-funnel'
+import { TopFundersChart } from '@/components/reports/top-funders-chart'
+import { YoYComparisonChart } from '@/components/reports/yoy-comparison-chart'
 
 export default function ReportsPage() {
-  const [activeReport, setActiveReport] = useState<ReportType>(null)
-  const [dateRange] = useState({
+  const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   })
 
-  // Fetch grants data for quick stats
-  const { data: grantsData, isLoading: grantsLoading } = api.grants.list.useQuery({})
+  // Fetch chart data
+  const { data: winRateData, isLoading: winRateLoading } = api.reports.getWinRateData.useQuery({
+    months: 12,
+  })
 
-  // Transform Decimal to number at the boundary
-  const grants = (grantsData?.grants ?? []).map(g => ({
-    ...g,
-    amountRequested: g.amountRequested ? Number(g.amountRequested) : null,
-    amountAwarded: g.amountAwarded ? Number(g.amountAwarded) : null,
-  }))
+  const { data: fundingByProgramRawData, isLoading: fundingLoading } = api.reports.getFundingByProgram.useQuery()
 
-  // Calculate quick stats
-  const stats = grants.length > 0
-    ? (() => {
-        const currentYear = new Date().getFullYear()
+  const { data: pipelineData, isLoading: pipelineLoading } = api.reports.getPipelineByStage.useQuery()
 
-        // Total grants
-        const totalGrants = grants.length
+  const { data: topFundersData, isLoading: fundersLoading } = api.reports.getTopFunders.useQuery({
+    limit: 10,
+  })
 
-        // YTD Awarded
-        const ytdAwarded = grants
-          .filter(
-            (g) =>
-              g.amountAwarded &&
-              g.awardedAt &&
-              new Date(g.awardedAt).getFullYear() === currentYear
-          )
-          .reduce((sum, g) => sum + (g.amountAwarded ?? 0), 0)
+  const { data: yoyData, isLoading: yoyLoading } = api.reports.getYoYComparison.useQuery()
 
-        // Win Rate
-        const decidedGrants = grants.filter(
-          (g) => g.status === 'AWARDED' || g.status === 'DECLINED'
-        )
-        const awardedGrants = grants.filter((g) => g.status === 'AWARDED')
-        const winRate = decidedGrants.length > 0 ? (awardedGrants.length / decidedGrants.length) * 100 : 0
+  // Transform data for components
+  const winRateChartData = winRateData?.map((d) => ({
+    month: new Date(d.month).toLocaleDateString('en-US', { month: 'short' }),
+    rate: d.rate,
+  })) || []
 
-        // Active Pipeline Value
-        const pipelineStatuses = ['PROSPECT', 'RESEARCHING', 'WRITING', 'REVIEW', 'SUBMITTED', 'PENDING']
-        const pipelineValue = grants
-          .filter((g) => pipelineStatuses.includes(g.status))
-          .reduce((sum, g) => sum + (g.amountRequested ?? 0), 0)
+  const funnelStages = pipelineData?.slice(0, 4).map((stage) => ({
+    name: stage.name,
+    value: stage.value,
+    count: stage.count,
+    color: stage.color,
+  })) || []
 
-        return {
-          totalGrants,
-          ytdAwarded,
-          winRate,
-          pipelineValue,
-        }
-      })()
-    : null
+  const funnelTotal = funnelStages.reduce((sum, stage) => sum + stage.value, 0)
 
-  const reportCards = [
+  const topFundersChartData = topFundersData?.map((f) => ({
+    name: f.name,
+    amount: f.totalAwarded,
+  })) || []
+
+  const yoyChartData = yoyData?.map((d) => ({
+    category: d.quarter,
+    currentYear: d.currentYear.amount,
+    previousYear: d.lastYear.amount,
+  })) || []
+
+  const currentYear = new Date().getFullYear()
+  const previousYear = currentYear - 1
+
+  // Report type cards
+  const reportTypes = [
     {
-      id: 'executive' as const,
-      title: 'Executive Summary',
-      description: 'One-page overview of grant activity and key metrics',
+      id: 'executive',
+      title: 'Executive',
+      description: 'One-page overview',
       icon: FileText,
-      color: 'from-emerald-500 to-teal-500',
     },
     {
-      id: 'monthly' as const,
-      title: 'Monthly Summary',
-      description: 'Comprehensive monthly performance report for leadership',
-      icon: Calendar,
-      color: 'from-blue-500 to-cyan-500',
+      id: 'pipeline',
+      title: 'Pipeline',
+      description: 'All grants by status',
+      icon: ClipboardList,
     },
     {
-      id: 'pipeline' as const,
-      title: 'Pipeline Report',
-      description: 'All grants by status with amounts and details',
-      icon: TrendingUp,
-      color: 'from-purple-500 to-pink-500',
-      comingSoon: true,
-    },
-    {
-      id: 'winrate' as const,
-      title: 'Win/Loss Analysis',
-      description: 'Success rates by funder type and program area',
+      id: 'historical',
+      title: 'Historical',
+      description: 'Trends over time',
       icon: Target,
-      color: 'from-amber-500 to-orange-500',
-      comingSoon: true,
     },
     {
-      id: 'funder' as const,
-      title: 'Funder Report',
-      description: 'Deep dive on specific funder relationships',
+      id: 'funder',
+      title: 'Funder',
+      description: 'Relationship deep dive',
       icon: Award,
-      color: 'from-red-500 to-pink-500',
-      comingSoon: true,
+    },
+    {
+      id: 'compliance',
+      title: 'Compliance',
+      description: 'Reporting requirements',
+      icon: CheckSquare,
     },
   ]
 
-  // If a report is active, show it
-  if (activeReport === 'monthly') {
-    return (
-      <div className="space-y-6">
-        <div>
-          <button
-            onClick={() => setActiveReport(null)}
-            className="text-sm text-slate-400 hover:text-white transition-colors mb-4"
-          >
-            ← Back to Reports
-          </button>
-          <h1 className="text-3xl font-bold text-white">Monthly Summary Report</h1>
-          <p className="text-slate-400 mt-1">
-            Generate comprehensive monthly reports for leadership review
-          </p>
-        </div>
-
-        <MonthlySummary />
-      </div>
-    )
-  }
-
-  if (activeReport === 'executive') {
-    return (
-      <div className="space-y-6">
-        <div>
-          <button
-            onClick={() => setActiveReport(null)}
-            className="text-sm text-slate-400 hover:text-white transition-colors mb-4"
-          >
-            ← Back to Reports
-          </button>
-          <h1 className="text-3xl font-bold text-white">Executive Summary Report</h1>
-          <p className="text-slate-400 mt-1">
-            One-page overview of grant activity and portfolio performance
-          </p>
-        </div>
-
-        <ExecutiveSummary dateRange={dateRange} />
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Reports & Analytics</h1>
-        <p className="text-slate-400 mt-1">
-          Generate comprehensive reports on your grant portfolio and performance
-        </p>
+    <div className="space-y-6">
+      {/* Header with Date Range Selector */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Reports & Analytics</h1>
+          <p className="text-slate-400 mt-1">
+            Comprehensive insights into your grant portfolio performance
+          </p>
+        </div>
+        <DateRangeSelector value={dateRange} onChange={setDateRange} />
       </div>
 
-      {/* Quick Stats */}
-      {grantsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-      ) : stats ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            label="Total Grants"
-            value={stats.totalGrants}
-            trendLabel="Across all statuses"
+      {/* Top Row: Win Rate + Funding Donut (2 columns) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {winRateLoading ? (
+          <Skeleton className="h-[400px]" />
+        ) : (
+          <WinRateChart
+            data={winRateChartData}
+            dateRange={`${new Date(dateRange.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - ${new Date(dateRange.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`}
           />
-          <StatCard
-            label="Total Awarded YTD"
-            value={`$${(stats.ytdAwarded / 1000000).toFixed(1)}M`}
-            trendLabel="Current year funding"
-          />
-          <StatCard
-            label="Win Rate"
-            value={`${stats.winRate.toFixed(0)}%`}
-            trendLabel="Success rate"
-          />
-          <StatCard
-            label="Active Pipeline Value"
-            value={`$${(stats.pipelineValue / 1000000).toFixed(1)}M`}
-            trendLabel="Potential funding"
-          />
-        </div>
-      ) : null}
+        )}
 
-      {/* Report Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {reportCards.map((report) => {
-          const Icon = report.icon
-          return (
-            <button
-              key={report.id}
-              onClick={() => !report.comingSoon && setActiveReport(report.id)}
-              disabled={report.comingSoon}
-              className={`
-                relative overflow-hidden bg-slate-800 border border-slate-700 rounded-lg p-6
-                transition-all duration-200 text-left
-                ${
-                  report.comingSoon
-                    ? 'opacity-60 cursor-not-allowed'
-                    : 'hover:border-slate-600 hover:shadow-lg hover:scale-[1.02] cursor-pointer'
-                }
-              `}
-            >
-              {/* Background gradient */}
-              <div
-                className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${report.color} opacity-10 blur-3xl`}
-              />
-
-              <div className="relative">
-                <div className="flex items-start justify-between mb-4">
-                  <div
-                    className={`p-3 rounded-lg bg-gradient-to-br ${report.color} bg-opacity-10`}
-                  >
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  {report.comingSoon && (
-                    <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded">
-                      Coming Soon
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="text-lg font-semibold text-white mb-2">{report.title}</h3>
-                <p className="text-sm text-slate-400">{report.description}</p>
-
-                {!report.comingSoon && (
-                  <div className="mt-4 text-sm font-medium text-blue-400">
-                    Click to generate →
-                  </div>
-                )}
-              </div>
-            </button>
-          )
-        })}
+        {fundingLoading ? (
+          <Skeleton className="h-[400px]" />
+        ) : (
+          <FundingByProgramChart data={fundingByProgramRawData || []} />
+        )}
       </div>
 
-      {/* Quick Info */}
+      {/* Middle Row: Funnel + Top Funders + YoY (3 columns) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {pipelineLoading ? (
+          <Skeleton className="h-[400px]" />
+        ) : (
+          <PipelineFunnel stages={funnelStages} total={funnelTotal} />
+        )}
+
+        {fundersLoading ? (
+          <Skeleton className="h-[400px]" />
+        ) : (
+          <TopFundersChart funders={topFundersChartData} />
+        )}
+
+        {yoyLoading ? (
+          <Skeleton className="h-[400px]" />
+        ) : (
+          <YoYComparisonChart
+            data={yoyChartData}
+            currentYearLabel={currentYear.toString()}
+            previousYearLabel={previousYear.toString()}
+          />
+        )}
+      </div>
+
+      {/* Report Types (5 columns) */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-white mb-2">About Reports</h2>
-        <p className="text-sm text-slate-400 leading-relaxed">
-          Reports are designed for easy sharing with leadership, board members, and stakeholders.
-          Each report can be exported as PDF and scheduled for automatic delivery. Historical
-          reports are saved for future reference and trend analysis.
-        </p>
+        <h2 className="text-xl font-semibold text-white mb-4">Report Types</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {reportTypes.map((report) => {
+            const Icon = report.icon
+            return (
+              <button
+                key={report.id}
+                className="flex flex-col items-center gap-3 p-4 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all group"
+              >
+                <div className="p-3 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition">
+                  <Icon className="h-6 w-6 text-blue-400" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold text-white mb-1">{report.title}</h3>
+                  <p className="text-xs text-slate-400">{report.description}</p>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Export Buttons */}
+      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">Export Options</h2>
+        <ExportButtons />
       </div>
     </div>
   )
