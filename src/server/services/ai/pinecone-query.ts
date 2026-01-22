@@ -1,11 +1,31 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 
-const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+let _pinecone: Pinecone | null = null;
+let _openai: OpenAI | null = null;
+
+function getPinecone(): Pinecone {
+  if (!_pinecone) {
+    if (!process.env.PINECONE_API_KEY) {
+      throw new Error('PINECONE_API_KEY is not set');
+    }
+    _pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+  }
+  return _pinecone;
+}
+
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not set');
+    }
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await openai.embeddings.create({
+  const response = await getOpenAI().embeddings.create({
     model: 'text-embedding-3-large',
     input: text,
   });
@@ -25,7 +45,7 @@ export async function queryOrganizationMemory({
 }) {
   const queryEmbedding = await generateEmbedding(query);
 
-  const index = pinecone.index(process.env.PINECONE_INDEX!);
+  const index = getPinecone().index(process.env.PINECONE_INDEX!);
   const namespace = index.namespace(organizationId);
 
   const results = await namespace.query({
