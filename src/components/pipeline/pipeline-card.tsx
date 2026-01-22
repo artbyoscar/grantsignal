@@ -6,20 +6,22 @@ import { useDraggable } from '@dnd-kit/core'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { api } from '@/lib/trpc/client'
 
-// Grant Status Enum
-enum GrantStatus {
-  PROSPECT = 'PROSPECT',
-  RESEARCHING = 'RESEARCHING',
-  WRITING = 'WRITING',
-  REVIEW = 'REVIEW',
-  SUBMITTED = 'SUBMITTED',
-  PENDING = 'PENDING',
-  AWARDED = 'AWARDED',
-  DECLINED = 'DECLINED',
-  ACTIVE = 'ACTIVE',
-  CLOSEOUT = 'CLOSEOUT',
-  COMPLETED = 'COMPLETED',
-}
+// Grant Status Enum (client-safe)
+const GrantStatus = {
+  PROSPECT: 'PROSPECT',
+  RESEARCHING: 'RESEARCHING',
+  WRITING: 'WRITING',
+  REVIEW: 'REVIEW',
+  SUBMITTED: 'SUBMITTED',
+  PENDING: 'PENDING',
+  AWARDED: 'AWARDED',
+  DECLINED: 'DECLINED',
+  ACTIVE: 'ACTIVE',
+  CLOSEOUT: 'CLOSEOUT',
+  COMPLETED: 'COMPLETED'
+} as const
+
+type GrantStatus = typeof GrantStatus[keyof typeof GrantStatus]
 
 // Grant type definition (client-safe, no server imports)
 interface Grant {

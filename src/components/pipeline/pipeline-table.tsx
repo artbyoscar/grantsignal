@@ -9,20 +9,22 @@ import { toast } from 'sonner'
 import { AssigneeSelector } from '@/components/grants/assignee-selector'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-// Grant Status Enum
-enum GrantStatus {
-  PROSPECT = 'PROSPECT',
-  RESEARCHING = 'RESEARCHING',
-  WRITING = 'WRITING',
-  REVIEW = 'REVIEW',
-  SUBMITTED = 'SUBMITTED',
-  PENDING = 'PENDING',
-  AWARDED = 'AWARDED',
-  DECLINED = 'DECLINED',
-  ACTIVE = 'ACTIVE',
-  CLOSEOUT = 'CLOSEOUT',
-  COMPLETED = 'COMPLETED',
-}
+// Grant Status Enum (client-safe)
+const GrantStatus = {
+  PROSPECT: 'PROSPECT',
+  RESEARCHING: 'RESEARCHING',
+  WRITING: 'WRITING',
+  REVIEW: 'REVIEW',
+  SUBMITTED: 'SUBMITTED',
+  PENDING: 'PENDING',
+  AWARDED: 'AWARDED',
+  DECLINED: 'DECLINED',
+  ACTIVE: 'ACTIVE',
+  CLOSEOUT: 'CLOSEOUT',
+  COMPLETED: 'COMPLETED'
+} as const
+
+type GrantStatus = typeof GrantStatus[keyof typeof GrantStatus]
 
 // Grant type definition (client-safe, no server imports)
 interface Grant {
@@ -81,7 +83,7 @@ const TABS: Array<{ id: Tab; label: string; statuses: GrantStatus[] | 'all' }> =
 ]
 
 // Status badge colors
-const STATUS_COLORS: Record<GrantStatus, string> = {
+const STATUS_COLORS: Record<string, string> = {
   PROSPECT: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
   RESEARCHING: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
   WRITING: 'bg-blue-500/20 text-blue-300 border-blue-500/30',

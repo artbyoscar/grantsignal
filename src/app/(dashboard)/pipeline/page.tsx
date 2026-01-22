@@ -19,17 +19,22 @@ import { toast } from 'sonner'
 import { PipelineTable } from '@/components/pipeline/pipeline-table'
 import { DraggableGrantCard as DraggableCard, GrantCard as StaticGrantCard } from '@/components/pipeline/pipeline-card'
 
-// Grant Status Enum
-enum GrantStatus {
-  PROSPECT = 'PROSPECT',
-  RESEARCHING = 'RESEARCHING',
-  WRITING = 'WRITING',
-  REVIEW = 'REVIEW',
-  SUBMITTED = 'SUBMITTED',
-  PENDING = 'PENDING',
-  AWARDED = 'AWARDED',
-  DECLINED = 'DECLINED',
-}
+// Grant Status Enum (client-safe)
+const GrantStatus = {
+  PROSPECT: 'PROSPECT',
+  RESEARCHING: 'RESEARCHING',
+  WRITING: 'WRITING',
+  REVIEW: 'REVIEW',
+  SUBMITTED: 'SUBMITTED',
+  PENDING: 'PENDING',
+  AWARDED: 'AWARDED',
+  DECLINED: 'DECLINED',
+  ACTIVE: 'ACTIVE',
+  CLOSEOUT: 'CLOSEOUT',
+  COMPLETED: 'COMPLETED'
+} as const
+
+type GrantStatus = typeof GrantStatus[keyof typeof GrantStatus]
 
 // Funder Type Enum
 enum FunderType {
@@ -45,19 +50,21 @@ enum FunderType {
 // Grant type definition (client-safe, no server imports)
 interface Grant {
   id: string
-  title: string
   status: GrantStatus
   deadline: Date | null
   amountRequested: number | null
   amountAwarded: number | null
-  assigneeId: string | null
+  assignedToId: string | null
   funderId: string | null
   opportunityId: string | null
+  programId: string | null
   createdAt: Date
   updatedAt: Date
-  funder?: { id: string; name: string } | null
+  funder?: { id: string; name: string; type?: string } | null
   opportunity?: { id: string; title: string; deadline: Date | null } | null
-  assignee?: { id: string; name: string | null; email: string } | null
+  program?: { id: string; name: string } | null
+  assignedTo?: { id: string; displayName: string | null; avatarUrl: string | null; clerkUserId: string } | null
+  _count?: { documents: number; commitments: number }
 }
 
 // Column configuration with colors
@@ -255,13 +262,13 @@ export default function PipelinePage() {
   })
 
   // Group grants by status
-  const grantsByStatus = grants.reduce((acc, grant) => {
+  const grantsByStatus = grants.reduce<Record<string, Grant[]>>((acc, grant) => {
     if (!acc[grant.status]) {
       acc[grant.status] = []
     }
     acc[grant.status].push(grant)
     return acc
-  }, {} as Record<GrantStatus, Grant[]>)
+  }, {})
 
   // Calculate stats
   const totalValue = grants.reduce((sum, grant) => {
