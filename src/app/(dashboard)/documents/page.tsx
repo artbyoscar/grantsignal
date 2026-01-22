@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, DragEvent, ChangeEvent } from 'react'
-import { FileText, Upload, Search, FolderOpen, File, X, Loader2, AlertCircle, CheckCircle, Clock, XCircle, Eye } from 'lucide-react'
+import { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
+import { FileText, Upload, Search, FolderOpen, File, X, Loader2, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { DocumentType, ProcessingStatus } from '@/types/client-types'
 import { DocumentCard, DocumentCardSkeleton } from '@/components/documents/document-card'
@@ -50,8 +50,30 @@ export default function DocumentsPage() {
     type: selectedType,
   })
 
+  // Check if any documents are currently processing
+  const hasProcessingDocs = documents?.some(
+    doc => doc.status === ProcessingStatus.PROCESSING || doc.status === ProcessingStatus.PENDING
+  )
+
+  // Poll for status updates every 2 seconds when there are processing documents
+  api.documents.list.useQuery(
+    { type: selectedType },
+    {
+      enabled: hasProcessingDocs === true,
+      refetchInterval: 2000, // Poll every 2 seconds
+      refetchIntervalInBackground: false, // Stop polling when tab is not active
+    }
+  )
+
   // Fetch document health stats
   const { data: health } = api.documents.health.useQuery()
+
+  // Also poll health stats when processing documents
+  api.documents.health.useQuery(undefined, {
+    enabled: hasProcessingDocs === true,
+    refetchInterval: 2000,
+    refetchIntervalInBackground: false,
+  })
 
   // Search query (debounced)
   const { data: searchResults, isLoading: isSearching } = api.documents.search.useQuery(
@@ -72,6 +94,43 @@ export default function DocumentsPage() {
 
   // Approve document mutation
   const approveDocumentMutation = api.documents.approveDocument.useMutation()
+
+  // Track previous document statuses to detect when processing completes
+  const prevDocumentsRef = useRef<typeof documents>(undefined)
+
+  useEffect(() => {
+    if (!documents || !prevDocumentsRef.current) {
+      prevDocumentsRef.current = documents
+      return
+    }
+
+    // Check for documents that just completed processing
+    documents.forEach(doc => {
+      const prevDoc = prevDocumentsRef.current?.find(d => d.id === doc.id)
+
+      // If document was PROCESSING and is now COMPLETED/NEEDS_REVIEW
+      if (prevDoc && prevDoc.status === ProcessingStatus.PROCESSING) {
+        if (doc.status === ProcessingStatus.COMPLETED) {
+          toast.success('Document processing complete', {
+            description: `${doc.name} is ready with ${doc.confidenceScore || 0}% confidence`,
+            icon: <CheckCircle className="w-5 h-5" />,
+          })
+        } else if (doc.status === ProcessingStatus.NEEDS_REVIEW) {
+          toast.warning('Document needs review', {
+            description: `${doc.name} has low confidence (${doc.confidenceScore || 0}%). Please review.`,
+            icon: <AlertCircle className="w-5 h-5" />,
+          })
+        } else if (doc.status === ProcessingStatus.FAILED) {
+          toast.error('Document processing failed', {
+            description: `${doc.name} could not be processed`,
+            icon: <XCircle className="w-5 h-5" />,
+          })
+        }
+      }
+    })
+
+    prevDocumentsRef.current = documents
+  }, [documents])
 
   // Handle file selection
   const handleFileSelect = async (files: FileList | null) => {
@@ -145,19 +204,22 @@ export default function DocumentsPage() {
 
       await confirmUploadMutation.mutateAsync({ documentId })
 
+      // Show success toast - processing will happen in background
+      toast.success('Document uploaded successfully', {
+        description: `${file.name} is being processed. Status updates will appear automatically.`,
+      })
+
       setUploadingFiles(prev =>
         prev.map(f => (f.id === uploadId ? { ...f, status: 'complete' } : f))
       )
 
-      toast.success(`${file.name} uploaded successfully`)
-
-      // Refresh document list
+      // Refresh document list to show the processing document
       refetch()
 
       // Remove from uploading list after a delay
       setTimeout(() => {
         setUploadingFiles(prev => prev.filter(f => f.id !== uploadId))
-      }, 2000)
+      }, 3000)
     } catch (error) {
       console.error('Upload error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Upload failed'
@@ -168,7 +230,16 @@ export default function DocumentsPage() {
         )
       )
 
-      toast.error(`Failed to upload ${file.name}: ${errorMessage}`)
+      toast.error(`Upload failed: ${errorMessage}`, {
+        description: file.name,
+        action: {
+          label: 'Retry',
+          onClick: () => {
+            removeUploadingFile(uploadId)
+            uploadFile(file)
+          },
+        },
+      })
     }
   }
 
@@ -468,46 +539,114 @@ export default function DocumentsPage() {
               {uploadingFiles.map((uploadingFile) => (
                 <div
                   key={uploadingFile.id}
-                  className="bg-slate-800 border border-slate-700 rounded-lg p-4"
+                  className="bg-slate-800 border border-slate-700 rounded-lg p-5"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white truncate">
-                          {uploadingFile.file.name}
+                  {/* Uploading State */}
+                  {uploadingFile.status === 'uploading' && (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                            <Upload className="w-5 h-5 text-blue-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white truncate">
+                              Uploading {uploadingFile.file.name}...
+                            </p>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {uploadingFile.progress}% complete
+                            </p>
+                          </div>
+                        </div>
+                        <Loader2 className="w-5 h-5 text-blue-400 animate-spin flex-shrink-0" />
+                      </div>
+                      <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-blue-500 h-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadingFile.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Processing State */}
+                  {uploadingFile.status === 'processing' && (
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">
+                          Processing document...
                         </p>
-                        <p className="text-xs text-slate-500">
-                          {uploadingFile.status === 'uploading' && `Uploading... ${uploadingFile.progress}%`}
-                          {uploadingFile.status === 'processing' && 'Processing...'}
-                          {uploadingFile.status === 'complete' && 'Complete'}
-                          {uploadingFile.status === 'error' && `Error: ${uploadingFile.error}`}
+                        <p className="text-xs text-slate-400 mt-1">
+                          Extracting text and generating embeddings
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {uploadingFile.status === 'uploading' && (
-                        <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                      )}
-                      {uploadingFile.status === 'processing' && (
-                        <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                      )}
-                      {uploadingFile.status === 'error' && (
+                  )}
+
+                  {/* Complete State */}
+                  {uploadingFile.status === 'complete' && (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                          <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-white">
+                            Document ready!
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5 truncate">
+                            {uploadingFile.file.name}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={openFilePicker}
+                        className="w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        Upload another
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Error State */}
+                  {uploadingFile.status === 'error' && (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20 flex-shrink-0">
+                            <AlertCircle className="w-5 h-5 text-red-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white">
+                              Upload failed
+                            </p>
+                            <p className="text-xs text-red-300 mt-1 break-words">
+                              {uploadingFile.error || 'An unknown error occurred'}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5 truncate">
+                              {uploadingFile.file.name}
+                            </p>
+                          </div>
+                        </div>
                         <button
                           onClick={() => removeUploadingFile(uploadingFile.id)}
-                          className="p-1 hover:bg-slate-700 rounded transition-colors"
+                          className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
                         >
                           <X className="w-4 h-4 text-slate-400" />
                         </button>
-                      )}
-                    </div>
-                  </div>
-                  {uploadingFile.status === 'uploading' && (
-                    <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-blue-500 h-full transition-all duration-300"
-                        style={{ width: `${uploadingFile.progress}%` }}
-                      />
+                      </div>
+                      <button
+                        onClick={() => {
+                          removeUploadingFile(uploadingFile.id)
+                          uploadFile(uploadingFile.file)
+                        }}
+                        className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        Retry Upload
+                      </button>
                     </div>
                   )}
                 </div>

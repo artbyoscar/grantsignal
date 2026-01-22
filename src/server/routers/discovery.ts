@@ -2,11 +2,25 @@ import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
 import { calculateFitScore as calculateFitScoreService, getOrCalculateFitScore } from '../../lib/fit-scoring'
 import type { FitScoreResult } from '../../lib/fit-scoring'
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { inngest } from '@/inngest/client'
 
 /**
  * Mock delay to simulate API processing
  */
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+/**
+ * S3 client for file uploads
+ */
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+})
 
 /**
  * Discovery router for RFP parsing and fit scoring
@@ -388,6 +402,71 @@ export const discoveryRouter = router({
       return {
         opportunity,
         grant,
+      }
+    }),
+
+  /**
+   * Generate presigned S3 URL for RFP file upload
+   */
+  createRfpUploadUrl: orgProcedure
+    .input(
+      z.object({
+        fileName: z.string(),
+        fileType: z.string(),
+        fileSize: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Generate unique S3 key
+      const timestamp = Date.now()
+      const sanitizedFileName = input.fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const s3Key = `rfps/${ctx.organizationId}/${timestamp}-${sanitizedFileName}`
+
+      // Generate presigned URL for upload
+      const command = new PutObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET!,
+        Key: s3Key,
+        ContentType: input.fileType,
+      })
+
+      const uploadUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 3600, // 1 hour
+      })
+
+      return {
+        uploadId: `${timestamp}-${sanitizedFileName}`,
+        uploadUrl,
+        s3Key,
+      }
+    }),
+
+  /**
+   * Parse RFP from uploaded file
+   * Triggers Inngest job to process the file and extract RFP details
+   */
+  parseRfpFile: orgProcedure
+    .input(
+      z.object({
+        s3Key: z.string(),
+        fileName: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Trigger Inngest job to parse the RFP file
+      await inngest.send({
+        name: 'rfp/parse-file',
+        data: {
+          s3Key: input.s3Key,
+          fileName: input.fileName,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      // For now, return a placeholder while processing
+      // In production, this would be replaced by polling or webhooks
+      return {
+        status: 'processing',
+        message: 'RFP file is being processed. This may take a few moments.',
       }
     }),
 })

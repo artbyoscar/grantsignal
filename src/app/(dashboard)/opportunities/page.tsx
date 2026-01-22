@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock, Building2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock, Building2, X } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { useRouter } from 'next/navigation'
 import { FitScoreCard } from '@/components/fit-score-card'
 import { ResearchFunderModal } from '@/components/funders/research-funder-modal'
+import { uploadToS3 } from '@/lib/upload'
+import { toast } from 'sonner'
 
 type AnalysisStep = 'idle' | 'parsing' | 'scoring' | 'complete' | 'error'
 
@@ -45,6 +47,23 @@ interface FitScore {
   }
 }
 
+const ACCEPTED_FILE_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc
+]
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+type UploadingFile = {
+  file: File
+  progress: number
+  status: 'uploading' | 'parsing' | 'complete' | 'error'
+  error?: string
+}
+
 export default function OpportunitiesPage() {
   const router = useRouter()
   const [inputUrl, setInputUrl] = useState('')
@@ -55,6 +74,11 @@ export default function OpportunitiesPage() {
   const [fitScore, setFitScore] = useState<FitScore | null>(null)
   const [showResearchModal, setShowResearchModal] = useState(false)
 
+  // File upload state
+  const [uploadingFile, setUploadingFile] = useState<UploadingFile | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Opportunity list state
   const [sortBy, setSortBy] = useState<'deadline' | 'fitScore' | 'createdAt'>('deadline')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
@@ -64,6 +88,8 @@ export default function OpportunitiesPage() {
   const parseRfpMutation = api.discovery.parseRfp.useMutation()
   const calculateFitMutation = api.discovery.calculateFitScore.useMutation()
   const saveOpportunityMutation = api.discovery.saveOpportunity.useMutation()
+  const createRfpUploadUrlMutation = api.discovery.createRfpUploadUrl.useMutation()
+  const parseRfpFileMutation = api.discovery.parseRfpFile.useMutation()
 
   // Query for listing opportunities with fit scores
   const { data: opportunities, refetch: refetchOpportunities } = api.discovery.listOpportunities.useQuery(
@@ -159,8 +185,142 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
     }
   }
 
+  // File upload handlers
+  const handleFileSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+
+    const file = files[0] // Only handle first file
+
+    // Validate file type
+    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+      toast.error('Invalid file type. Please upload PDF or DOCX files.')
+      return
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File size exceeds 25MB limit.')
+      return
+    }
+
+    await uploadFile(file)
+  }
+
+  const uploadFile = async (file: File) => {
+    setUploadingFile({
+      file,
+      progress: 0,
+      status: 'uploading',
+    })
+
+    setError(null)
+    setParsedRfp(null)
+    setFitScore(null)
+    setAnalysisStep('parsing')
+
+    try {
+      // Step 1: Get presigned upload URL
+      const { uploadUrl, s3Key } = await createRfpUploadUrlMutation.mutateAsync({
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      })
+
+      // Step 2: Upload file to S3 with progress tracking
+      await uploadToS3(file, uploadUrl, (progress) => {
+        setUploadingFile(prev => prev ? { ...prev, progress } : null)
+      })
+
+      // Step 3: Trigger RFP parsing
+      setUploadingFile(prev => prev ? { ...prev, status: 'parsing', progress: 100 } : null)
+
+      await parseRfpFileMutation.mutateAsync({
+        s3Key,
+        fileName: file.name,
+      })
+
+      // For now, simulate the parsing result
+      // In production, this would be replaced by polling or webhooks
+      await delay(3000)
+
+      const parsed = await parseRfpMutation.mutateAsync({
+        text: `Uploaded file: ${file.name}`,
+      })
+
+      setParsedRfp(parsed)
+      setAnalysisStep('scoring')
+
+      // Save opportunity temporarily
+      const tempOpportunity = await saveOpportunityMutation.mutateAsync({
+        title: parsed.title,
+        description: parsed.description,
+        deadline: parsed.deadline,
+        amountMin: parsed.amountMin,
+        amountMax: parsed.amountMax,
+        source: `File: ${file.name}`,
+        notes: 'Temporary analysis - not yet approved',
+      })
+
+      // Calculate fit score
+      const score = await calculateFitMutation.mutateAsync({
+        opportunityId: tempOpportunity.opportunity.id,
+      })
+
+      setFitScore(score)
+      setAnalysisStep('complete')
+      setUploadingFile(prev => prev ? { ...prev, status: 'complete' } : null)
+
+      toast.success(`${file.name} analyzed successfully`)
+
+      // Refetch opportunities list
+      refetchOpportunities()
+
+      // Clear uploading state after delay
+      setTimeout(() => {
+        setUploadingFile(null)
+      }, 2000)
+    } catch (err) {
+      console.error('Upload error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed'
+
+      setUploadingFile(prev => prev ? { ...prev, status: 'error', error: errorMessage } : null)
+      setError(errorMessage)
+      setAnalysisStep('error')
+
+      toast.error(`Failed to upload ${file.name}: ${errorMessage}`)
+    }
+  }
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    const files = e.dataTransfer.files
+    handleFileSelect(files)
+  }
+
   const isAnalyzing = analysisStep === 'parsing' || analysisStep === 'scoring'
   const hasInput = Boolean(inputUrl || inputText)
+  const isUploading = uploadingFile?.status === 'uploading' || uploadingFile?.status === 'parsing'
 
   return (
     <div className="space-y-8">
@@ -246,11 +406,59 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
           disabled={isAnalyzing}
         />
 
-        {/* Upload Area (placeholder for future implementation) */}
-        <div className="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-slate-500 transition-colors cursor-not-allowed opacity-50">
-          <Upload className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-          <p className="text-slate-300 font-medium">File upload coming soon</p>
-          <p className="text-sm text-slate-500 mt-1">PDF, DOCX up to 25MB</p>
+        {/* Upload Area */}
+        <div
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
+            isDragging
+              ? 'border-blue-500 bg-blue-500/10'
+              : isUploading
+              ? 'border-slate-600 bg-slate-900 cursor-wait'
+              : 'border-slate-600 hover:border-slate-500 hover:bg-slate-900'
+          } ${isAnalyzing && !isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={(e) => handleFileSelect(e.target.files)}
+            disabled={isAnalyzing}
+            className="hidden"
+          />
+
+          {isUploading && uploadingFile ? (
+            <div className="space-y-3">
+              <Loader2 className="w-10 h-10 text-blue-500 mx-auto animate-spin" />
+              <div>
+                <p className="text-slate-300 font-medium">{uploadingFile.file.name}</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  {uploadingFile.status === 'uploading'
+                    ? `Uploading... ${uploadingFile.progress}%`
+                    : 'Processing RFP...'}
+                </p>
+              </div>
+              {uploadingFile.status === 'uploading' && (
+                <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${uploadingFile.progress}%` }}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+              <p className="text-slate-300 font-medium">
+                {isDragging ? 'Drop RFP file here' : 'Click to upload or drag and drop'}
+              </p>
+              <p className="text-sm text-slate-500 mt-1">PDF, DOCX up to 25MB</p>
+            </>
+          )}
         </div>
 
         {/* Error Display */}

@@ -20,6 +20,13 @@ export type Events = {
       mimeType: string
     }
   }
+  'rfp/parse-file': {
+    data: {
+      s3Key: string
+      fileName: string
+      organizationId: string
+    }
+  }
   'voice/analyze': {
     data: {
       organizationId: string
