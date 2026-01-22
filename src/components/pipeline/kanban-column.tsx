@@ -1,165 +1,182 @@
 'use client'
 
 import { useDroppable } from '@dnd-kit/core'
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import type { GrantStatus } from '@/types/client-types'
+import { Minus, Plus } from 'lucide-react'
+import type { PipelineCardProps } from './pipeline-card'
 
-type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
-
-const colorClasses: Record<ColorType, { dot: string; border: string; bg: string; text: string }> = {
-  slate: {
-    dot: 'bg-slate-500',
-    border: 'border-slate-500/30',
-    bg: 'bg-slate-500/10',
-    text: 'text-slate-400',
-  },
-  purple: {
-    dot: 'bg-purple-500',
-    border: 'border-purple-500/30',
-    bg: 'bg-purple-500/10',
-    text: 'text-purple-400',
-  },
-  blue: {
-    dot: 'bg-blue-500',
-    border: 'border-blue-500/30',
-    bg: 'bg-blue-500/10',
-    text: 'text-blue-400',
-  },
-  amber: {
-    dot: 'bg-amber-500',
+// Stage color mapping based on mockup
+const stageColors: Record<string, { dot: string; border: string; bg: string; headerBg: string }> = {
+  prospect: {
+    dot: 'bg-amber-400',
     border: 'border-amber-500/30',
-    bg: 'bg-amber-500/10',
-    text: 'text-amber-400',
+    bg: 'bg-amber-500/5',
+    headerBg: 'bg-amber-500/10',
   },
-  cyan: {
-    dot: 'bg-cyan-500',
-    border: 'border-cyan-500/30',
-    bg: 'bg-cyan-500/10',
-    text: 'text-cyan-400',
+  researching: {
+    dot: 'bg-blue-400',
+    border: 'border-blue-500/30',
+    bg: 'bg-blue-500/5',
+    headerBg: 'bg-blue-500/10',
   },
-  orange: {
-    dot: 'bg-orange-500',
-    border: 'border-orange-500/30',
+  writing: {
+    dot: 'bg-purple-400',
+    border: 'border-purple-500/30',
+    bg: 'bg-purple-500/5',
+    headerBg: 'bg-purple-500/10',
+  },
+  review: {
+    dot: 'bg-orange-400',
+    border: 'border-orange-500/40',
     bg: 'bg-orange-500/10',
-    text: 'text-orange-400',
+    headerBg: 'bg-orange-500/15', // More prominent
   },
-  green: {
-    dot: 'bg-green-500',
+  submitted: {
+    dot: 'bg-indigo-400',
+    border: 'border-indigo-500/30',
+    bg: 'bg-indigo-500/5',
+    headerBg: 'bg-indigo-500/10',
+  },
+  pending: {
+    dot: 'bg-orange-400',
+    border: 'border-orange-500/30',
+    bg: 'bg-orange-500/5',
+    headerBg: 'bg-orange-500/10',
+  },
+  awarded: {
+    dot: 'bg-green-400',
     border: 'border-green-500/30',
-    bg: 'bg-green-500/10',
-    text: 'text-green-400',
-  },
-  red: {
-    dot: 'bg-red-500',
-    border: 'border-red-500/30',
-    bg: 'bg-red-500/10',
-    text: 'text-red-400',
+    bg: 'bg-green-500/5',
+    headerBg: 'bg-green-500/10',
   },
 }
 
-interface KanbanColumnProps {
-  id: GrantStatus
-  label: string
-  color: ColorType
-  description: string
+export interface KanbanColumnProps {
+  id: string
+  title: string
   count: number
-  isCollapsed: boolean
+  color: string
+  cards: PipelineCardProps[]
+  isCollapsed?: boolean
   onToggleCollapse: () => void
-  children: React.ReactNode
+  onAddCard: () => void
 }
 
 export function KanbanColumn({
   id,
-  label,
-  color,
-  description,
+  title,
   count,
-  isCollapsed,
+  color,
+  cards,
+  isCollapsed = false,
   onToggleCollapse,
-  children,
+  onAddCard,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
   })
 
-  const classes = colorClasses[color]
+  // Get color classes, fallback to slate if color not found
+  const colorKey = color.toLowerCase()
+  const classes = stageColors[colorKey] || {
+    dot: 'bg-slate-400',
+    border: 'border-slate-500/30',
+    bg: 'bg-slate-500/5',
+    headerBg: 'bg-slate-500/10',
+  }
 
-  return (
-    <div
-      className={`flex flex-col w-80 flex-shrink-0 ${isCollapsed ? 'w-16' : 'w-80'} transition-all duration-300`}
-    >
-      {/* Column Header */}
-      <div
-        className={`
-          flex items-center justify-between p-3 rounded-t-lg border-t border-x
-          ${classes.border} ${classes.bg} backdrop-blur-sm
-        `}
-      >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-white truncate">{label}</h3>
-                <span
-                  className={`px-2 py-0.5 text-xs font-bold rounded-full ${classes.bg} ${classes.text}`}
-                >
-                  {count}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 truncate">{description}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Collapse/Expand Button */}
-        <button
-          onClick={onToggleCollapse}
-          className="p-1 hover:bg-white/10 rounded transition-colors flex-shrink-0"
-          aria-label={isCollapsed ? 'Expand column' : 'Collapse column'}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-slate-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
-          )}
-        </button>
-      </div>
-
-      {/* Column Content */}
-      {!isCollapsed && (
+  // Collapsed state - minimal width with vertical title
+  if (isCollapsed) {
+    return (
+      <div className="w-12 shrink-0 flex flex-col max-h-full">
+        {/* Collapsed Header */}
         <div
-          ref={setNodeRef}
           className={`
-            flex-1 p-3 rounded-b-lg border-b border-x overflow-y-auto
-            ${classes.border}
-            ${isOver ? `${classes.bg} border-2` : 'bg-slate-900/30 border-slate-700/50'}
-            transition-all duration-200
+            flex items-center justify-center px-1 py-2 rounded-t-xl
+            ${classes.border} ${classes.headerBg} backdrop-blur-sm
           `}
         >
-          {children}
+          <button
+            onClick={onToggleCollapse}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            aria-label="Expand column"
+          >
+            <Plus className="w-4 h-4 text-slate-400" />
+          </button>
         </div>
-      )}
 
-      {/* Collapsed state - show count vertically */}
-      {isCollapsed && (
+        {/* Collapsed Content - Vertical Title */}
         <div
           ref={setNodeRef}
           className={`
-            flex-1 flex flex-col items-center justify-center p-2 rounded-b-lg border-b border-x
+            flex-1 flex items-center justify-center p-2 rounded-b-xl border-b border-x
             ${classes.border}
-            ${isOver ? `${classes.bg} border-2` : 'bg-slate-900/30 border-slate-700/50'}
+            ${isOver ? `${classes.bg} border-2 border-dashed border-blue-500` : 'bg-slate-900/30'}
             transition-all duration-200
           `}
         >
           <span
-            className={`writing-mode-vertical text-xs font-semibold ${classes.text}`}
-            style={{ writingMode: 'vertical-rl' }}
+            className="text-xs font-semibold text-slate-300 whitespace-nowrap"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
+            {title}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // Expanded state
+  return (
+    <div className="w-[300px] shrink-0 flex flex-col max-h-full">
+      {/* Column Header */}
+      <div
+        className={`
+          flex items-center justify-between px-3 py-2 rounded-t-xl
+          ${classes.border} ${classes.headerBg} backdrop-blur-sm
+        `}
+      >
+        {/* Left: Colored Dot + Title + Count Badge */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
+          <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
+          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-700/50 text-slate-300">
             {count}
           </span>
         </div>
-      )}
+
+        {/* Right: Action Buttons */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={onToggleCollapse}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            aria-label="Collapse column"
+          >
+            <Minus className="w-4 h-4 text-slate-400" />
+          </button>
+          <button
+            onClick={onAddCard}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            aria-label="Add card"
+          >
+            <Plus className="w-4 h-4 text-slate-400" />
+          </button>
+        </div>
+      </div>
+
+      {/* Card Container with Drop Zone */}
+      <div
+        ref={setNodeRef}
+        className={`
+          flex-1 overflow-y-auto space-y-3 p-2 rounded-b-xl border-b border-x
+          ${classes.border}
+          ${isOver ? `${classes.bg} border-2 border-dashed border-blue-500` : 'bg-slate-900/30'}
+          transition-all duration-200
+        `}
+      >
+        {cards.map((card) => (
+          <div key={card.id}>{/* Card components will be rendered here */}</div>
+        ))}
+      </div>
     </div>
   )
 }
