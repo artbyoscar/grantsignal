@@ -1,60 +1,102 @@
 'use client'
 
-import { FileText, Download, Calendar } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-
 interface ReportTypeCardProps {
   title: string
   description: string
-  icon?: 'file' | 'download' | 'calendar'
-  lastGenerated?: Date
   onGenerate: () => void
   isGenerating?: boolean
-}
-
-const iconMap = {
-  file: FileText,
-  download: Download,
-  calendar: Calendar,
 }
 
 export function ReportTypeCard({
   title,
   description,
-  icon = 'file',
-  lastGenerated,
   onGenerate,
-  isGenerating = false,
+  isGenerating = false
 }: ReportTypeCardProps) {
-  const Icon = iconMap[icon]
-
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-600 transition-colors">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500/10 rounded-lg">
-            <Icon className="h-5 w-5 text-blue-400" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-white">{title}</h3>
-            <p className="text-sm text-slate-400 mt-1">{description}</p>
-          </div>
-        </div>
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 flex flex-col h-full">
+      <div className="flex-1 mb-4">
+        <h3 className="text-lg font-semibold text-slate-100 mb-2">
+          {title}
+        </h3>
+        <p className="text-sm text-slate-400 line-clamp-2">
+          {description}
+        </p>
       </div>
 
-      {lastGenerated && (
-        <div className="mb-4 text-xs text-slate-500">
-          Last generated: {lastGenerated.toLocaleDateString()}
-        </div>
-      )}
-
-      <Button
+      <button
         onClick={onGenerate}
         disabled={isGenerating}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+        className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-colors"
       >
-        {isGenerating ? 'Generating...' : 'Generate Report'}
-      </Button>
+        {isGenerating ? 'Generating...' : 'Generate'}
+      </button>
+    </div>
+  )
+}
+
+interface ReportType {
+  id: string
+  title: string
+  description: string
+}
+
+const REPORT_TYPES: ReportType[] = [
+  {
+    id: 'executive-summary',
+    title: 'Executive Summary',
+    description: 'High-level overview of key metrics and performance.',
+  },
+  {
+    id: 'pipeline-report',
+    title: 'Pipeline Report',
+    description: 'Detailed analysis of active opportunities and stages.',
+  },
+  {
+    id: 'historical-analysis',
+    title: 'Historical Analysis',
+    description: 'Long-term trends and win/loss data.',
+  },
+  {
+    id: 'funder-report',
+    title: 'Funder Report',
+    description: 'Insights into top funders and giving patterns.',
+  },
+  {
+    id: 'compliance-report',
+    title: 'Compliance Report',
+    description: 'Grant compliance status and upcoming deadlines.',
+  },
+]
+
+interface ReportTypeGridProps {
+  onGenerateReport?: (reportId: string) => void
+  generatingReportId?: string
+}
+
+export function ReportTypeGrid({
+  onGenerateReport,
+  generatingReportId
+}: ReportTypeGridProps) {
+  const handleGenerate = (reportId: string) => {
+    if (onGenerateReport) {
+      onGenerateReport(reportId)
+    } else {
+      console.log(`Generating report: ${reportId}`)
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      {REPORT_TYPES.map((report) => (
+        <ReportTypeCard
+          key={report.id}
+          title={report.title}
+          description={report.description}
+          onGenerate={() => handleGenerate(report.id)}
+          isGenerating={generatingReportId === report.id}
+        />
+      ))}
     </div>
   )
 }
