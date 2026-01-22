@@ -1,14 +1,9 @@
-import { type Grant, type Funder, type Program } from '@prisma/client'
-
-type GrantWithRelations = Grant & {
-  funder: Pick<Funder, 'id' | 'name' | 'type'> | null
-  program: Pick<Program, 'id' | 'name'> | null
-}
+import { type Grant } from '@/types/client-types'
 
 /**
  * Convert grants data to CSV format
  */
-export function exportGrantsToCSV(grants: GrantWithRelations[]): string {
+export function exportGrantsToCSV(grants: Grant[]): string {
   // Define CSV headers
   const headers = [
     'Funder Name',
@@ -87,7 +82,7 @@ export function downloadCSV(content: string, filename: string): void {
 /**
  * Export grants to CSV and trigger download
  */
-export function exportAndDownloadGrants(grants: GrantWithRelations[]): void {
+export function exportAndDownloadGrants(grants: Grant[]): void {
   const csv = exportGrantsToCSV(grants)
   const timestamp = new Date().toISOString().split('T')[0]
   const filename = `grants-export-${timestamp}.csv`

@@ -20,11 +20,17 @@ export default function ReportsPage() {
   // Fetch grants data for quick stats
   const { data: grantsData, isLoading: grantsLoading } = api.grants.list.useQuery({})
 
+  // Transform Decimal to number at the boundary
+  const grants = (grantsData?.grants ?? []).map(g => ({
+    ...g,
+    amountRequested: g.amountRequested ? Number(g.amountRequested) : null,
+    amountAwarded: g.amountAwarded ? Number(g.amountAwarded) : null,
+  }))
+
   // Calculate quick stats
-  const stats = grantsData?.grants
+  const stats = grants.length > 0
     ? (() => {
         const currentYear = new Date().getFullYear()
-        const grants = grantsData.grants
 
         // Total grants
         const totalGrants = grants.length
@@ -37,7 +43,7 @@ export default function ReportsPage() {
               g.awardedAt &&
               new Date(g.awardedAt).getFullYear() === currentYear
           )
-          .reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0)
+          .reduce((sum, g) => sum + (g.amountAwarded ?? 0), 0)
 
         // Win Rate
         const decidedGrants = grants.filter(
@@ -50,7 +56,7 @@ export default function ReportsPage() {
         const pipelineStatuses = ['PROSPECT', 'RESEARCHING', 'WRITING', 'REVIEW', 'SUBMITTED', 'PENDING']
         const pipelineValue = grants
           .filter((g) => pipelineStatuses.includes(g.status))
-          .reduce((sum, g) => sum + Number(g.amountRequested || 0), 0)
+          .reduce((sum, g) => sum + (g.amountRequested ?? 0), 0)
 
         return {
           totalGrants,

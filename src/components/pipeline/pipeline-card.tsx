@@ -153,7 +153,7 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false }
       <div className="mb-2">
         <span className="text-xs text-slate-400">Amount Requested</span>
         <p className="text-lg font-semibold text-white">
-          {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
+          {formatCurrency(grant.amountRequested)}
         </p>
       </div>
 
@@ -267,7 +267,7 @@ export function GrantCard({ grant, color, progress, isFlagged = false }: GrantCa
       <div className="mb-2">
         <span className="text-xs text-slate-400">Amount Requested</span>
         <p className="text-lg font-semibold text-white">
-          {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
+          {formatCurrency(grant.amountRequested)}
         </p>
       </div>
 

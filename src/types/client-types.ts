@@ -5,11 +5,6 @@
  * DO NOT import from @prisma/client in client components - use these types instead.
  */
 
-import type { AppRouter } from '@/server/routers/_app'
-import type { inferRouterOutputs } from '@trpc/server'
-
-type RouterOutput = inferRouterOutputs<AppRouter>
-
 // ============================================================================
 // Grant Status
 // ============================================================================
@@ -61,14 +56,66 @@ export type FunderType = typeof FunderType[keyof typeof FunderType]
 /**
  * Grant type as returned by api.grants.list
  *
- * This is inferred directly from the tRPC router output to ensure type safety.
- * Superjson automatically transforms Prisma Decimal to number.
+ * Manual interface to avoid pulling Prisma types into client bundle.
+ * Decimal fields are converted to number at the data boundary.
  */
-export type Grant = RouterOutput['grants']['list']['grants'][number]
+export interface Grant {
+  id: string
+  status: GrantStatus
+  amountRequested: number | null
+  amountAwarded: number | null
+  deadline: Date | null
+  submittedAt: Date | null
+  assignedAt: Date | null
+  awardedAt: Date | null
+  startDate: Date | null
+  endDate: Date | null
+  notes: string | null
+  createdAt: Date
+  updatedAt: Date
+  organizationId: string
+  funderId: string | null
+  opportunityId: string | null
+  programId: string | null
+  assignedToId: string | null
+
+  // Relations
+  funder: {
+    id: string
+    name: string
+    type: FunderType | null
+  } | null
+  opportunity: {
+    id: string
+    title: string
+    deadline: Date | null
+    fitScores?: Array<{
+      overallScore: number
+      missionScore: number
+      capacityScore: number
+      historyScore: number
+    }>
+  } | null
+  program: {
+    id: string
+    name: string
+  } | null
+  assignedTo: {
+    id: string
+    clerkUserId: string
+    displayName: string | null
+    avatarUrl: string | null
+  } | null
+}
 
 /**
- * Grant type as returned by api.grants.byId
+ * Grant type with full details as returned by api.grants.byId
  *
- * This includes full details with fit scores, documents, and commitments.
+ * Includes additional relations like documents, commitments, and fit scores.
  */
-export type GrantWithDetails = RouterOutput['grants']['byId']
+export interface GrantWithDetails extends Grant {
+  _count: {
+    documents: number
+    commitments: number
+  }
+}

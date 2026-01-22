@@ -86,9 +86,16 @@ export default function WritingStudioPage({ params }: PageProps) {
   const resizeRef = useRef<HTMLDivElement>(null)
 
   // Fetch grant data
-  const { data: grant, isLoading: isLoadingGrant } = api.grants.byId.useQuery({
+  const { data: rawGrant, isLoading: isLoadingGrant } = api.grants.byId.useQuery({
     id: grantId,
   })
+
+  // Transform Decimal to number at the boundary
+  const grant = rawGrant ? {
+    ...rawGrant,
+    amountRequested: rawGrant.amountRequested ? Number(rawGrant.amountRequested) : null,
+    amountAwarded: rawGrant.amountAwarded ? Number(rawGrant.amountAwarded) : null,
+  } : null
 
   // Fetch draft content
   const { data: draftData, refetch: refetchDraft } = api.writing.getGrantDraft.useQuery({

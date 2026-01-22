@@ -497,7 +497,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm font-medium text-white">
-                        {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
+                        {formatCurrency(grant.amountRequested)}
                       </span>
                     </td>
                     <td className="px-4 py-3">

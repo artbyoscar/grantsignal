@@ -45,10 +45,17 @@ export default function GrantDetailPage() {
   const router = useRouter()
   const grantId = params.grantId as string
 
-  const { data: grant, isLoading } = api.grants.byId.useQuery(
+  const { data: rawGrant, isLoading } = api.grants.byId.useQuery(
     { id: grantId },
     { enabled: !!grantId }
   )
+
+  // Transform Decimal to number at the boundary
+  const grant = rawGrant ? {
+    ...rawGrant,
+    amountRequested: rawGrant.amountRequested ? Number(rawGrant.amountRequested) : null,
+    amountAwarded: rawGrant.amountAwarded ? Number(rawGrant.amountAwarded) : null,
+  } : null
 
   if (isLoading) {
     return (
@@ -135,7 +142,7 @@ export default function GrantDetailPage() {
                 <div>
                   <p className="text-xs text-slate-400 mb-1">Amount Requested</p>
                   <p className="text-xl font-bold text-white">
-                    {formatCurrency(grant.amountRequested ? Number(grant.amountRequested) : null)}
+                    {formatCurrency(grant.amountRequested)}
                   </p>
                 </div>
               </div>

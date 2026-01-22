@@ -192,7 +192,13 @@ export default function PipelinePage() {
     funderType,
     assignedToId,
   })
-  const grants = data?.grants || []
+
+  // Transform Decimal to number at the boundary
+  const grants: Grant[] = (data?.grants ?? []).map(g => ({
+    ...g,
+    amountRequested: g.amountRequested ? Number(g.amountRequested) : null,
+    amountAwarded: g.amountAwarded ? Number(g.amountAwarded) : null,
+  }))
 
   // Fetch programs for filter
   const { data: programsData } = api.programs.list.useQuery()
@@ -225,10 +231,7 @@ export default function PipelinePage() {
 
   // Calculate stats
   const totalValue = grants.reduce((sum, grant) => {
-    const amount = grant.amountRequested
-      ? Number(grant.amountRequested)
-      : 0;
-    return sum + amount;
+    return sum + (grant.amountRequested ?? 0)
   }, 0)
 
   // Drag and drop sensors

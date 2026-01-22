@@ -17,11 +17,17 @@ export default function DashboardPage() {
   const { data, isLoading, error } = api.grants.list.useQuery({})
   const { data: programsData, isLoading: programsLoading } = api.programs.list.useQuery()
 
+  // Transform Decimal to number at the boundary
+  const grants = (data?.grants ?? []).map(g => ({
+    ...g,
+    amountRequested: g.amountRequested ? Number(g.amountRequested) : null,
+    amountAwarded: g.amountAwarded ? Number(g.amountAwarded) : null,
+  }))
+
   // Calculate stats from grants data
-  const stats = data?.grants
+  const stats = grants.length > 0
     ? (() => {
         const currentYear = new Date().getFullYear()
-        const grants = data.grants
 
         // Active Grants: AWARDED or ACTIVE status
         const activeGrants = grants.filter(
@@ -41,7 +47,7 @@ export default function DashboardPage() {
               g.awardedAt &&
               new Date(g.awardedAt).getFullYear() === currentYear
           )
-          .reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0)
+          .reduce((sum, g) => sum + (g.amountAwarded ?? 0), 0)
 
         // Win Rate: (awarded / total submitted) * 100
         const submittedGrants = grants.filter(
@@ -71,15 +77,13 @@ export default function DashboardPage() {
     : null
 
   // Filter grants with deadline within 14 days
-  const urgentGrants = data?.grants
-    ? data.grants.filter((g) => {
-        if (!g.deadline) return false
-        const deadline = new Date(g.deadline)
-        const now = new Date()
-        const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
-        return deadline >= now && deadline <= fourteenDaysFromNow
-      })
-    : []
+  const urgentGrants = grants.filter((g) => {
+    if (!g.deadline) return false
+    const deadline = new Date(g.deadline)
+    const now = new Date()
+    const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
+    return deadline >= now && deadline <= fourteenDaysFromNow
+  })
 
   // Show error state
   if (error) {
@@ -151,9 +155,9 @@ export default function DashboardPage() {
 
       {/* Pipeline Summary and Grants by Program */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PipelineSummary grants={data?.grants || []} isLoading={isLoading} />
+        <PipelineSummary grants={grants} isLoading={isLoading} />
         <GrantsByProgram
-          grants={data?.grants || []}
+          grants={grants}
           programs={programsData || []}
           isLoading={isLoading || programsLoading}
         />
