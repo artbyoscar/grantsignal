@@ -11,6 +11,245 @@ import { TRPCError } from '@trpc/server'
  */
 export const writingRouter = router({
   /**
+   * Get grant details for writing context
+   * Includes funder, opportunity, and related documents
+   */
+  getGrantForWriting: orgProcedure
+    .input(
+      z.object({
+        grantId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        console.log('[writing.getGrantForWriting] Fetching grant:', input.grantId)
+
+        const grant = await ctx.db.grant.findFirst({
+          where: {
+            id: input.grantId,
+            organizationId: ctx.organizationId,
+          },
+          include: {
+            funder: true,
+            opportunity: true,
+            program: true,
+            documents: {
+              where: {
+                status: 'COMPLETED',
+              },
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                createdAt: true,
+              },
+            },
+          },
+        })
+
+        if (!grant) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Grant not found or access denied',
+          })
+        }
+
+        console.log('[writing.getGrantForWriting] Grant loaded successfully')
+
+        return grant
+      } catch (error) {
+        console.error('[writing.getGrantForWriting] Error:', error)
+
+        if (error instanceof TRPCError) {
+          throw error
+        }
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to fetch grant: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        })
+      }
+    }),
+
+  /**
+   * Get RFP sections with word limits
+   * Returns parsed sections if available, otherwise returns default structure
+   */
+  getRFPSections: orgProcedure
+    .input(
+      z.object({
+        grantId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        console.log('[writing.getRFPSections] Fetching sections for grant:', input.grantId)
+
+        const grant = await ctx.db.grant.findFirst({
+          where: {
+            id: input.grantId,
+            organizationId: ctx.organizationId,
+          },
+        })
+
+        if (!grant) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Grant not found or access denied',
+          })
+        }
+
+        // Check if RFP has been parsed and stored in draftContent
+        const draftContent = grant.draftContent as any
+        if (draftContent?.rfpSections) {
+          console.log('[writing.getRFPSections] Returning parsed RFP sections')
+          return draftContent.rfpSections
+        }
+
+        // Return default sections if no RFP parsed yet
+        console.log('[writing.getRFPSections] No parsed RFP found, returning defaults')
+        const defaultSections = [
+          {
+            id: 'executive_summary',
+            name: 'Executive Summary',
+            wordLimit: 500,
+            description: 'Brief overview of the proposal',
+          },
+          {
+            id: 'statement_of_need',
+            name: 'Statement of Need',
+            wordLimit: 1000,
+            description: 'Description of the problem or need being addressed',
+          },
+          {
+            id: 'goals_objectives',
+            name: 'Goals & Objectives',
+            wordLimit: 750,
+            description: 'Project goals and measurable objectives',
+          },
+          {
+            id: 'methodology',
+            name: 'Methodology',
+            wordLimit: 1500,
+            description: 'Detailed description of project activities and approach',
+          },
+          {
+            id: 'evaluation_plan',
+            name: 'Evaluation Plan',
+            wordLimit: 500,
+            description: 'How project success will be measured and evaluated',
+          },
+          {
+            id: 'budget_narrative',
+            name: 'Budget Narrative',
+            wordLimit: 500,
+            description: 'Justification for budget items',
+          },
+        ]
+
+        return defaultSections
+      } catch (error) {
+        console.error('[writing.getRFPSections] Error:', error)
+
+        if (error instanceof TRPCError) {
+          throw error
+        }
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to fetch RFP sections: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        })
+      }
+    }),
+
+  /**
+   * Get funder intelligence data
+   * Returns focus areas, average grant size, and priorities
+   */
+  getFunderIntelligence: orgProcedure
+    .input(
+      z.object({
+        funderId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        console.log('[writing.getFunderIntelligence] Fetching funder:', input.funderId)
+
+        const funder = await ctx.db.funder.findUnique({
+          where: {
+            id: input.funderId,
+          },
+          include: {
+            pastGrantees: {
+              take: 10,
+              orderBy: {
+                year: 'desc',
+              },
+            },
+          },
+        })
+
+        if (!funder) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Funder not found',
+          })
+        }
+
+        // Calculate average grant size from past grantees
+        const avgGrantSize = funder.pastGrantees.length > 0
+          ? funder.pastGrantees.reduce((sum, g) => sum + Number(g.amount), 0) / funder.pastGrantees.length
+          : funder.grantSizeMedian ? Number(funder.grantSizeMedian) : null
+
+        // Extract focus areas from programAreas JSON
+        const focusAreas = (funder.programAreas as any)?.areas || []
+
+        // Build priorities from available data
+        const priorities = {
+          programAreas: focusAreas,
+          geographicFocus: funder.geographicFocus,
+          grantSizeRange: {
+            min: funder.grantSizeMin ? Number(funder.grantSizeMin) : null,
+            max: funder.grantSizeMax ? Number(funder.grantSizeMax) : null,
+            median: funder.grantSizeMedian ? Number(funder.grantSizeMedian) : null,
+          },
+          applicationProcess: funder.applicationProcess,
+          recentGrants: funder.pastGrantees.map(g => ({
+            recipient: g.recipientName,
+            amount: Number(g.amount),
+            purpose: g.purpose,
+            year: g.year,
+          })),
+        }
+
+        console.log('[writing.getFunderIntelligence] Funder data loaded successfully')
+
+        return {
+          id: funder.id,
+          name: funder.name,
+          type: funder.type,
+          mission: funder.mission,
+          focusAreas,
+          avgGrantSize,
+          totalGiving: funder.totalGiving ? Number(funder.totalGiving) : null,
+          priorities,
+        }
+      } catch (error) {
+        console.error('[writing.getFunderIntelligence] Error:', error)
+
+        if (error instanceof TRPCError) {
+          throw error
+        }
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to fetch funder intelligence: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        })
+      }
+    }),
+
+  /**
    * Search organizational memory for relevant content
    * Used in Writing Studio's memory search widget
    */
