@@ -20,7 +20,7 @@ import { KanbanColumn } from './kanban-column'
 import { PipelineHeader } from './pipeline-header'
 import { PipelineFilters } from './pipeline-filters'
 import { api } from '@/lib/trpc/client'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 
 type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
 
@@ -109,9 +109,6 @@ export function PipelineKanban({ grants, defaultView = 'kanban' }: PipelineKanba
   )
 
   const updateStatusMutation = api.grants.updateStatus.useMutation({
-    onSuccess: () => {
-      toast.success('Grant moved successfully')
-    },
     onError: (error) => {
       toast.error('Failed to move grant: ' + error.message)
     },
@@ -193,8 +190,29 @@ export function PipelineKanban({ grants, defaultView = 'kanban' }: PipelineKanba
     const grant = grants.find((g) => g.id === grantId)
     if (!grant || grant.status === newStatus) return
 
+    const previousStatus = grant.status
+    const grantTitle = grant.opportunity?.title || 'Grant'
+    const newStatusLabel = KANBAN_COLUMNS.find((col) => col.id === newStatus)?.label || newStatus
+
     try {
       await updateStatusMutation.mutateAsync({ id: grantId, status: newStatus })
+
+      // Show success toast with undo action
+      toast.success(`Moved "${grantTitle}" to ${newStatusLabel}`, {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              await updateStatusMutation.mutateAsync({ id: grantId, status: previousStatus })
+              const previousStatusLabel = KANBAN_COLUMNS.find((col) => col.id === previousStatus)?.label || previousStatus
+              toast.info(`Restored "${grantTitle}" to ${previousStatusLabel}`)
+            } catch (error) {
+              toast.error('Failed to undo move')
+            }
+          },
+        },
+        duration: 5000,
+      })
     } catch (error) {
       // Error already handled by mutation
     }
