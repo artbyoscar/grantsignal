@@ -15,12 +15,50 @@ import {
   useDraggable,
 } from '@dnd-kit/core'
 import { api } from '@/lib/trpc/client'
-import type { AppRouter } from '@/server/routers/_app'
-import type { inferRouterOutputs } from '@trpc/server'
-import { GrantStatus, FunderType } from '@prisma/client'
 import { toast } from 'sonner'
 import { PipelineTable } from '@/components/pipeline/pipeline-table'
 import { DraggableGrantCard as DraggableCard, GrantCard as StaticGrantCard } from '@/components/pipeline/pipeline-card'
+
+// Grant Status Enum
+enum GrantStatus {
+  PROSPECT = 'PROSPECT',
+  RESEARCHING = 'RESEARCHING',
+  WRITING = 'WRITING',
+  REVIEW = 'REVIEW',
+  SUBMITTED = 'SUBMITTED',
+  PENDING = 'PENDING',
+  AWARDED = 'AWARDED',
+  DECLINED = 'DECLINED',
+}
+
+// Funder Type Enum
+enum FunderType {
+  PRIVATE_FOUNDATION = 'PRIVATE_FOUNDATION',
+  COMMUNITY_FOUNDATION = 'COMMUNITY_FOUNDATION',
+  CORPORATE = 'CORPORATE',
+  FEDERAL = 'FEDERAL',
+  STATE = 'STATE',
+  LOCAL = 'LOCAL',
+  OTHER = 'OTHER',
+}
+
+// Grant type definition (client-safe, no server imports)
+interface Grant {
+  id: string
+  title: string
+  status: GrantStatus
+  deadline: Date | null
+  amountRequested: number | null
+  amountAwarded: number | null
+  assigneeId: string | null
+  funderId: string | null
+  opportunityId: string | null
+  createdAt: Date
+  updatedAt: Date
+  funder?: { id: string; name: string } | null
+  opportunity?: { id: string; title: string; deadline: Date | null } | null
+  assignee?: { id: string; name: string | null; email: string } | null
+}
 
 // Column configuration with colors
 const COLUMNS = [
@@ -46,9 +84,6 @@ const colorClasses: Record<ColorType, { dot: string; border: string; bg: string 
   green: { dot: 'bg-green-500', border: 'border-green-500/30', bg: 'bg-green-500/10' },
   red: { dot: 'bg-red-500', border: 'border-red-500/30', bg: 'bg-red-500/10' },
 }
-
-type RouterOutputs = inferRouterOutputs<AppRouter>;
-type Grant = RouterOutputs['grants']['list']['grants'][number];
 
 // Format currency
 function formatCurrency(amount: number | null | undefined): string {

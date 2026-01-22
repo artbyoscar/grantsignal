@@ -3,14 +3,48 @@
 import { useRouter } from 'next/navigation'
 import { Edit3, MoreHorizontal, Flag } from 'lucide-react'
 import { useDraggable } from '@dnd-kit/core'
-import { GrantStatus } from '@prisma/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { api } from '@/lib/trpc/client'
-import type { inferRouterOutputs } from '@trpc/server'
-import type { AppRouter } from '@/server/routers/_app'
 
-type RouterOutputs = inferRouterOutputs<AppRouter>
-type Grant = RouterOutputs['grants']['list']['grants'][number]
+// Grant Status Enum
+enum GrantStatus {
+  PROSPECT = 'PROSPECT',
+  RESEARCHING = 'RESEARCHING',
+  WRITING = 'WRITING',
+  REVIEW = 'REVIEW',
+  SUBMITTED = 'SUBMITTED',
+  PENDING = 'PENDING',
+  AWARDED = 'AWARDED',
+  DECLINED = 'DECLINED',
+  ACTIVE = 'ACTIVE',
+  CLOSEOUT = 'CLOSEOUT',
+  COMPLETED = 'COMPLETED',
+}
+
+// Grant type definition (client-safe, no server imports)
+interface Grant {
+  id: string
+  title: string
+  status: GrantStatus
+  deadline: Date | null
+  amountRequested: number | null
+  amountAwarded: number | null
+  assigneeId: string | null
+  funderId: string | null
+  opportunityId: string | null
+  createdAt: Date
+  updatedAt: Date
+  funder?: { id: string; name: string } | null
+  opportunity?: { id: string; title: string; deadline: Date | null } | null
+  assignee?: { id: string; name: string | null; email: string } | null
+  assignedTo?: {
+    id: string
+    name: string | null
+    email: string
+    displayName: string | null
+    avatarUrl: string | null
+  } | null
+}
 
 type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
 
