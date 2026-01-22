@@ -17,12 +17,53 @@ Transform grant writing from 20 hours to 2 hours by capturing institutional know
 | Document Health Dashboard | ✅ Complete |
 | TypeScript Build (0 errors) | ✅ Complete |
 | Vercel Deployment | ✅ Live |
-| Post-Launch Polish | 🔄 In Progress |
+| **Dashboard Visual Parity** | ✅ Complete |
+| **AI Writer Visual Parity** | ✅ Complete |
+| **Pipeline Kanban Visual Parity** | ✅ Complete |
+| Post-Launch Blockers | 🔄 In Progress |
 | Team Collaboration | ⏳ Planned |
 | Email Notifications | ⏳ Planned |
 
 **Production URL:** [grantsignal.vercel.app](https://grantsignal.vercel.app)  
-**Last Updated:** January 2026
+**Last Updated:** January 21, 2026
+
+---
+
+## Recent Updates (January 2026)
+
+### Visual Parity Sprint — Complete ✅
+
+Brought three core screens to premium "Bloomberg Terminal" aesthetic matching Gemini mockup designs:
+
+**Dashboard Upgrade**
+- Quick Stats row with sparkline trend charts
+- Urgent Actions panel with amber/red gradient borders and deadline badges
+- Pipeline Summary with interactive stacked bar chart and tooltips
+- AI Daily Digest sidebar with AI-generated insights
+- Quick Actions panel for one-click workflows
+- Activity Feed with team avatars and relative timestamps
+- Loading skeleton states for all components
+
+**AI Writer Upgrade**
+- Three-panel layout (Left: context, Center: editor, Right: outline)
+- RFP Requirements panel with parsed sections and word counts
+- Memory Assist panel with RAG-powered content retrieval and relevance scores
+- Funder Intelligence panel with quick facts
+- Rich editor toolbar with formatting controls
+- AI action buttons (Generate, Improve, Expand, Shorten)
+- Section outline with completion percentages
+- AI Toolbar with contextual Claude assistance
+- Real-time word count tracking
+
+**Pipeline Kanban Upgrade**
+- Pipeline Header with view toggles (Kanban/List/Calendar) and filter dropdowns
+- Enhanced Pipeline Cards with funder logos, progress bars, and team avatars
+- Kanban columns with stage-colored headers and collapse/expand
+- Full drag-and-drop using @dnd-kit with optimistic updates
+- Add Grant modal for quick entry
+- Total pipeline value display ($X.XM format)
+- Stage configuration with consistent colors
+- Toast notifications with undo support
 
 ---
 
@@ -98,7 +139,10 @@ By ingesting an organization's complete grant history, GrantSignal creates a liv
 
 **Pipeline Management**
 - Kanban board with 8 grant stages (Prospect → Researching → Writing → Review → Submitted → Pending → Awarded → Completed)
-- Drag-and-drop with optimistic updates
+- Drag-and-drop with @dnd-kit and optimistic updates
+- Funder logos and progress bars on cards
+- Team member avatars and assignment
+- Total pipeline value tracking
 - Table view with sortable columns
 - Quick view slide-out panel
 - Deadline badges with urgency color coding
@@ -111,11 +155,13 @@ By ingesting an organization's complete grant history, GrantSignal creates a liv
 - Automatic document type classification
 
 **AI Writing Studio**
-- Split-pane layout (RFP requirements + editor)
+- Three-panel layout (RFP requirements + editor + section outline)
 - Memory Assist panel with relevance scoring
+- Funder Intelligence quick facts
 - Confidence thresholds gating generation
 - Source attribution on all AI outputs
 - Voice consistency indicator
+- Real-time word count with limits
 
 **Compliance Guardian**
 - Track commitments made to funders
@@ -298,6 +344,7 @@ This is the multi-million dollar feature that justifies premium pricing and sell
 | Embeddings | text-embedding-3-large | Best quality for RAG (3072 dimensions) |
 | Doc Parsing | Unstructured.io + pdf-parse | Multi-engine fallback chain |
 | Background Jobs | Inngest | Serverless, durable processing |
+| Drag-and-Drop | @dnd-kit | Accessible, performant Kanban |
 | Hosting | Vercel | Edge functions, excellent Next.js support |
 
 ---
@@ -443,22 +490,59 @@ grantsignal/
 │   │       ├── inngest/       # Background jobs
 │   │       └── v1/            # REST API
 │   ├── components/
-│   │   ├── ui/                # shadcn/ui components
+│   │   ├── ui/                # shadcn/ui + custom components
+│   │   │   └── sparkline.tsx  # Trend visualization
 │   │   ├── ai/                # Trust Architecture components
 │   │   ├── dashboard/         # Dashboard widgets
+│   │   │   ├── stat-card.tsx
+│   │   │   ├── quick-stats.tsx
+│   │   │   ├── urgent-actions.tsx
+│   │   │   ├── pipeline-summary.tsx
+│   │   │   ├── ai-digest.tsx
+│   │   │   ├── quick-actions.tsx
+│   │   │   ├── activity-feed.tsx
+│   │   │   └── dashboard-skeleton.tsx
 │   │   ├── pipeline/          # Kanban components
-│   │   ├── writing/           # AI Writing Studio
+│   │   │   ├── pipeline-header.tsx
+│   │   │   ├── pipeline-card.tsx
+│   │   │   ├── kanban-column.tsx
+│   │   │   ├── kanban-board.tsx
+│   │   │   ├── sortable-card.tsx
+│   │   │   ├── add-grant-modal.tsx
+│   │   │   └── funder-logo.tsx
+│   │   ├── writer/            # AI Writing Studio
+│   │   │   ├── rfp-requirements.tsx
+│   │   │   ├── memory-assist.tsx
+│   │   │   ├── funder-intelligence.tsx
+│   │   │   ├── editor-toolbar.tsx
+│   │   │   ├── section-outline.tsx
+│   │   │   ├── ai-toolbar.tsx
+│   │   │   ├── grant-editor.tsx
+│   │   │   ├── left-panel.tsx
+│   │   │   └── word-count.tsx
 │   │   ├── compliance/        # Compliance Guardian
 │   │   ├── documents/         # Document management
 │   │   └── voice/             # Voice Analysis
 │   ├── server/
 │   │   ├── routers/           # tRPC routers
+│   │   │   ├── dashboard.ts
+│   │   │   ├── pipeline.ts
+│   │   │   ├── writer.ts
+│   │   │   └── ...
 │   │   └── services/          # Business logic
 │   │       ├── ai/            # RAG, embeddings, voice
 │   │       ├── documents/     # Parsing, processing
 │   │       └── compliance/    # Commitment tracking
 │   ├── lib/                   # Utilities
 │   │   ├── trpc/              # tRPC client setup
+│   │   ├── config/
+│   │   │   └── pipeline-stages.ts
+│   │   ├── utils/
+│   │   │   └── grant-progress.ts
+│   │   ├── memory/
+│   │   │   └── search.ts
+│   │   ├── ai/
+│   │   │   └── generate-content.ts
 │   │   ├── pinecone.ts        # Vector DB client
 │   │   └── s3.ts              # Storage utilities
 │   ├── types/                 # TypeScript definitions
@@ -531,31 +615,34 @@ After deployment, register the Inngest webhook:
 - Production deployment
 - Team management
 - Reports framework
+- **Dashboard visual parity** (sparklines, AI digest, activity feed)
+- **AI Writer visual parity** (three-panel, memory assist, funder intel)
+- **Pipeline Kanban visual parity** (drag-drop, logos, progress bars)
 
 ### In Progress 🔄
 
-**Week 1-2: Critical Fixes**
-- Document upload progress indicators
+**Blocker Fixes (Next Session)**
+- Document upload progress indicators (stuck at 0%)
 - Opportunities file upload
-- Settings page implementation
 - Add Commitment button fix
-
-**Week 3-4: UX Polish**
-- Add Grant modal in Pipeline
-- Writer link in sidebar navigation
-- Document preview implementation
-- Document type dropdown
-- Onboarding tour visibility fix
+- S3 presigned URL flow
+- Inngest job triggering
 
 ### Planned ⏳
 
-**Phase 5: Intelligence**
-- Pipeline Report widget
+**Phase 5: Reports and Analytics**
+- Pipeline Report widget with charts
 - Win/Loss Analysis widget
 - Funder Report widget
-- Advanced voice matching
+- Funder Profile page (Image 4 mockup)
 
-**Phase 6: Scale**
+**Phase 6: Remaining Visual Parity**
+- Reports page (Image 7 mockup)
+- Documents page with preview panel (Image 8 mockup)
+- Calendar view (Image 9 mockup)
+- Compliance Guardian polish (Image 10 mockup)
+
+**Phase 7: Scale**
 - Email notifications and digests
 - Browser extension for clipboard
 - Salesforce integration
@@ -568,11 +655,28 @@ After deployment, register the Inngest webhook:
 ### Color Palette
 - **Background:** #0f172a (deep navy)
 - **Card surfaces:** #1e293b (slate)
+- **Card border:** #334155
 - **Primary accent:** #3b82f6 (electric blue)
 - **Success:** #22c55e (green)
 - **Warning:** #f59e0b (amber)
 - **Error:** #ef4444 (red)
-- **Text:** #f8fafc (white), #94a3b8 (muted)
+- **Text primary:** #f8fafc (white)
+- **Text secondary:** #94a3b8 (muted)
+- **Text muted:** #64748b
+
+### Component Patterns
+- **Cards:** `bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl`
+- **Glow effects:** `shadow-lg shadow-blue-500/10` on hover states
+- **Section headers:** `text-lg font-semibold text-slate-100` with `text-slate-400` subtitle
+- **Badges:** `rounded-full px-3 py-1 text-xs font-medium`
+- **Status indicators:** 8px circles with pulse animation for active states
+
+### Spacing
+- **Card padding:** 24px
+- **Section gap:** 32px
+- **Border radius cards:** 12px
+- **Border radius buttons:** 8px
+- **Border radius inputs:** 6px
 
 ### Design Philosophy
 "Bloomberg Terminal for Nonprofits" — information density and professional aesthetics over consumer-grade simplicity. Power users spend hours daily in the application.
