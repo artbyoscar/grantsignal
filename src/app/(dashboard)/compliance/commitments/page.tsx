@@ -5,11 +5,12 @@ import { api } from '@/lib/trpc/client';
 import {
   FileText, Clock, CheckCircle, AlertTriangle,
   ChevronDown, Search, Filter, Download,
-  Calendar, Building2, Tag
+  Calendar, Building2, Tag, Plus
 } from 'lucide-react';
 import { format, isPast, differenceInDays } from 'date-fns';
 import Link from 'next/link';
 import Papa from 'papaparse';
+import { AddCommitmentModal } from '@/components/compliance/add-commitment-modal';
 
 const TYPE_LABELS: Record<string, string> = {
   DELIVERABLE: 'Deliverable',
@@ -33,7 +34,9 @@ export default function CommitmentsPage() {
     type: undefined as string | undefined,
     search: ''
   });
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  const utils = api.useUtils();
   const { data, isLoading } = api.compliance.listCommitments.useQuery({
     status: filters.status as any,
     type: filters.type as any,
@@ -96,13 +99,22 @@ export default function CommitmentsPage() {
           <h1 className="text-3xl font-bold text-white">Commitment Registry</h1>
           <p className="text-slate-400 mt-1">All promises made to funders across your grants</p>
         </div>
-        <button
-          onClick={handleExportCSV}
-          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Commitment
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Filters Bar */}
@@ -242,6 +254,15 @@ export default function CommitmentsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Add Commitment Modal */}
+      <AddCommitmentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => {
+          utils.compliance.listCommitments.invalidate();
+        }}
+      />
     </div>
   );
 }

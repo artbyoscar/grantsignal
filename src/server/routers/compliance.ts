@@ -182,9 +182,37 @@ export const complianceRouter = router({
       status: z.nativeEnum(CommitmentStatus)
     }))
     .mutation(async ({ ctx, input }) => {
+      // Get the commitment to check due date
+      const commitment = await ctx.db.commitment.findUnique({
+        where: { id: input.id, organizationId: ctx.organizationId }
+      });
+
+      if (!commitment) {
+        throw new Error('Commitment not found');
+      }
+
+      // Auto-set to OVERDUE if past due date and not completed
+      let finalStatus = input.status;
+      if (
+        commitment.dueDate &&
+        commitment.dueDate < new Date() &&
+        input.status !== 'COMPLETED'
+      ) {
+        finalStatus = 'OVERDUE';
+      }
+
       return ctx.db.commitment.update({
         where: { id: input.id, organizationId: ctx.organizationId },
-        data: { status: input.status }
+        data: { status: finalStatus }
+      });
+    }),
+
+  // Delete commitment
+  deleteCommitment: orgProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.commitment.delete({
+        where: { id: input.id, organizationId: ctx.organizationId }
       });
     }),
 
