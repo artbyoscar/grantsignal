@@ -191,11 +191,34 @@ export default function PipelinePage() {
     setIsAddModalOpen(true)
   }
 
+  // Create grant mutation
+  const createGrantMutation = api.grants.create.useMutation({
+    onSuccess: () => {
+      toast.success('Grant added successfully')
+      refetch()
+      setIsAddModalOpen(false)
+    },
+    onError: (error) => {
+      toast.error(`Failed to create grant: ${error.message}`)
+    },
+  })
+
   // Handle add grant submission
-  const handleAddGrant = (data: NewGrantData) => {
-    // TODO: Implement grant creation via tRPC
-    toast.success('Grant added successfully')
-    refetch()
+  const handleAddGrant = async (data: NewGrantData) => {
+    try {
+      // Note: This is a simplified implementation
+      // In a real app, you'd need to either:
+      // 1. Create/lookup the funder first
+      // 2. Or extend the grants.create mutation to accept funderName
+      await createGrantMutation.mutateAsync({
+        status: data.status as GrantStatus,
+        amountRequested: data.amount,
+        deadline: data.deadline,
+        notes: `Grant for: ${data.title}\nFunder: ${data.funderName}${data.programArea ? `\nProgram: ${data.programArea}` : ''}`,
+      })
+    } catch (error) {
+      // Error already handled by mutation
+    }
   }
 
   // Clear all filters

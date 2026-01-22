@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { PipelineCard, type PipelineCardProps } from './pipeline-card'
+import { SortableCard } from './sortable-card'
 
 interface KanbanColumn {
   id: string
@@ -213,10 +214,9 @@ export function KanbanBoard({ columns, onCardMove, onCardClick, onAddCard }: Kan
                   </div>
                 ) : (
                   column.cards.map((card) => (
-                    <PipelineCard
+                    <SortableCard
                       key={card.id}
                       {...card}
-                      isDragging={activeId === card.id}
                       onClick={() => onCardClick(card.id)}
                     />
                   ))

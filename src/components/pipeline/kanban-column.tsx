@@ -52,24 +52,24 @@ const stageColors: Record<string, { dot: string; border: string; bg: string; hea
 
 export interface KanbanColumnProps {
   id: string
-  title: string
+  label: string
   count: number
   color: string
-  cards: PipelineCardProps[]
+  description?: string
   isCollapsed?: boolean
   onToggleCollapse: () => void
-  onAddCard: () => void
+  children?: React.ReactNode
 }
 
 export function KanbanColumn({
   id,
-  title,
+  label,
   count,
   color,
-  cards,
+  description,
   isCollapsed = false,
   onToggleCollapse,
-  onAddCard,
+  children,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
@@ -118,7 +118,7 @@ export function KanbanColumn({
             className="text-xs font-semibold text-slate-300 whitespace-nowrap"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
-            {title}
+            {label}
           </span>
         </div>
       </div>
@@ -138,7 +138,7 @@ export function KanbanColumn({
         {/* Left: Colored Dot + Title + Count Badge */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
-          <h3 className="text-sm font-semibold text-white truncate">{title}</h3>
+          <h3 className="text-sm font-semibold text-white truncate">{label}</h3>
           <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-700/50 text-slate-300">
             {count}
           </span>
@@ -153,13 +153,6 @@ export function KanbanColumn({
           >
             <Minus className="w-4 h-4 text-slate-400" />
           </button>
-          <button
-            onClick={onAddCard}
-            className="p-1 hover:bg-white/10 rounded transition-colors"
-            aria-label="Add card"
-          >
-            <Plus className="w-4 h-4 text-slate-400" />
-          </button>
         </div>
       </div>
 
@@ -173,9 +166,7 @@ export function KanbanColumn({
           transition-all duration-200
         `}
       >
-        {cards.map((card) => (
-          <div key={card.id}>{/* Card components will be rendered here */}</div>
-        ))}
+        {children}
       </div>
     </div>
   )

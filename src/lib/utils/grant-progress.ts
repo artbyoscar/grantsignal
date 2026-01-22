@@ -12,8 +12,8 @@ export interface GrantSection {
 /**
  * Grant with typed sections
  */
-export interface GrantWithSections extends Grant {
-  draftContent?: Record<string, GrantSection> | null;
+export interface GrantWithSections extends Omit<Grant, 'draftContent'> {
+  draftContent: Record<string, GrantSection> | null;
 }
 
 /**
