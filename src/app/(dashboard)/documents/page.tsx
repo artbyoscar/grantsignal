@@ -3,7 +3,7 @@
 import { useState, useRef, DragEvent, ChangeEvent } from 'react'
 import { FileText, Upload, Search, FolderOpen, File, X, Loader2, AlertCircle, CheckCircle, Clock, XCircle, Eye } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
-import { DocumentType, ProcessingStatus } from '@prisma/client'
+import { DocumentType, ProcessingStatus } from '@/types/client-types'
 import { DocumentCard, DocumentCardSkeleton } from '@/components/documents/document-card'
 import { toast } from 'sonner'
 

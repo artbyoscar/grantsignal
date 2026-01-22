@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/client-types'
 
 interface InviteMemberModalProps {
   open: boolean

@@ -119,3 +119,61 @@ export interface GrantWithDetails extends Grant {
     commitments: number
   }
 }
+
+// ============================================================================
+// Document Type
+// ============================================================================
+
+/**
+ * Document type enum as const object (client-safe)
+ * Matches the Prisma DocumentType enum but safe for client use
+ */
+export const DocumentType = {
+  PROPOSAL: 'PROPOSAL',
+  REPORT: 'REPORT',
+  BUDGET: 'BUDGET',
+  LOI: 'LOI',
+  AWARD_LETTER: 'AWARD_LETTER',
+  AGREEMENT: 'AGREEMENT',
+  ANNUAL_REPORT: 'ANNUAL_REPORT',
+  STRATEGIC_PLAN: 'STRATEGIC_PLAN',
+  EVALUATION: 'EVALUATION',
+  OTHER: 'OTHER',
+} as const
+
+export type DocumentType = typeof DocumentType[keyof typeof DocumentType]
+
+// ============================================================================
+// Processing Status
+// ============================================================================
+
+/**
+ * Processing status enum as const object (client-safe)
+ * Matches the Prisma ProcessingStatus enum but safe for client use
+ */
+export const ProcessingStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  NEEDS_REVIEW: 'NEEDS_REVIEW',
+} as const
+
+export type ProcessingStatus = typeof ProcessingStatus[keyof typeof ProcessingStatus]
+
+// ============================================================================
+// User Role
+// ============================================================================
+
+/**
+ * User role enum as const object (client-safe)
+ * Matches the Prisma UserRole enum but safe for client use
+ */
+export const UserRole = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+  VIEWER: 'VIEWER',
+} as const
+
+export type UserRole = typeof UserRole[keyof typeof UserRole]

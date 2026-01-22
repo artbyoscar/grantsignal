@@ -13,7 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { InviteMemberModal } from '@/components/team/invite-member-modal'
 import { toast } from 'sonner'
-import { UserRole } from '@prisma/client'
+import { UserRole } from '@/types/client-types'
 
 export default function TeamPage() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false)

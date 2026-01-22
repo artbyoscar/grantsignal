@@ -13,7 +13,7 @@ import {
   MoreVertical
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { DocumentType, ProcessingStatus } from '@prisma/client'
+import { DocumentType, ProcessingStatus } from '@/types/client-types'
 import { ConfidenceBadge } from '@/components/ui/confidence-badge'
 import { Badge } from '@/components/ui/badge'
 import {

@@ -1,4 +1,4 @@
-import { DocumentType, ProcessingStatus } from '@prisma/client'
+import { DocumentType, ProcessingStatus } from '@/types/client-types'
 
 export type HealthStatus = 'successful' | 'needs-review' | 'failed'
 

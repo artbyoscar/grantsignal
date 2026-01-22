@@ -1,5 +1,5 @@
 import { FileText, FileSpreadsheet, File, Download, MoreVertical, Eye } from 'lucide-react'
-import { DocumentType, ProcessingStatus } from '@prisma/client'
+import { DocumentType, ProcessingStatus } from '@/types/client-types'
 import { formatDistanceToNow } from 'date-fns'
 
 type Document = {

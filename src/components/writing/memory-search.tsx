@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Loader2, FileText } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
-import { DocumentType } from '@prisma/client'
+import { DocumentType } from '@/types/client-types'
 import { toast } from 'sonner'
 import { ConfidenceBadge } from '@/components/ui/confidence-badge'
 

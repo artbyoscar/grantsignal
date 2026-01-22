@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, FileText, Loader2, X, ArrowRight } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
-import { DocumentType } from '@prisma/client'
+import { DocumentType } from '@/types/client-types'
 
 export interface MemorySearchResult {
   documentId: string
