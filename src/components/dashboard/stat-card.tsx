@@ -9,6 +9,7 @@ interface StatCardProps {
     value: string;
     label: string;
   };
+  trendLabel?: string;
   sparklineData?: number[];
   onClick?: () => void;
 }
@@ -17,6 +18,7 @@ export function StatCard({
   label,
   value,
   trend,
+  trendLabel,
   sparklineData,
   onClick,
 }: StatCardProps) {
@@ -68,6 +70,11 @@ export function StatCard({
             <span>
               {trend.value} {trend.label}
             </span>
+          </div>
+        )}
+        {trendLabel && !trend && (
+          <div className="text-sm text-slate-400">
+            {trendLabel}
           </div>
         )}
       </div>

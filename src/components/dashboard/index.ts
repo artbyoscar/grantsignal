@@ -17,8 +17,10 @@
 
 export { StatCard } from './stat-card';
 export { QuickStats } from './quick-stats';
-export { UrgentActionsPanel } from './urgent-actions';
+export { UrgentActionsPanel } from './urgent-actions-panel';
 export { PipelineSummary } from './pipeline-summary';
 export { AIDigest } from './ai-digest';
 export { QuickActionsPanel } from './quick-actions';
 export { ActivityFeed } from './activity-feed';
+export { ActivityFeedClient } from './activity-feed-client';
+export { AIDigestClient } from './ai-digest-client';

@@ -181,30 +181,27 @@ export const dashboardRouter = router({
       const deadline = grant.deadline!
       const daysRemaining = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-      // Determine action type based on status
-      let type: 'deadline' | 'report' | 'contract' | 'review' = 'deadline'
-      let actionLabel = 'Review'
+      // Determine severity based on days remaining
+      const severity: 'critical' | 'warning' = daysRemaining <= 3 ? 'critical' : 'warning'
 
+      // Determine action type based on status
+      let actionType = 'Submit Application'
       if (grant.status === GrantStatus.REVIEW) {
-        type = 'review'
-        actionLabel = 'Review Draft'
+        actionType = 'Review Draft'
       } else if (grant.status === GrantStatus.WRITING) {
-        type = 'deadline'
-        actionLabel = 'Continue Writing'
+        actionType = 'Continue Writing'
       } else if (grant.status === GrantStatus.SUBMITTED) {
-        type = 'deadline'
-        actionLabel = 'View Status'
+        actionType = 'View Status'
       }
 
       return {
         id: grant.id,
-        type,
-        title: grant.opportunity?.title || grant.funder?.name || 'Grant Application',
+        grantId: grant.id,
         grantName: grant.opportunity?.title || grant.funder?.name || 'Unnamed Grant',
         funderName: grant.funder?.name || 'Unknown Funder',
         daysRemaining,
-        actionLabel,
-        actionHref: `/grants/${grant.id}`,
+        severity,
+        actionType,
       }
     })
   }),

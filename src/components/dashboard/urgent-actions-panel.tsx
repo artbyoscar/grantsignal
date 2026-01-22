@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-r
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-interface UrgentAction {
+export interface UrgentAction {
   id: string;
   grantName: string;
   grantId: string;
@@ -32,7 +32,8 @@ export function UrgentActionsPanel({ actions = [], className }: UrgentActionsPan
   return (
     <div
       className={cn(
-        'relative rounded-xl border border-slate-700/50 bg-slate-800/60 p-6',
+        'relative rounded-xl border border-slate-700 bg-slate-800/50 backdrop-blur p-6',
+        'hover:shadow-lg hover:shadow-blue-500/10',
         'transition-all duration-300',
         className
       )}
