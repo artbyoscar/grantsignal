@@ -5,48 +5,7 @@ import { Edit3, MoreHorizontal, Flag } from 'lucide-react'
 import { useDraggable } from '@dnd-kit/core'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { api } from '@/lib/trpc/client'
-
-// Grant Status Enum (client-safe)
-const GrantStatus = {
-  PROSPECT: 'PROSPECT',
-  RESEARCHING: 'RESEARCHING',
-  WRITING: 'WRITING',
-  REVIEW: 'REVIEW',
-  SUBMITTED: 'SUBMITTED',
-  PENDING: 'PENDING',
-  AWARDED: 'AWARDED',
-  DECLINED: 'DECLINED',
-  ACTIVE: 'ACTIVE',
-  CLOSEOUT: 'CLOSEOUT',
-  COMPLETED: 'COMPLETED'
-} as const
-
-type GrantStatus = typeof GrantStatus[keyof typeof GrantStatus]
-
-// Grant type definition (client-safe, no server imports)
-interface Grant {
-  id: string
-  title: string
-  status: GrantStatus
-  deadline: Date | null
-  amountRequested: number | null
-  amountAwarded: number | null
-  assigneeId: string | null
-  funderId: string | null
-  opportunityId: string | null
-  createdAt: Date
-  updatedAt: Date
-  funder?: { id: string; name: string } | null
-  opportunity?: { id: string; title: string; deadline: Date | null } | null
-  assignee?: { id: string; name: string | null; email: string } | null
-  assignedTo?: {
-    id: string
-    name: string | null
-    email: string
-    displayName: string | null
-    avatarUrl: string | null
-  } | null
-}
+import { GrantStatus, type Grant } from '@/types/client-types'
 
 type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
 

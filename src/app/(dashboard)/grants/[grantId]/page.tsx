@@ -4,23 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Edit3, Calendar, DollarSign, Building2, Target, FileText, Clock } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { AssigneeSelector } from '@/components/grants/assignee-selector'
-
-// Grant Status Enum (client-safe)
-const GrantStatus = {
-  PROSPECT: 'PROSPECT',
-  RESEARCHING: 'RESEARCHING',
-  WRITING: 'WRITING',
-  REVIEW: 'REVIEW',
-  SUBMITTED: 'SUBMITTED',
-  PENDING: 'PENDING',
-  AWARDED: 'AWARDED',
-  DECLINED: 'DECLINED',
-  ACTIVE: 'ACTIVE',
-  CLOSEOUT: 'CLOSEOUT',
-  COMPLETED: 'COMPLETED'
-} as const
-
-type GrantStatus = typeof GrantStatus[keyof typeof GrantStatus]
+import { GrantStatus } from '@/types/client-types'
 
 // Status badge colors
 const STATUS_COLORS: Record<string, string> = {

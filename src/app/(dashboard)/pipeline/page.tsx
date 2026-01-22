@@ -18,54 +18,7 @@ import { api } from '@/lib/trpc/client'
 import { toast } from 'sonner'
 import { PipelineTable } from '@/components/pipeline/pipeline-table'
 import { DraggableGrantCard as DraggableCard, GrantCard as StaticGrantCard } from '@/components/pipeline/pipeline-card'
-
-// Grant Status Enum (client-safe)
-const GrantStatus = {
-  PROSPECT: 'PROSPECT',
-  RESEARCHING: 'RESEARCHING',
-  WRITING: 'WRITING',
-  REVIEW: 'REVIEW',
-  SUBMITTED: 'SUBMITTED',
-  PENDING: 'PENDING',
-  AWARDED: 'AWARDED',
-  DECLINED: 'DECLINED',
-  ACTIVE: 'ACTIVE',
-  CLOSEOUT: 'CLOSEOUT',
-  COMPLETED: 'COMPLETED'
-} as const
-
-type GrantStatus = typeof GrantStatus[keyof typeof GrantStatus]
-
-// Funder Type Enum
-enum FunderType {
-  PRIVATE_FOUNDATION = 'PRIVATE_FOUNDATION',
-  COMMUNITY_FOUNDATION = 'COMMUNITY_FOUNDATION',
-  CORPORATE = 'CORPORATE',
-  FEDERAL = 'FEDERAL',
-  STATE = 'STATE',
-  LOCAL = 'LOCAL',
-  OTHER = 'OTHER',
-}
-
-// Grant type definition (client-safe, no server imports)
-interface Grant {
-  id: string
-  status: GrantStatus
-  deadline: Date | null
-  amountRequested: number | null
-  amountAwarded: number | null
-  assignedToId: string | null
-  funderId: string | null
-  opportunityId: string | null
-  programId: string | null
-  createdAt: Date
-  updatedAt: Date
-  funder?: { id: string; name: string; type?: string } | null
-  opportunity?: { id: string; title: string; deadline: Date | null } | null
-  program?: { id: string; name: string } | null
-  assignedTo?: { id: string; displayName: string | null; avatarUrl: string | null; clerkUserId: string } | null
-  _count?: { documents: number; commitments: number }
-}
+import { GrantStatus, FunderType, type Grant } from '@/types/client-types'
 
 // Column configuration with colors
 const COLUMNS = [
