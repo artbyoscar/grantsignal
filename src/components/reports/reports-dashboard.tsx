@@ -63,11 +63,22 @@ const sampleYoYData = [
   { category: 'Q4', currentYear: 1850000, previousYear: 1420000 },
 ]
 
+const sampleFunnelData = {
+  stages: [
+    { name: 'Prospect', value: 2500000, count: 24, color: '#f59e0b' },
+    { name: 'Researching', value: 1800000, count: 18, color: '#3b82f6' },
+    { name: 'Writing', value: 1200000, count: 12, color: '#8b5cf6' },
+    { name: 'Submitted', value: 800000, count: 8, color: '#6366f1' },
+  ],
+  total: 6300000,
+}
+
 interface ReportsDashboardProps {
   // Add props for real data when available
   winRateData?: typeof sampleWinRateData
   programData?: typeof sampleProgramData
   stageData?: typeof sampleStageData
+  funnelData?: typeof sampleFunnelData
   funderData?: typeof sampleFunderData
   yoyData?: typeof sampleYoYData
 }
@@ -76,6 +87,7 @@ export function ReportsDashboard({
   winRateData = sampleWinRateData,
   programData = sampleProgramData,
   stageData = sampleStageData,
+  funnelData = sampleFunnelData,
   funderData = sampleFunderData,
   yoyData = sampleYoYData,
 }: ReportsDashboardProps) {
