@@ -9,11 +9,41 @@ export function AIWriter() {
   const [content, setContent] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  // Mock data for LeftPanel
+  const mockRfpSections = [
+    {
+      id: '1',
+      name: 'Executive Summary',
+      wordLimit: 500,
+      currentWords: 0,
+      isComplete: false,
+      isActive: false,
+    },
+  ];
+
+  const mockMemoryResults: any[] = [];
+
+  const mockFunderInfo = {
+    funderName: 'Sample Funder',
+    focus: ['Education'],
+    avgGrantSize: 50000,
+    keyPriorities: ['Impact', 'Innovation'],
+  };
+
   return (
     <div className="h-screen bg-[#0f172a] flex">
       {/* Left Panel: RFP Requirements + Memory Assist + Funder Intelligence */}
       <div className="w-80 border-r border-slate-700 overflow-y-auto">
-        <LeftPanel />
+        <LeftPanel
+          rfpSections={mockRfpSections}
+          memoryResults={mockMemoryResults}
+          funderInfo={mockFunderInfo}
+          onSectionClick={() => {}}
+          onMemorySearch={() => {}}
+          onMemoryInsert={() => {}}
+          memorySearchQuery=""
+          isSearchingMemory={false}
+        />
       </div>
 
       {/* Center Panel: Rich Text Editor */}
