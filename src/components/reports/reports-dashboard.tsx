@@ -5,6 +5,7 @@ import {
   WinRateChart,
   FundingByProgramChart,
   PipelineByStageChart,
+  PipelineFunnel,
   TopFundersChart,
   YoYComparisonChart,
   ReportTypeCard,
