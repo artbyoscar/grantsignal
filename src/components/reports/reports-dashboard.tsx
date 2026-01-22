@@ -13,18 +13,18 @@ import {
 
 // Sample data - replace with real data from tRPC
 const sampleWinRateData = [
-  { month: 'Jan', winRate: 45 },
-  { month: 'Feb', winRate: 48 },
-  { month: 'Mar', winRate: 52 },
-  { month: 'Apr', winRate: 50 },
-  { month: 'May', winRate: 55 },
-  { month: 'Jun', winRate: 58 },
-  { month: 'Jul', winRate: 56 },
-  { month: 'Aug', winRate: 60 },
-  { month: 'Sep', winRate: 62 },
-  { month: 'Oct', winRate: 65 },
-  { month: 'Nov', winRate: 63 },
-  { month: 'Dec', winRate: 67 },
+  { month: 'Jan', rate: 45 },
+  { month: 'Feb', rate: 48 },
+  { month: 'Mar', rate: 52 },
+  { month: 'Apr', rate: 50 },
+  { month: 'May', rate: 55 },
+  { month: 'Jun', rate: 58 },
+  { month: 'Jul', rate: 56 },
+  { month: 'Aug', rate: 60 },
+  { month: 'Sep', rate: 62 },
+  { month: 'Oct', rate: 65 },
+  { month: 'Nov', rate: 63 },
+  { month: 'Dec', rate: 67 },
 ]
 
 const sampleProgramData = [
@@ -44,16 +44,16 @@ const sampleStageData = [
 ]
 
 const sampleFunderData = [
-  { name: 'Gates Foundation', value: 2500000, count: 8 },
-  { name: 'Ford Foundation', value: 1800000, count: 6 },
-  { name: 'Rockefeller Foundation', value: 1500000, count: 7 },
-  { name: 'MacArthur Foundation', value: 1200000, count: 5 },
-  { name: 'Carnegie Corporation', value: 950000, count: 4 },
-  { name: 'Kellogg Foundation', value: 850000, count: 6 },
-  { name: 'Mellon Foundation', value: 720000, count: 3 },
-  { name: 'Hewlett Foundation', value: 680000, count: 4 },
-  { name: 'Knight Foundation', value: 520000, count: 3 },
-  { name: 'Spencer Foundation', value: 450000, count: 2 },
+  { name: 'Gates Foundation', amount: 2500000 },
+  { name: 'Ford Foundation', amount: 1800000 },
+  { name: 'Rockefeller Foundation', amount: 1500000 },
+  { name: 'MacArthur Foundation', amount: 1200000 },
+  { name: 'Carnegie Corporation', amount: 950000 },
+  { name: 'Kellogg Foundation', amount: 850000 },
+  { name: 'Mellon Foundation', amount: 720000 },
+  { name: 'Hewlett Foundation', amount: 680000 },
+  { name: 'Knight Foundation', amount: 520000 },
+  { name: 'Spencer Foundation', amount: 450000 },
 ]
 
 const sampleYoYData = [
@@ -104,13 +104,17 @@ export function ReportsDashboard({
     <div className="space-y-6">
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <WinRateChart data={winRateData} />
+        <WinRateChart data={winRateData} dateRange="Jan 2024 - Dec 2024" />
         <FundingByProgramChart data={programData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PipelineByStageChart data={stageData} />
-        <TopFundersChart data={funderData} />
+        <TopFundersChart funders={funderData} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        <PipelineFunnel stages={funnelData.stages} total={funnelData.total} />
       </div>
 
       <div className="grid grid-cols-1 gap-6">
