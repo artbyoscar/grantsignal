@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { X } from 'lucide-react'
 import { GrantStatus } from '@/types/client-types'
 
@@ -39,6 +39,16 @@ export function AddGrantModal({ isOpen, onClose, onSubmit, defaultStatus }: AddG
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Update status when defaultStatus changes and modal opens
+  useEffect(() => {
+    if (isOpen && defaultStatus) {
+      setFormData((prev) => ({
+        ...prev,
+        status: defaultStatus,
+      }))
+    }
+  }, [isOpen, defaultStatus])
 
   // Reset form when modal closes
   const handleClose = () => {

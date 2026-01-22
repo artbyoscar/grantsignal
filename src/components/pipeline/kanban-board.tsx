@@ -4,8 +4,8 @@ import { useState } from 'react'
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
-  pointerWithin,
+  closestCenter,
+  useDroppable,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -31,6 +31,90 @@ export interface KanbanBoardProps {
   onCardMove: (cardId: string, fromColumn: string, toColumn: string, newIndex: number) => void
   onCardClick: (cardId: string) => void
   onAddCard: (columnId: string) => void
+}
+
+// Droppable column component
+interface DroppableColumnProps {
+  column: KanbanColumn
+  isOver: boolean
+  onCardClick: (cardId: string) => void
+  onAddCard: (columnId: string) => void
+}
+
+function DroppableColumn({ column, isOver, onCardClick, onAddCard }: DroppableColumnProps) {
+  const { setNodeRef } = useDroppable({
+    id: column.id,
+  })
+
+  return (
+    <div className="flex-shrink-0 w-80 scroll-snap-align-start">
+      {/* Column Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: column.color }}
+          />
+          <h3 className="text-sm font-semibold text-slate-200">{column.title}</h3>
+          <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">
+            {column.cards.length}
+          </span>
+        </div>
+        <button
+          onClick={() => onAddCard(column.id)}
+          className="text-slate-400 hover:text-slate-200 transition-colors"
+          title="Add card"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Column Content with Droppable Area */}
+      <SortableContext
+        items={column.cards.map((card) => card.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div
+          ref={setNodeRef}
+          className={`
+            min-h-[200px] rounded-lg border-2 border-dashed p-3 space-y-3
+            ${
+              isOver
+                ? 'border-blue-500 bg-blue-500/5'
+                : 'border-slate-700 bg-slate-900/30'
+            }
+            transition-colors duration-200
+          `}
+        >
+          {column.cards.length === 0 ? (
+            <div className="flex items-center justify-center h-32 text-slate-500 text-sm">
+              Drop cards here
+            </div>
+          ) : (
+            column.cards.map((card) => (
+              <SortableCard
+                key={card.id}
+                {...card}
+                onClick={() => onCardClick(card.id)}
+              />
+            ))
+          )}
+        </div>
+      </SortableContext>
+    </div>
+  )
 }
 
 export function KanbanBoard({ columns, onCardMove, onCardClick, onAddCard }: KanbanBoardProps) {
@@ -146,7 +230,7 @@ export function KanbanBoard({ columns, onCardMove, onCardClick, onAddCard }: Kan
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -155,75 +239,13 @@ export function KanbanBoard({ columns, onCardMove, onCardClick, onAddCard }: Kan
       {/* Horizontal scrollable container */}
       <div className="flex gap-4 overflow-x-auto pb-4 px-2 scroll-snap-type-x scroll-snap-mandatory">
         {columns.map((column) => (
-          <div
+          <DroppableColumn
             key={column.id}
-            className="flex-shrink-0 w-80 scroll-snap-align-start"
-          >
-            {/* Column Header */}
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: column.color }}
-                />
-                <h3 className="text-sm font-semibold text-slate-200">{column.title}</h3>
-                <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">
-                  {column.cards.length}
-                </span>
-              </div>
-              <button
-                onClick={() => onAddCard(column.id)}
-                className="text-slate-400 hover:text-slate-200 transition-colors"
-                title="Add card"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Column Content with Droppable Area */}
-            <SortableContext
-              items={column.cards.map((card) => card.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div
-                className={`
-                  min-h-[200px] rounded-lg border-2 border-dashed p-3 space-y-3
-                  ${
-                    overId === column.id
-                      ? 'border-blue-500 bg-blue-500/5'
-                      : 'border-slate-700 bg-slate-900/30'
-                  }
-                  transition-colors duration-200
-                `}
-              >
-                {column.cards.length === 0 ? (
-                  <div className="flex items-center justify-center h-32 text-slate-500 text-sm">
-                    Drop cards here
-                  </div>
-                ) : (
-                  column.cards.map((card) => (
-                    <SortableCard
-                      key={card.id}
-                      {...card}
-                      onClick={() => onCardClick(card.id)}
-                    />
-                  ))
-                )}
-              </div>
-            </SortableContext>
-          </div>
+            column={column}
+            isOver={overId === column.id}
+            onCardClick={onCardClick}
+            onAddCard={onAddCard}
+          />
         ))}
       </div>
 
