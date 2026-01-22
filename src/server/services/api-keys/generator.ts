@@ -54,9 +54,9 @@ function base62Encode(buffer: Buffer): string {
 
   // Convert to base62
   while (num > 0) {
-    const remainder = Number(num % 62n)
+    const remainder = Number(num % BigInt(62))
     result = base62Chars[remainder] + result
-    num = num / 62n
+    num = num / BigInt(62)
   }
 
   // Pad to consistent length (43 chars for 32 bytes)

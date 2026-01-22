@@ -139,8 +139,13 @@ export async function detectConflicts(organizationId: string): Promise<DetectedC
       const newConflict = await db.commitmentConflict.create({
         data: {
           commitmentId: conflict.commitmentIds[0],
+          relatedCommitmentIds: conflict.commitmentIds.slice(1),
           conflictType: conflict.type,
           description: conflict.description,
+          detectedValues: {
+            conflictingCommitments: conflict.commitmentIds,
+            affectedGrants: conflict.affectedGrants
+          },
           severity: conflict.severity,
           affectedGrants: conflict.affectedGrants,
           suggestedResolution: conflict.suggestedResolution,

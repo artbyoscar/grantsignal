@@ -109,4 +109,5 @@ export async function extractCommitmentsFromText(
 ): Promise<ExtractedCommitment[]> {
   // Same logic but for ad-hoc text analysis (e.g., draft being written)
   // Used for real-time compliance checking in Writing Studio
+  return []
 }

@@ -80,7 +80,7 @@ export const voiceRouter = router({
             extractedText: true,
           },
           orderBy: {
-            uploadedAt: 'desc',
+            createdAt: 'desc',
           },
           take: 20, // Analyze up to 20 most recent documents
         })

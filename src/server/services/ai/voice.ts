@@ -226,7 +226,7 @@ export async function getOrganizationVoice(
       return null
     }
 
-    return org.voiceProfile as VoiceProfile
+    return (org.voiceProfile as unknown) as VoiceProfile
   } catch (error) {
     console.error('[Voice] Failed to get voice profile:', error)
     throw new Error(

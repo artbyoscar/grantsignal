@@ -1,4 +1,4 @@
-import * as pdfParse from 'pdf-parse'
+const pdfParse = require('pdf-parse')
 import mammoth from 'mammoth'
 import { confidenceScoring } from '../ai/confidence-scoring'
 import type { ParsedDocumentMetadata, ParseConfidenceResult } from '@/types/confidence'
