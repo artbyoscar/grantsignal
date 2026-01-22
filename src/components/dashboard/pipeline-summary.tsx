@@ -1,107 +1,138 @@
-import { cn } from "@/lib/utils"
+"use client";
 
-type Grant = {
-  id: string
-  status: string
-  amountRequested: any // Decimal or number or null
-  [key: string]: any
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+
+export interface PipelineStage {
+  id: string;
+  name: string;
+  count: number;
+  amount: number;
+  color: string;
 }
 
-type PipelineSummaryProps = {
-  grants: Grant[]
-  isLoading?: boolean
+export const STAGE_COLORS = {
+  PROSPECT: "#f59e0b",
+  RESEARCHING: "#3b82f6",
+  WRITING: "#8b5cf6",
+  REVIEW: "#06b6d4",
+  SUBMITTED: "#6366f1",
+  PENDING: "#f97316",
+  AWARDED: "#22c55e",
+  DECLINED: "#64748b",
+} as const;
+
+interface PipelineSummaryProps {
+  stages: PipelineStage[];
 }
 
-const stageConfig = [
-  { status: 'PROSPECT', name: 'Prospect', color: 'bg-slate-500' },
-  { status: 'RESEARCHING', name: 'Researching', color: 'bg-purple-500' },
-  { status: 'WRITING', name: 'Writing', color: 'bg-blue-500' },
-  { status: 'REVIEW', name: 'Review', color: 'bg-indigo-500' },
-  { status: 'SUBMITTED', name: 'Submitted', color: 'bg-cyan-500' },
-  { status: 'PENDING', name: 'Pending', color: 'bg-orange-500' },
-  { status: 'AWARDED', name: 'Awarded', color: 'bg-emerald-500' },
-  { status: 'ACTIVE', name: 'Active', color: 'bg-emerald-600' },
-]
+export function PipelineSummary({ stages }: PipelineSummaryProps) {
+  const [hoveredStage, setHoveredStage] = useState<string | null>(null);
 
-export function PipelineSummary({ grants, isLoading }: PipelineSummaryProps) {
-  // Group grants by status and count them
-  const stages = stageConfig.map(config => {
-    const count = grants.filter(g => g.status === config.status).length
-    return { ...config, count }
-  })
+  // Calculate totals
+  const totalCount = stages.reduce((sum, stage) => sum + stage.count, 0);
+  const totalAmount = stages.reduce((sum, stage) => sum + stage.amount, 0);
 
-  const totalGrants = grants.length
+  // Format amount as $XK or $X.XM
+  const formatAmount = (amount: number): string => {
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(1)}M`;
+    }
+    return `$${Math.round(amount / 1000)}K`;
+  };
 
-  // Calculate total pipeline value from all grants (not just active pipeline)
-  const totalValue = grants.reduce((sum, grant) => {
-    return sum + Number(grant.amountRequested || 0)
-  }, 0)
+  return (
+    <Card className="overflow-hidden">
+      {/* Header */}
+      <div className="p-6 pb-4">
+        <h2 className="text-lg font-semibold text-slate-100">
+          Pipeline Summary
+        </h2>
+      </div>
 
-  if (isLoading) {
-    return (
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Pipeline Summary</h2>
-          <span className="text-sm text-slate-400">Loading...</span>
+      {/* Stacked Bar Chart */}
+      <div className="px-6 pb-4">
+        <div className="relative h-12 rounded-lg overflow-hidden flex">
+          {stages.map((stage) => {
+            const widthPercentage =
+              totalCount > 0 ? (stage.count / totalCount) * 100 : 0;
+            const isHovered = hoveredStage === stage.id;
+
+            return (
+              <div
+                key={stage.id}
+                className="relative group"
+                style={{
+                  width: `${widthPercentage}%`,
+                  backgroundColor: stage.color,
+                }}
+                onMouseEnter={() => setHoveredStage(stage.id)}
+                onMouseLeave={() => setHoveredStage(null)}
+              >
+                {/* Count label */}
+                {widthPercentage > 8 && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-white font-semibold text-sm">
+                      {stage.count}
+                    </span>
+                  </div>
+                )}
+
+                {/* Hover Tooltip */}
+                {isHovered && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                    <div className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
+                      <div className="text-xs font-medium text-slate-100 mb-1">
+                        {stage.name}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {stage.count} grants · {formatAmount(stage.amount)}
+                      </div>
+                      {/* Arrow */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+                        <div className="border-4 border-transparent border-t-slate-700" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-        <div className="h-3 bg-slate-700 rounded-full animate-pulse" />
-        <div className="flex flex-wrap gap-4 mt-4">
-          {stageConfig.map((stage) => (
-            <div key={stage.name} className="flex items-center gap-2">
-              <div className={cn("w-3 h-3 rounded-full", stage.color)} />
+      </div>
+
+      {/* Legend */}
+      <div className="px-6 pb-4">
+        <div className="flex flex-wrap gap-4">
+          {stages.map((stage) => (
+            <div key={stage.id} className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: stage.color }}
+              />
               <span className="text-xs text-slate-400">{stage.name}</span>
             </div>
           ))}
         </div>
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <p className="text-sm text-slate-400">Total Pipeline Value</p>
-          <div className="h-8 w-32 bg-slate-700 rounded animate-pulse mt-1" />
+      </div>
+
+      {/* Footer */}
+      <div className="px-6 py-4 border-t border-slate-700/50 bg-slate-800/30">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm text-slate-400">Total Pipeline</div>
+            <div className="text-xl font-bold text-slate-100 mt-0.5">
+              {totalCount} grants
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-slate-400">Total Value</div>
+            <div className="text-xl font-bold text-emerald-400 mt-0.5">
+              {formatAmount(totalAmount)}
+            </div>
+          </div>
         </div>
       </div>
-    )
-  }
-
-  return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-white">Pipeline Summary</h2>
-        <span className="text-sm text-slate-400">{totalGrants} grants</span>
-      </div>
-
-      {/* Pipeline bar */}
-      <div className="h-3 bg-slate-700 rounded-full overflow-hidden flex">
-        {totalGrants === 0 ? (
-          <div className="w-full bg-slate-600" />
-        ) : (
-          stages.map((stage) => (
-            stage.count > 0 && (
-              <div
-                key={stage.name}
-                className={cn(stage.color)}
-                style={{ width: `${(stage.count / totalGrants) * 100}%` }}
-              />
-            )
-          ))
-        )}
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 mt-4">
-        {stages.map((stage) => (
-          <div key={stage.name} className="flex items-center gap-2">
-            <div className={cn("w-3 h-3 rounded-full", stage.color)} />
-            <span className="text-xs text-slate-400">
-              {stage.name} {stage.count > 0 && `(${stage.count})`}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Total value */}
-      <div className="mt-4 pt-4 border-t border-slate-700">
-        <p className="text-sm text-slate-400">Total Pipeline Value</p>
-        <p className="text-2xl font-bold text-white">${totalValue.toLocaleString()}</p>
-      </div>
-    </div>
-  )
+    </Card>
+  );
 }
