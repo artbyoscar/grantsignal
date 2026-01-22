@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { OnboardingGuard } from '@/components/onboarding/onboarding-guard'
 import { ConditionalSidebarLayout } from '@/components/onboarding/conditional-sidebar-layout'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardLayout({
   children,
 }: {

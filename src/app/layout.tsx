@@ -5,6 +5,8 @@ import { TRPCProvider } from '@/trpc/react'
 import { Toaster } from 'sonner'
 import "./globals.css";
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: "GrantSignal",
   description: "The Organizational Memory Engine for Nonprofits",
