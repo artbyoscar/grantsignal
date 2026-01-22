@@ -36,7 +36,8 @@
       "Bash(timeout 8 tail -f:*)",
       "Bash(pnpm dlx:*)",
       "Bash(pnpm build:*)",
-      "Bash(pnpm tsc:*)"
+      "Bash(pnpm tsc:*)",
+      "Bash(if not exist \"c:\\\\Users\\\\OscarNuñez\\\\Desktop\\\\grantsignal\\\\src\\\\components\\\\dashboard\" mkdir \"c:\\\\Users\\\\OscarNuñez\\\\Desktop\\\\grantsignal\\\\src\\\\components\\\\dashboard\")"
     ]
   }
 }
