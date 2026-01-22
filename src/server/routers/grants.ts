@@ -190,6 +190,7 @@ export const grantsRouter = router({
         amountRequested: z.number().positive().optional(),
         deadline: z.date().optional(),
         notes: z.string().optional(),
+        assignedToId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -197,11 +198,44 @@ export const grantsRouter = router({
         data: {
           ...input,
           organizationId: ctx.organizationId,
+          assignedAt: input.assignedToId ? new Date() : null,
         },
         include: {
-          funder: true,
-          opportunity: true,
-          program: true,
+          funder: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          opportunity: {
+            select: {
+              id: true,
+              title: true,
+              deadline: true,
+            },
+          },
+          program: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+              clerkUserId: true,
+            },
+          },
+          documents: true,
+          _count: {
+            select: {
+              documents: true,
+              commitments: true,
+            },
+          },
         },
       })
 
@@ -261,6 +295,7 @@ export const grantsRouter = router({
       z.object({
         id: z.string(),
         status: z.nativeEnum(GrantStatus),
+        newIndex: z.number().optional(), // Optional position within column
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -279,6 +314,8 @@ export const grantsRouter = router({
       const oldStatus = oldGrant.status
 
       // Update the status
+      // Note: For sort order within columns, we're using updatedAt as a simple ordering mechanism
+      // If you need explicit ordering, consider adding a sortOrder field to the Grant model
       const grant = await ctx.db.grant.updateMany({
         where: {
           id: input.id,
@@ -286,6 +323,8 @@ export const grantsRouter = router({
         },
         data: {
           status: input.status,
+          // Touch updatedAt to affect sort order
+          updatedAt: new Date(),
         },
       })
 
@@ -295,6 +334,22 @@ export const grantsRouter = router({
 
       const updatedGrant = await ctx.db.grant.findUnique({
         where: { id: input.id },
+        include: {
+          funder: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+          assignedTo: {
+            select: {
+              id: true,
+              displayName: true,
+              avatarUrl: true,
+            },
+          },
+        },
       })
 
       // Emit webhook event if status changed
@@ -479,4 +534,134 @@ export const grantsRouter = router({
 
       return updatedGrant
     }),
+
+  /**
+   * Get grants grouped by status for Kanban board
+   */
+  getGrantsGroupedByStatus: orgProcedure.query(async ({ ctx }) => {
+    const grants = await ctx.db.grant.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        funder: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            displayName: true,
+            avatarUrl: true,
+          },
+        },
+        documents: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+        _count: {
+          select: {
+            documents: true,
+          },
+        },
+      },
+    })
+
+    // Group grants by status
+    const grouped = grants.reduce((acc, grant) => {
+      const status = grant.status
+      if (!acc[status]) {
+        acc[status] = []
+      }
+      acc[status].push(grant)
+      return acc
+    }, {} as Record<GrantStatus, typeof grants>)
+
+    return grouped
+  }),
+
+  /**
+   * Get grants for pipeline view with calculated fields
+   */
+  getGrantsForPipeline: orgProcedure.query(async ({ ctx }) => {
+    const grants = await ctx.db.grant.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        funder: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            displayName: true,
+            avatarUrl: true,
+          },
+        },
+        documents: {
+          select: {
+            id: true,
+            status: true,
+            type: true,
+          },
+        },
+        program: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            documents: true,
+            commitments: true,
+          },
+        },
+      },
+    })
+
+    // Add calculated fields
+    const enhancedGrants = grants.map((grant) => {
+      // Calculate days until deadline
+      let daysUntilDeadline: number | null = null
+      if (grant.deadline) {
+        const now = new Date()
+        const deadline = new Date(grant.deadline)
+        const diffTime = deadline.getTime() - now.getTime()
+        daysUntilDeadline = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      }
+
+      // Calculate completion progress based on filled sections
+      // This is a simplified version - you can enhance based on your draftContent structure
+      let completionProgress = 0
+      if (grant.draftContent) {
+        const draftContent = grant.draftContent as Record<string, any>
+        const sections = Object.keys(draftContent)
+        const filledSections = sections.filter(
+          (key) => draftContent[key]?.content && draftContent[key].content.length > 0
+        )
+        completionProgress = sections.length > 0 ? Math.round((filledSections.length / sections.length) * 100) : 0
+      }
+
+      return {
+        ...grant,
+        daysUntilDeadline,
+        completionProgress,
+      }
+    })
+
+    return enhancedGrants
+  }),
 })

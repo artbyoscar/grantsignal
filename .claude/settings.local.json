@@ -41,7 +41,8 @@
       "Bash(node -e:*)",
       "Bash(git status:*)",
       "Bash(pnpm exec tsc:*)",
-      "Bash(if exist nul echo File exists)"
+      "Bash(if exist nul echo File exists)",
+      "Bash(pnpm next build:*)"
     ]
   }
 }
