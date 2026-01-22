@@ -6,6 +6,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { api } from '@/lib/trpc/client'
 import { GrantStatus, type Grant } from '@/types/client-types'
+import { cn } from '@/lib/utils'
 
 type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
 
@@ -81,9 +82,10 @@ interface DraggableGrantCardProps {
   color: ColorType
   progress?: number // Optional progress for Writing stage (0-100)
   isFlagged?: boolean // Optional priority flag
+  logoUrl?: string | null // Optional funder logo URL
 }
 
-export function DraggableGrantCard({ grant, color, progress, isFlagged = false }: DraggableGrantCardProps) {
+export function DraggableGrantCard({ grant, color, progress, isFlagged = false, logoUrl }: DraggableGrantCardProps) {
   const router = useRouter()
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: grant.id,
@@ -133,10 +135,18 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false }
         </div>
       )}
 
-      {/* Status dot and funder name */}
+      {/* Funder logo and name */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={grant.funder?.name || 'Funder'}
+              className="w-6 h-6 rounded flex-shrink-0 object-cover bg-slate-700"
+            />
+          ) : (
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
+          )}
           <h4 className="text-sm font-medium text-white truncate">
             {grant.funder?.name || 'Unknown Funder'}
           </h4>
@@ -219,9 +229,10 @@ interface GrantCardProps {
   color: ColorType
   progress?: number
   isFlagged?: boolean
+  logoUrl?: string | null
 }
 
-export function GrantCard({ grant, color, progress, isFlagged = false }: GrantCardProps) {
+export function GrantCard({ grant, color, progress, isFlagged = false, logoUrl }: GrantCardProps) {
   const classes = colorClasses[color]
   const deadlineInfo = getDeadlineInfo(grant.opportunity?.deadline || grant.deadline)
   const fitScore = (grant.opportunity as any)?.fitScores?.[0]
@@ -250,10 +261,18 @@ export function GrantCard({ grant, color, progress, isFlagged = false }: GrantCa
         </div>
       )}
 
-      {/* Status dot and funder name */}
+      {/* Funder logo and name */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={grant.funder?.name || 'Funder'}
+              className="w-6 h-6 rounded flex-shrink-0 object-cover bg-slate-700"
+            />
+          ) : (
+            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
+          )}
           <h4 className="text-sm font-medium text-white truncate">
             {grant.funder?.name || 'Unknown Funder'}
           </h4>
@@ -311,6 +330,181 @@ export function GrantCard({ grant, color, progress, isFlagged = false }: GrantCa
           </span>
         </div>
       )}
+    </div>
+  )
+}
+
+// Enhanced Pipeline Card Component
+export interface PipelineCardProps {
+  id: string
+  funderName: string
+  funderLogo?: string
+  grantTitle: string
+  programArea: string
+  amount: number
+  deadline?: Date
+  daysLeft?: number
+  progress?: number // 0-100 completion percentage
+  assignee?: {
+    name: string
+    initials: string
+    avatarUrl?: string
+    color?: string
+  }
+  hasFlag?: boolean
+  isDragging?: boolean
+  onClick?: () => void
+}
+
+// Format currency for pipeline card
+function formatAmount(amount: number): string {
+  if (amount >= 1000000) {
+    return `$${(amount / 1000000).toFixed(1)}M`
+  }
+  if (amount >= 1000) {
+    return `$${(amount / 1000).toFixed(0)}K`
+  }
+  return `$${amount.toLocaleString()}`
+}
+
+// Get deadline text and color
+function getDeadlineDisplay(deadline?: Date, daysLeft?: number): { text: string; color: string } | null {
+  if (!deadline && daysLeft === undefined) return null
+
+  const days = daysLeft ?? Math.ceil((deadline!.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+
+  let color = 'text-slate-400'
+  if (days < 0) {
+    color = 'text-red-400'
+  } else if (days < 7) {
+    color = 'text-amber-400'
+  }
+
+  const text = days < 0 ? 'Overdue' : `${days} Days Left`
+
+  return { text, color }
+}
+
+export function PipelineCard({
+  id,
+  funderName,
+  funderLogo,
+  grantTitle,
+  programArea,
+  amount,
+  deadline,
+  daysLeft,
+  progress,
+  assignee,
+  hasFlag = false,
+  isDragging = false,
+  onClick,
+}: PipelineCardProps) {
+  const deadlineDisplay = getDeadlineDisplay(deadline, daysLeft)
+
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        'bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-grab transition-all',
+        'hover:border-slate-600',
+        isDragging && 'shadow-xl shadow-blue-500/20 opacity-90 rotate-2'
+      )}
+    >
+      {/* 1. Funder Row */}
+      <div className="flex items-center gap-2 mb-2">
+        {funderLogo ? (
+          <img
+            src={funderLogo}
+            alt={funderName}
+            className="w-8 h-8 rounded object-cover"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded bg-slate-700 flex items-center justify-center">
+            <span className="text-sm font-medium text-slate-300">
+              {funderName.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
+        <h3 className="text-slate-100 font-medium text-sm truncate flex-1">
+          {funderName}
+        </h3>
+      </div>
+
+      {/* 2. Grant Title */}
+      <h4 className="text-slate-300 text-sm mt-2 line-clamp-2 min-h-[2.5rem]">
+        {grantTitle}
+      </h4>
+
+      {/* 3. Program Area */}
+      <p className="text-slate-500 text-xs mt-1">
+        {programArea}
+      </p>
+
+      {/* 4. Amount Badge */}
+      <div className="mt-3">
+        <span className="inline-block bg-slate-700 rounded px-2 py-1 text-sm font-medium text-slate-100">
+          {formatAmount(amount)}
+        </span>
+      </div>
+
+      {/* 5. Deadline */}
+      {deadlineDisplay && (
+        <div className="mt-2">
+          <span className="text-xs text-slate-400">Deadline: </span>
+          <span className={cn('text-xs font-medium', deadlineDisplay.color)}>
+            {deadlineDisplay.text}
+          </span>
+        </div>
+      )}
+
+      {/* 6. Progress Bar */}
+      {progress !== undefined && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-1">
+            <div className="h-1.5 bg-slate-700 rounded-full flex-1 overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+              />
+            </div>
+            <span className="text-xs text-slate-400 ml-2 font-medium">
+              {progress}%
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Bottom Row - Assignee + Flag */}
+      <div className="flex items-center justify-between mt-3">
+        {assignee ? (
+          <div className="flex items-center gap-2">
+            {assignee.avatarUrl ? (
+              <img
+                src={assignee.avatarUrl}
+                alt={assignee.name}
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className={cn(
+                  'w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium',
+                  assignee.color || 'bg-blue-500/20 text-blue-400'
+                )}
+              >
+                {assignee.initials}
+              </div>
+            )}
+            <span className="text-xs text-slate-400">{assignee.name}</span>
+          </div>
+        ) : (
+          <div />
+        )}
+
+        {hasFlag && (
+          <Flag className="w-4 h-4 text-red-400 fill-red-400" />
+        )}
+      </div>
     </div>
   )
 }
