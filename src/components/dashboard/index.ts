@@ -15,4 +15,10 @@
  * - Hover glow: hover:shadow-lg hover:shadow-blue-500/10
  */
 
-// Dashboard component exports will be added here as they are built
+export { StatCard } from './stat-card';
+export { QuickStats } from './quick-stats';
+export { UrgentActionsPanel } from './urgent-actions';
+export { PipelineSummary } from './pipeline-summary';
+export { AIDigest } from './ai-digest';
+export { QuickActionsPanel } from './quick-actions';
+export { ActivityFeed } from './activity-feed';
