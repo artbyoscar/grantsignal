@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { FileEdit, Clock, DollarSign } from 'lucide-react';
 
 export default function WriterIndexPage() {
-  const { data: grants, isLoading } = api.grants.getAll.useQuery();
+  const { data: grantsData, isLoading } = api.grants.list.useQuery({});
+  const grants = grantsData?.grants || [];
 
   if (isLoading) {
     return <WriterSkeleton />;
   }
 
   // Filter to active grants (not declined/completed)
-  const activeGrants = grants?.filter(g =>
+  const activeGrants = grants.filter(g =>
     !['DECLINED', 'COMPLETED', 'CLOSED'].includes(g.status)
   ) || [];
 
