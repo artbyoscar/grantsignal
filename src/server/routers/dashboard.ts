@@ -13,6 +13,9 @@ export const dashboardRouter = router({
     const lastYear = new Date(now.getFullYear() - 1, 0, 1)
     const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59)
 
+    console.log('[Dashboard Stats] Calculating for org:', ctx.organizationId)
+    console.log('[Dashboard Stats] Year:', now.getFullYear(), 'Start of year:', startOfYear)
+
     // Get active grants (all statuses except DECLINED and COMPLETED)
     const activeGrantsCount = await ctx.db.grant.count({
       where: {
@@ -22,14 +25,18 @@ export const dashboardRouter = router({
         },
       },
     })
+    console.log('[Dashboard Stats] Active grants count:', activeGrantsCount)
 
-    // Get pending decisions count
+    // Get pending decisions count (SUBMITTED or PENDING status)
     const pendingDecisionsCount = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
-        status: GrantStatus.SUBMITTED,
+        status: {
+          in: [GrantStatus.SUBMITTED, GrantStatus.PENDING],
+        },
       },
     })
+    console.log('[Dashboard Stats] Pending decisions count (SUBMITTED + PENDING):', pendingDecisionsCount)
 
     // Get pending decisions due this week
     const nextWeek = new Date(now)
@@ -63,6 +70,11 @@ export const dashboardRouter = router({
       (sum, grant) => sum + Number(grant.amountAwarded || 0),
       0
     )
+    console.log('[Dashboard Stats] YTD awarded:', {
+      count: ytdAwardedGrants.length,
+      total: ytdAwardedAmount,
+      startOfYear: startOfYear.toISOString(),
+    })
 
     // Get last year's awarded amount for comparison
     const lastYearAwardedGrants = await ctx.db.grant.findMany({
@@ -90,11 +102,14 @@ export const dashboardRouter = router({
         ? ((ytdAwardedAmount - lastYearAwardedAmount) / lastYearAwardedAmount) * 100
         : 0
 
-    // Calculate win rate
+    // Calculate win rate (only for grants decided this year)
     const awardedCount = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
         status: GrantStatus.AWARDED,
+        awardedAt: {
+          gte: startOfYear,
+        },
       },
     })
 
@@ -102,17 +117,28 @@ export const dashboardRouter = router({
       where: {
         organizationId: ctx.organizationId,
         status: GrantStatus.DECLINED,
+        // Declined grants should have submittedAt or updatedAt to determine when they were declined
+        // Using updatedAt as proxy for decision date
+        updatedAt: {
+          gte: startOfYear,
+        },
       },
     })
 
     const totalDecisions = awardedCount + declinedCount
     const winRatePercentage = totalDecisions > 0 ? (awardedCount / totalDecisions) * 100 : 0
+    console.log('[Dashboard Stats] Win rate (YTD):', {
+      awarded: awardedCount,
+      declined: declinedCount,
+      total: totalDecisions,
+      percentage: winRatePercentage.toFixed(1) + '%',
+    })
 
     // Mock sparkline data (7 data points for the past week)
     // TODO: Implement real sparkline data based on historical trends
     const mockSparkline = [65, 70, 68, 75, 72, 78, 80]
 
-    return {
+    const stats = {
       activeGrants: {
         count: activeGrantsCount,
         trend: 5, // Mock trend - TODO: Calculate actual trend
@@ -134,6 +160,9 @@ export const dashboardRouter = router({
         sparkline: mockSparkline,
       },
     }
+
+    console.log('[Dashboard Stats] Final stats:', JSON.stringify(stats, null, 2))
+    return stats
   }),
 
   /**

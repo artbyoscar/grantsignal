@@ -97,12 +97,12 @@ export default function ReportsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header with Date Range Selector */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Reports & Analytics</h1>
-          <p className="text-slate-400 mt-1">
+          <h1 className="text-2xl font-semibold text-white">Reports & Analytics</h1>
+          <p className="text-xs text-slate-400 mt-0.5">
             Comprehensive insights into your grant portfolio performance
           </p>
         </div>
@@ -112,9 +112,9 @@ export default function ReportsPage() {
       </div>
 
       {/* Top Row: Win Rate + Funding Donut (2 columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {winRateLoading ? (
-          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[200px]" />
         ) : (
           <WinRateChart
             data={winRateChartData}
@@ -123,28 +123,28 @@ export default function ReportsPage() {
         )}
 
         {fundingLoading ? (
-          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[200px]" />
         ) : (
           <FundingByProgramChart data={fundingByProgramRawData || []} />
         )}
       </div>
 
       {/* Middle Row: Funnel + Top Funders + YoY (3 columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {pipelineLoading ? (
-          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[160px]" />
         ) : (
           <PipelineFunnel stages={funnelStages} total={funnelTotal} />
         )}
 
         {fundersLoading ? (
-          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[180px]" />
         ) : (
           <TopFundersChart funders={topFundersChartData} />
         )}
 
         {yoyLoading ? (
-          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[180px]" />
         ) : (
           <YoYComparisonChart
             data={yoyChartData}
@@ -155,32 +155,35 @@ export default function ReportsPage() {
       </div>
 
       {/* Report Types (5 columns) */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Report Types</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+        <h2 className="text-sm font-semibold text-white mb-3">Report Types</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {reportTypes.map((report) => {
             const Icon = report.icon
             return (
-              <button
+              <div
                 key={report.id}
-                className="flex flex-col items-center gap-3 p-4 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 transition-all group"
+                className="flex flex-col p-3 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-600 transition-all"
               >
-                <div className="p-3 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition">
+                <div className="flex items-center justify-center mb-2">
                   <Icon className="h-6 w-6 text-blue-400" />
                 </div>
-                <div className="text-center">
-                  <h3 className="text-sm font-semibold text-white mb-1">{report.title}</h3>
-                  <p className="text-xs text-slate-400">{report.description}</p>
+                <div className="text-center mb-2">
+                  <h3 className="text-sm font-semibold text-white mb-0.5">{report.title}</h3>
+                  <p className="text-xs text-slate-400 line-clamp-2">{report.description}</p>
                 </div>
-              </button>
+                <button className="mt-auto w-full px-2 py-1 text-xs font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded transition">
+                  Generate
+                </button>
+              </div>
             )
           })}
         </div>
       </div>
 
       {/* Export Buttons */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Export Options</h2>
+      <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-lg p-3">
+        <span className="text-xs text-slate-400">Export Options</span>
         <ExportButtons />
       </div>
     </div>

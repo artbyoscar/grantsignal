@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 
 export interface PipelineStage {
@@ -28,6 +29,7 @@ interface PipelineSummaryProps {
 
 export function PipelineSummary({ stages }: PipelineSummaryProps) {
   const [hoveredStage, setHoveredStage] = useState<string | null>(null);
+  const router = useRouter();
 
   // Calculate totals
   const totalCount = stages.reduce((sum, stage) => sum + stage.count, 0);
@@ -61,13 +63,14 @@ export function PipelineSummary({ stages }: PipelineSummaryProps) {
             return (
               <div
                 key={stage.id}
-                className="relative group"
+                className="relative group cursor-pointer transition-all hover:opacity-90"
                 style={{
                   width: `${widthPercentage}%`,
                   backgroundColor: stage.color,
                 }}
                 onMouseEnter={() => setHoveredStage(stage.id)}
                 onMouseLeave={() => setHoveredStage(null)}
+                onClick={() => router.push(`/pipeline?stage=${stage.id}`)}
               >
                 {/* Count label */}
                 {widthPercentage > 8 && (

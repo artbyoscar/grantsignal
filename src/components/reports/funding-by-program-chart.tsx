@@ -30,29 +30,28 @@ export function FundingByProgramChart({ data }: FundingByProgramChartProps) {
   const totalValue = data.reduce((sum, item) => sum + item.value, 0)
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-white">Funding by Program Area</h2>
-        <span className="text-sm text-slate-400">
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-white">Funding by Program Area</h2>
+        <span className="text-xs text-slate-400">
           {data.reduce((sum, item) => sum + item.count, 0)} grants
         </span>
       </div>
 
       {data.length === 0 ? (
-        <div className="h-[300px] flex flex-col items-center justify-center text-slate-400">
-          <FileText className="h-12 w-12 mb-3 opacity-50" />
-          <p className="text-sm">No program funding data available</p>
-          <p className="text-xs text-slate-500 mt-1">Award grants to see funding distribution</p>
+        <div className="h-[140px] flex flex-col items-center justify-center text-slate-400">
+          <FileText className="h-8 w-8 mb-2 opacity-50" />
+          <p className="text-xs">No program funding data available</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={140}>
         <PieChart>
           <Pie
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={100}
+            innerRadius={35}
+            outerRadius={55}
             fill="#8884d8"
             paddingAngle={2}
             dataKey="value"
@@ -72,10 +71,10 @@ export function FundingByProgramChart({ data }: FundingByProgramChartProps) {
           />
           <Legend
             verticalAlign="bottom"
-            height={36}
+            height={24}
             iconType="circle"
             wrapperStyle={{
-              fontSize: '12px',
+              fontSize: '10px',
               color: '#94a3b8',
             }}
           />
@@ -83,10 +82,10 @@ export function FundingByProgramChart({ data }: FundingByProgramChartProps) {
       </ResponsiveContainer>
       )}
 
-      <div className="mt-4 pt-4 border-t border-slate-700">
+      <div className="mt-3 pt-3 border-t border-slate-700">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-400">Total Funding</span>
-          <span className="text-2xl font-bold text-white">
+          <span className="text-xs text-slate-400">Total Funding</span>
+          <span className="text-lg font-bold text-white">
             ${totalValue.toLocaleString()}
           </span>
         </div>

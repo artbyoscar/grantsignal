@@ -9,29 +9,29 @@ export function ExportButtons() {
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       <button
         onClick={() => handleExport("PDF")}
-        className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition"
+        className="inline-flex items-center justify-center w-8 h-8 bg-slate-700 border border-slate-600 rounded-md text-slate-400 hover:text-slate-100 hover:bg-slate-600 transition"
+        title="Export as PDF"
       >
         <FileText className="h-4 w-4" />
-        <span>PDF Export</span>
       </button>
 
       <button
         onClick={() => handleExport("Excel")}
-        className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition"
+        className="inline-flex items-center justify-center w-8 h-8 bg-slate-700 border border-slate-600 rounded-md text-slate-400 hover:text-slate-100 hover:bg-slate-600 transition"
+        title="Export as Excel"
       >
         <Table className="h-4 w-4" />
-        <span>Excel Export</span>
       </button>
 
       <button
         onClick={() => handleExport("PowerPoint")}
-        className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-400 hover:text-slate-100 hover:bg-slate-700 transition"
+        className="inline-flex items-center justify-center w-8 h-8 bg-slate-700 border border-slate-600 rounded-md text-slate-400 hover:text-slate-100 hover:bg-slate-600 transition"
+        title="Export as PowerPoint"
       >
         <Presentation className="h-4 w-4" />
-        <span>PowerPoint Export</span>
       </button>
     </div>
   );

@@ -25,23 +25,23 @@ export function StatCard({
   return (
     <div
       className={`
-        h-[120px] p-6
-        bg-slate-800/50 backdrop-blur
-        border border-slate-700 rounded-xl
+        h-[80px] p-3
+        bg-slate-800 backdrop-blur
+        border border-slate-700 rounded-md
         hover:border-slate-600 hover:shadow-lg hover:shadow-blue-500/10
         transition-all
         ${onClick ? "cursor-pointer" : ""}
       `}
       onClick={onClick}
     >
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full justify-between">
         {/* Header with label and sparkline */}
-        <div className="flex items-start justify-between mb-2">
-          <span className="text-slate-400 text-sm font-medium">{label}</span>
+        <div className="flex items-start justify-between">
+          <span className="text-[11px] text-slate-400 uppercase tracking-wide font-medium">{label}</span>
           {sparklineData && sparklineData.length > 0 && (
             <Sparkline
               data={sparklineData}
-              width={60}
+              width={48}
               height={24}
               color="#3b82f6"
             />
@@ -49,13 +49,13 @@ export function StatCard({
         </div>
 
         {/* Value */}
-        <div className="text-3xl font-bold text-slate-100 mb-1">{value}</div>
+        <div className="text-[28px] font-semibold text-slate-50 leading-none">{value}</div>
 
         {/* Trend */}
         {trend && (
           <div
             className={`
-              flex items-center gap-1 text-sm
+              flex items-center gap-1 text-[11px]
               ${
                 trend.direction === "up"
                   ? "text-emerald-400"
@@ -65,15 +65,15 @@ export function StatCard({
               }
             `}
           >
-            {trend.direction === "up" && <ChevronUp className="w-4 h-4" />}
-            {trend.direction === "down" && <ChevronDown className="w-4 h-4" />}
+            {trend.direction === "up" && <ChevronUp className="w-3 h-3" />}
+            {trend.direction === "down" && <ChevronDown className="w-3 h-3" />}
             <span>
               {trend.value} {trend.label}
             </span>
           </div>
         )}
         {trendLabel && !trend && (
-          <div className="text-sm text-slate-400">
+          <div className="text-[11px] text-slate-400">
             {trendLabel}
           </div>
         )}

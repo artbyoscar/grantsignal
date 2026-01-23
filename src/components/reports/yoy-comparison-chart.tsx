@@ -27,38 +27,36 @@ export function YoYComparisonChart({
     : '0'
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-white">Year-over-Year Comparison</h2>
-        <div className="flex items-center gap-2">
-          <span className={`text-sm font-medium ${
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-white">Year-over-Year</h2>
+        <div className="flex items-center gap-1">
+          <span className={`text-xs font-medium ${
             Number(percentChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'
           }`}>
             {Number(percentChange) >= 0 ? '+' : ''}{percentChange}%
           </span>
-          <span className="text-sm text-slate-400">vs last year</span>
         </div>
       </div>
 
       {data.length === 0 ? (
-        <div className="h-[300px] flex flex-col items-center justify-center text-slate-400">
-          <Calendar className="h-12 w-12 mb-3 opacity-50" />
-          <p className="text-sm">No year-over-year data available</p>
-          <p className="text-xs text-slate-500 mt-1">Data will appear once grants are awarded</p>
+        <div className="h-[140px] flex flex-col items-center justify-center text-slate-400">
+          <Calendar className="h-8 w-8 mb-2 opacity-50" />
+          <p className="text-xs">No YoY data available</p>
         </div>
       ) : (
         <>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={140}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis
             dataKey="category"
             stroke="#94a3b8"
-            style={{ fontSize: '12px' }}
+            style={{ fontSize: '10px' }}
           />
           <YAxis
             stroke="#94a3b8"
-            style={{ fontSize: '12px' }}
+            style={{ fontSize: '10px' }}
             tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
           />
           <Tooltip
@@ -72,7 +70,7 @@ export function YoYComparisonChart({
           />
           <Legend
             wrapperStyle={{
-              fontSize: '12px',
+              fontSize: '10px',
               color: '#94a3b8',
             }}
           />
@@ -91,16 +89,16 @@ export function YoYComparisonChart({
         </BarChart>
       </ResponsiveContainer>
 
-          <div className="mt-4 pt-4 border-t border-slate-700 grid grid-cols-2 gap-4">
+          <div className="mt-3 pt-3 border-t border-slate-700 grid grid-cols-2 gap-3">
         <div>
-          <span className="text-sm text-slate-400">{previousYearLabel} Total</span>
-          <p className="text-xl font-bold text-slate-300">
+          <span className="text-xs text-slate-400">{previousYearLabel}</span>
+          <p className="text-sm font-bold text-slate-300">
             ${previousTotal.toLocaleString()}
           </p>
         </div>
         <div>
-          <span className="text-sm text-slate-400">{currentYearLabel} Total</span>
-          <p className="text-xl font-bold text-white">
+          <span className="text-xs text-slate-400">{currentYearLabel}</span>
+          <p className="text-sm font-bold text-white">
             ${currentTotal.toLocaleString()}
           </p>
         </div>

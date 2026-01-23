@@ -88,18 +88,22 @@ function getInitials(name: string): string {
 }
 
 export function ActivityFeed({ activities, onLoadMore, hasMore }: ActivityFeedProps) {
+  const MAX_VISIBLE = 6;
+  const visibleActivities = activities.slice(0, MAX_VISIBLE);
+  const hasMoreActivities = activities.length > MAX_VISIBLE || hasMore;
+
   return (
     <Card className="overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-slate-700/50">
         <h2 className="text-lg font-semibold text-slate-100">
-          Recent Activity Feed
+          Recent Activity
         </h2>
       </div>
 
       {/* Activity list */}
       <div className="divide-y divide-slate-700/50">
-        {activities.map((activity) => {
+        {visibleActivities.map((activity) => {
           const Icon = ACTIVITY_ICONS[activity.type];
           const initials = getInitials(activity.actor.name);
 
@@ -114,10 +118,10 @@ export function ActivityFeed({ activities, onLoadMore, hasMore }: ActivityFeedPr
                   <img
                     src={activity.actor.avatarUrl}
                     alt={activity.actor.name}
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-6 h-6 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-200 text-sm font-medium">
+                  <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-slate-200 text-xs font-medium">
                     {initials}
                   </div>
                 )}
@@ -161,17 +165,15 @@ export function ActivityFeed({ activities, onLoadMore, hasMore }: ActivityFeedPr
         })}
       </div>
 
-      {/* Footer with Load More button */}
-      {hasMore && (
+      {/* Footer with View All link */}
+      {hasMoreActivities && (
         <div className="p-4 border-t border-slate-700/50 flex justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onLoadMore}
-            className="text-slate-300 hover:text-slate-100"
+          <a
+            href="/activity"
+            className="text-sm text-slate-400 hover:text-blue-400 transition-colors"
           >
-            Load more
-          </Button>
+            View all activity →
+          </a>
         </div>
       )}
     </Card>

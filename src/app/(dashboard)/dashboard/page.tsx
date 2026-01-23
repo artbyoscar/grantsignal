@@ -26,17 +26,17 @@ async function DashboardContent() {
       {/* Quick Stats */}
       <QuickStats stats={stats} />
 
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2/3 width) */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Main Grid Layout - Main content + 280px sidebar */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main Content (flexible width) */}
+        <div className="flex-1 space-y-6 min-w-0">
           <UrgentActionsPanel actions={urgentActions} />
           <PipelineSummary stages={pipelineStages} />
           <ActivityFeedClient initialActivities={recentActivity} />
         </div>
 
-        {/* Right Column (1/3 width) */}
-        <div className="space-y-6">
+        {/* Right Sidebar (280px fixed width on desktop) */}
+        <div className="w-full lg:w-[280px] flex-shrink-0 space-y-6">
           <AIDigestClient initialInsights={aiInsights} />
           <QuickActionsPanel />
         </div>
@@ -50,7 +50,7 @@ function QuickStatsSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Skeleton key={i} className="h-32" />
+        <Skeleton key={i} className="h-[80px]" />
       ))}
     </div>
   );
@@ -60,13 +60,13 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       <QuickStatsSkeleton />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 space-y-6">
           <Skeleton className="h-64" />
           <Skeleton className="h-96" />
           <Skeleton className="h-64" />
         </div>
-        <div className="space-y-6">
+        <div className="w-full lg:w-[280px] flex-shrink-0 space-y-6">
           <Skeleton className="h-96" />
           <Skeleton className="h-64" />
         </div>

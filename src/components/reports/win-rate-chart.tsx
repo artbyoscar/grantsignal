@@ -22,11 +22,11 @@ export function WinRateChart({ data, dateRange }: WinRateChartProps) {
   const currentValue = data.length > 0 ? data[data.length - 1].rate : 0;
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6">
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-sm font-semibold text-white">
             Win Rate Over Time
           </h2>
           <button
@@ -34,29 +34,28 @@ export function WinRateChart({ data, dateRange }: WinRateChartProps) {
             className="text-slate-400 hover:text-white transition-colors"
             title="Win rate percentage over time"
           >
-            <Info className="h-4 w-4" />
+            <Info className="h-3 w-3" />
           </button>
         </div>
-        <div className="text-sm text-slate-400">{dateRange}</div>
+        <div className="text-xs text-slate-400">{dateRange}</div>
       </div>
 
       {/* Current Value Display */}
-      <div className="mb-4">
-        <div className="text-4xl font-bold text-blue-400">
+      <div className="mb-3">
+        <div className="text-2xl font-bold text-blue-400">
           {currentValue.toFixed(0)}%
         </div>
-        <div className="text-sm text-slate-400">Current Win Rate</div>
+        <div className="text-xs text-slate-400">Current Win Rate</div>
       </div>
 
       {/* Chart or Empty State */}
       {data.length === 0 ? (
-        <div className="h-64 flex flex-col items-center justify-center text-slate-400">
-          <Info className="h-12 w-12 mb-3 opacity-50" />
-          <p className="text-sm">No win rate data available</p>
-          <p className="text-xs text-slate-500 mt-1">Data will appear once grants are awarded or declined</p>
+        <div className="h-[140px] flex flex-col items-center justify-center text-slate-400">
+          <Info className="h-8 w-8 mb-2 opacity-50" />
+          <p className="text-xs">No win rate data available</p>
         </div>
       ) : (
-        <div className="h-64">
+        <div className="h-[140px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
             <defs>

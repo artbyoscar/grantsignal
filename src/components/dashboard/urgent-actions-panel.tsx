@@ -22,6 +22,9 @@ interface UrgentActionsPanelProps {
 export function UrgentActionsPanel({ actions = [], className }: UrgentActionsPanelProps) {
   const hasCritical = actions.some(action => action.severity === 'critical');
   const isEmpty = actions.length === 0;
+  const MAX_VISIBLE = 5;
+  const visibleActions = actions.slice(0, MAX_VISIBLE);
+  const hasMore = actions.length > MAX_VISIBLE;
 
   const getDaysRemainingColor = (days: number) => {
     if (days <= 3) return 'bg-red-500/20 text-red-400 border-red-500/50';
@@ -74,7 +77,7 @@ export function UrgentActionsPanel({ actions = [], className }: UrgentActionsPan
       ) : (
         /* Action Items List */
         <div className="space-y-3">
-          {actions.map((action) => (
+          {visibleActions.map((action) => (
             <div
               key={action.id}
               className={cn(
@@ -149,14 +152,14 @@ export function UrgentActionsPanel({ actions = [], className }: UrgentActionsPan
         </div>
       )}
 
-      {/* View All Link (only if there are actions) */}
-      {!isEmpty && (
+      {/* View All Link (only if there are more than 5 actions) */}
+      {hasMore && (
         <div className="mt-4 flex justify-center">
           <Link
             href="/grants?filter=urgent"
             className="text-sm text-slate-400 hover:text-blue-400 transition-colors duration-200"
           >
-            View all urgent actions →
+            View all {actions.length} urgent actions →
           </Link>
         </div>
       )}
