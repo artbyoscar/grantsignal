@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:inngest": "npx inngest-cli@latest dev",
+    "dev:all": "pnpm run dev & pnpm run dev:inngest",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",

@@ -34,6 +34,9 @@ export default function PipelinePage() {
   const [selectedColumnForAdd, setSelectedColumnForAdd] = useState<string | null>(null)
   const [showFilters, setShowFilters] = useState(false)
 
+  // Optimistic updates: track pending status changes
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, GrantStatus>>({})
+
   // Filter state from URL
   const [programId, setProgramId] = useState<string | undefined>(searchParams.get('program') || undefined)
   const [selectedStatuses, setSelectedStatuses] = useState<GrantStatus[]>(() => {
@@ -80,11 +83,13 @@ export default function PipelinePage() {
     assignedToId,
   })
 
-  // Transform Decimal to number at the boundary
+  // Transform Decimal to number at the boundary and apply optimistic updates
   const grants: Grant[] = (data?.grants ?? []).map(g => ({
     ...g,
     amountRequested: g.amountRequested ? Number(g.amountRequested) : null,
     amountAwarded: g.amountAwarded ? Number(g.amountAwarded) : null,
+    // Apply optimistic status if exists
+    status: optimisticUpdates[g.id] ?? g.status,
   }))
 
   // Fetch programs for filter
@@ -151,33 +156,47 @@ export default function PipelinePage() {
 
   // Update status mutation
   const updateStatusMutation = api.grants.updateStatus.useMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Clear optimistic update - data is already correct from server
+      setOptimisticUpdates(prev => {
+        const next = { ...prev }
+        delete next[variables.id]
+        return next
+      })
       toast.success('Grant status updated')
       refetch()
     },
-    onError: (error) => {
+    onError: (error, variables) => {
+      // Revert optimistic update on error
+      setOptimisticUpdates(prev => {
+        const next = { ...prev }
+        delete next[variables.id]
+        return next
+      })
       toast.error(`Failed to update grant: ${error.message}`)
       refetch()
     },
   })
 
-  // Handle card move with optimistic updates - memoized to prevent re-renders
+  // Handle card move with TRUE optimistic updates - memoized to prevent re-renders
   const handleCardMove = useCallback(
-    async (cardId: string, fromColumn: string, toColumn: string, newIndex: number) => {
+    (cardId: string, fromColumn: string, toColumn: string, newIndex: number) => {
       if (fromColumn === toColumn) return
 
       const newStatus = toColumn as GrantStatus
 
-      // Optimistic update: this will be reflected immediately in the UI
-      // because the mutation will trigger a refetch
-      try {
-        await updateStatusMutation.mutateAsync({
-          id: cardId,
-          status: newStatus,
-        })
-      } catch (error) {
-        // Error already handled by mutation
-      }
+      // 1. IMMEDIATELY update local state (synchronous, instant UI feedback)
+      setOptimisticUpdates(prev => ({
+        ...prev,
+        [cardId]: newStatus,
+      }))
+
+      // 2. Fire API call in background (don't await - happens asynchronously)
+      updateStatusMutation.mutate({
+        id: cardId,
+        status: newStatus,
+      })
+      // Note: mutation callbacks handle success/error and clear optimistic update
     },
     [updateStatusMutation]
   )
