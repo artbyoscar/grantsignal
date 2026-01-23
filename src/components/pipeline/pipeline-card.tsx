@@ -402,12 +402,22 @@ export function PipelineCard({
 }: PipelineCardProps) {
   const deadlineDisplay = getDeadlineDisplay(deadline, daysLeft)
 
+  const handleClick = () => {
+    // Don't trigger click during drag
+    if (isDragging) return
+    onClick?.()
+  }
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       className={cn(
-        'bg-slate-800 border border-slate-700 rounded-xl p-4 cursor-grab transition-all',
-        'hover:border-slate-600',
+        'bg-slate-800 border border-slate-700 rounded-xl p-4 transition-all',
+        // Cursor states
+        isDragging ? 'cursor-grabbing' : 'cursor-pointer',
+        // Hover states - only when not dragging
+        !isDragging && 'hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10',
+        // Dragging state
         isDragging && 'shadow-xl shadow-blue-500/20 opacity-90 rotate-2'
       )}
     >

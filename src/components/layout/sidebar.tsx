@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Search,
   Kanban,
+  PenTool,
   FileText,
   Shield,
   BarChart3,
@@ -37,6 +38,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/opportunities', label: 'Opportunities', icon: Search },
     { href: '/pipeline', label: 'Pipeline', icon: Kanban },
+    { href: '/write', label: 'Writer', icon: PenTool },
     { href: '/documents', label: 'Documents', icon: FileText },
     {
       href: '/compliance',

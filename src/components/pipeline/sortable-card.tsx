@@ -23,6 +23,10 @@ export function SortableCard(props: SortableCardProps) {
     transition,
   }
 
+  // Note: The drag listeners on this wrapper enable drag-and-drop.
+  // The 8px activation constraint in KanbanBoard ensures that small
+  // movements (like clicks) don't trigger dragging, allowing onClick
+  // events to work on the PipelineCard below.
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <PipelineCard {...props} isDragging={isDragging} />
