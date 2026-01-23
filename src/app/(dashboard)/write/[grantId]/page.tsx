@@ -6,10 +6,38 @@ import { api } from '@/lib/trpc/client';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { LeftPanel, type RFPSection, type FunderIntelProps, type MemoryResult } from '@/components/writer/left-panel';
+import { RFPRequirements } from '@/components/writer/rfp-requirements';
+import { FunderIntelligence } from '@/components/writer/funder-intelligence';
+import { MemorySearch } from '@/components/writing/memory-search';
 import { GrantEditor } from '@/components/writer/grant-editor';
 import { AIToolbar } from '@/components/writer/ai-toolbar';
 import { OutlinePanel } from '@/components/writer/outline-panel';
+
+interface RFPSection {
+  id: string;
+  name: string;
+  wordLimit: number;
+  currentWords: number;
+  isComplete: boolean;
+  isActive: boolean;
+}
+
+interface FunderIntelProps {
+  funderId: string;
+  funderName: string;
+  funderType: string;
+  focusAreas: string[];
+  avgGrantSize: number | null;
+  grantSizeRange: {
+    min: number | null;
+    max: number | null;
+    median: number | null;
+  } | null;
+  totalGiving: number | null;
+  geographicFocus: string[] | null;
+  applicationProcess: string | null;
+  isLoading?: boolean;
+}
 
 interface PageProps {
   params: Promise<{
@@ -24,9 +52,6 @@ export default function WriterPage({ params }: PageProps) {
   // State Management
   const [editorContent, setEditorContent] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [memorySearchQuery, setMemorySearchQuery] = useState('');
-  const [memoryResults, setMemoryResults] = useState<MemoryResult[]>([]);
-  const [isSearchingMemory, setIsSearchingMemory] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | undefined>();
   const [isStreaming, setIsStreaming] = useState(false);
   const [sectionContents, setSectionContents] = useState<Record<string, string>>({});
@@ -43,6 +68,16 @@ export default function WriterPage({ params }: PageProps) {
     amountRequested: rawGrant.amountRequested ? Number(rawGrant.amountRequested) : null,
     amountAwarded: rawGrant.amountAwarded ? Number(rawGrant.amountAwarded) : null,
   } : null;
+
+  // Fetch funder intelligence data
+  const { data: funderIntelligence, isLoading: isLoadingFunder } = api.writing.getFunderIntelligence.useQuery(
+    {
+      funderId: grant?.funderId || '',
+    },
+    {
+      enabled: !!grant?.funderId, // Only fetch if we have a funderId
+    }
+  );
 
   // Parse RFP sections from grant opportunity requirements
   const rfpSections: RFPSection[] = grant?.opportunity?.requirements
@@ -63,16 +98,54 @@ export default function WriterPage({ params }: PageProps) {
     : [];
 
   // Prepare funder intelligence data
-  const funderInfo: FunderIntelProps = {
-    funderName: grant?.funder?.name || 'Unknown Funder',
-    focus: grant?.funder?.type ? [grant.funder.type.replace(/_/g, ' ')] : ['General'],
-    avgGrantSize: grant?.funder?.grantSizeMin ? Number(grant.funder.grantSizeMin) : 50000,
-    keyPriorities: [
-      'Measurable outcomes',
-      'Community impact',
-      'Sustainability plan',
-    ],
-  };
+  const funderInfo: FunderIntelProps = funderIntelligence
+    ? {
+        funderId: funderIntelligence.id,
+        funderName: funderIntelligence.name,
+        funderType: funderIntelligence.type,
+        focusAreas: funderIntelligence.focusAreas || [],
+        avgGrantSize: funderIntelligence.avgGrantSize,
+        grantSizeRange: funderIntelligence.priorities.grantSizeRange,
+        totalGiving: funderIntelligence.totalGiving,
+        geographicFocus: parseGeographicFocus(funderIntelligence.priorities.geographicFocus),
+        applicationProcess: funderIntelligence.priorities.applicationProcess,
+        isLoading: isLoadingFunder,
+      }
+    : {
+        // Fallback data when funder intelligence is loading or not available
+        funderId: grant?.funderId || '',
+        funderName: grant?.funder?.name || 'Unknown Funder',
+        funderType: grant?.funder?.type || 'OTHER',
+        focusAreas: [],
+        avgGrantSize: null,
+        grantSizeRange: null,
+        totalGiving: null,
+        geographicFocus: null,
+        applicationProcess: null,
+        isLoading: isLoadingFunder,
+      };
+
+  // Helper function to parse geographicFocus JSON to string array
+  function parseGeographicFocus(geoFocus: any): string[] | null {
+    if (!geoFocus) return null;
+
+    // If it's already an array of strings, return it
+    if (Array.isArray(geoFocus)) {
+      return geoFocus.filter(item => typeof item === 'string');
+    }
+
+    // If it's an object with areas/regions/states properties, extract them
+    if (typeof geoFocus === 'object') {
+      const areas = geoFocus.areas || geoFocus.regions || geoFocus.states || geoFocus.locations;
+      if (Array.isArray(areas)) {
+        return areas.filter(item => typeof item === 'string');
+      }
+      // If it's an object with key-value pairs, return the values
+      return Object.values(geoFocus).filter(item => typeof item === 'string') as string[];
+    }
+
+    return null;
+  }
 
   // Initialize first section
   useEffect(() => {
@@ -115,41 +188,8 @@ export default function WriterPage({ params }: PageProps) {
     }
   };
 
-  const handleMemorySearch = (query: string) => {
-    setMemorySearchQuery(query);
-    if (query.trim().length < 3) {
-      setMemoryResults([]);
-      return;
-    }
-
-    // Simulate memory search with debounce
-    setIsSearchingMemory(true);
-    setTimeout(() => {
-      // Mock results - replace with actual API call
-      setMemoryResults([
-        {
-          id: '1',
-          source: 'Previous Grant Proposal',
-          title: 'Similar content from past proposals',
-          relevanceScore: 92,
-          excerpt: 'Our organization has a proven track record of implementing community programs that have impacted over 5,000 individuals...',
-          documentId: 'doc-1',
-        },
-        {
-          id: '2',
-          source: 'Impact Report 2023',
-          title: 'Impact metrics',
-          relevanceScore: 85,
-          excerpt: 'In 2023, we achieved a 95% participant satisfaction rate and exceeded our goals by 120%...',
-          documentId: 'doc-2',
-        },
-      ]);
-      setIsSearchingMemory(false);
-    }, 800);
-  };
-
-  const handleMemoryInsert = (result: MemoryResult) => {
-    const insertText = `\n\n[From ${result.source}]\n${result.excerpt}\n`;
+  const handleMemoryInsert = (text: string, source: { documentId: string; documentName: string }) => {
+    const insertText = `\n\n[Source: ${source.documentName}]\n${text}\n`;
     const newContent = editorContent + insertText;
     setEditorContent(newContent);
 
@@ -165,8 +205,6 @@ export default function WriterPage({ params }: PageProps) {
     const start = editorContent.length;
     const end = newContent.length;
     setHighlightedText({ start, end, color: 'blue' });
-
-    toast.success(`Inserted content from ${result.source}`);
 
     // Clear highlight after 3 seconds
     setTimeout(() => {
@@ -266,8 +304,8 @@ export default function WriterPage({ params }: PageProps) {
   return (
     <div className="flex h-screen bg-slate-900">
       {/* Left Panel - 320px */}
-      <div className="w-80 shrink-0 border-r border-slate-800 p-4 overflow-y-auto">
-        <div className="mb-4">
+      <div className="w-80 shrink-0 border-r border-slate-800 overflow-y-auto">
+        <div className="p-4 border-b border-slate-800">
           <Button
             variant="ghost"
             size="sm"
@@ -278,16 +316,34 @@ export default function WriterPage({ params }: PageProps) {
             Back to Pipeline
           </Button>
         </div>
-        <LeftPanel
-          rfpSections={rfpSections}
-          memoryResults={memoryResults}
-          funderInfo={funderInfo}
-          onSectionClick={handleSectionClick}
-          onMemorySearch={handleMemorySearch}
-          onMemoryInsert={handleMemoryInsert}
-          memorySearchQuery={memorySearchQuery}
-          isSearchingMemory={isSearchingMemory}
-        />
+        <div className="p-4 space-y-4">
+          {/* RFP Requirements */}
+          <RFPRequirements sections={rfpSections} onSectionClick={handleSectionClick} />
+
+          {/* Memory Assist - Real search component */}
+          <div className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-700">
+              <h3 className="text-lg font-semibold text-slate-100">Memory Assist</h3>
+            </div>
+            <div className="h-[400px]">
+              <MemorySearch onInsert={handleMemoryInsert} />
+            </div>
+          </div>
+
+          {/* Funder Intelligence */}
+          <FunderIntelligence
+            funderId={funderInfo.funderId}
+            funderName={funderInfo.funderName}
+            funderType={funderInfo.funderType}
+            focusAreas={funderInfo.focusAreas}
+            avgGrantSize={funderInfo.avgGrantSize}
+            grantSizeRange={funderInfo.grantSizeRange}
+            totalGiving={funderInfo.totalGiving}
+            geographicFocus={funderInfo.geographicFocus}
+            applicationProcess={funderInfo.applicationProcess}
+            isLoading={funderInfo.isLoading}
+          />
+        </div>
       </div>
 
       {/* Center Panel - Editor */}

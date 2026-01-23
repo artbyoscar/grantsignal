@@ -14,10 +14,20 @@ interface RFPSection {
 }
 
 interface FunderIntelProps {
+  funderId: string;
   funderName: string;
-  focus: string[];
-  avgGrantSize: number;
-  keyPriorities: string[];
+  funderType: string;
+  focusAreas: string[];
+  avgGrantSize: number | null;
+  grantSizeRange: {
+    min: number | null;
+    max: number | null;
+    median: number | null;
+  } | null;
+  totalGiving: number | null;
+  geographicFocus: string[] | null;
+  applicationProcess: string | null;
+  isLoading?: boolean;
 }
 
 interface LeftPanelProps {
@@ -57,10 +67,16 @@ export function LeftPanel({
 
       {/* Funder Intelligence */}
       <FunderIntelligence
+        funderId={funderInfo.funderId}
         funderName={funderInfo.funderName}
-        focus={funderInfo.focus}
+        funderType={funderInfo.funderType}
+        focusAreas={funderInfo.focusAreas}
         avgGrantSize={funderInfo.avgGrantSize}
-        keyPriorities={funderInfo.keyPriorities}
+        grantSizeRange={funderInfo.grantSizeRange}
+        totalGiving={funderInfo.totalGiving}
+        geographicFocus={funderInfo.geographicFocus}
+        applicationProcess={funderInfo.applicationProcess}
+        isLoading={funderInfo.isLoading}
       />
     </div>
   );
