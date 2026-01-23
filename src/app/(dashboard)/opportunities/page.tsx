@@ -8,6 +8,8 @@ import { FitScoreCard } from '@/components/fit-score-card'
 import { ResearchFunderModal } from '@/components/funders/research-funder-modal'
 import { uploadToS3 } from '@/lib/upload'
 import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/ui/error-state'
 
 type AnalysisStep = 'idle' | 'parsing' | 'scoring' | 'complete' | 'error'
 
@@ -65,6 +67,48 @@ type UploadingFile = {
 }
 
 type ViewMode = 'grid' | 'list'
+
+// Opportunity Card Skeleton
+function OpportunityCardSkeleton() {
+  return (
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+      {/* Header with Funder */}
+      <div className="flex items-start gap-3 mb-4">
+        <Skeleton className="w-10 h-10 rounded-full" />
+        <div className="flex-1 min-w-0">
+          <Skeleton className="h-4 w-32 mb-2" />
+          <Skeleton className="h-5 w-full mb-1" />
+          <Skeleton className="h-5 w-3/4" />
+        </div>
+        <Skeleton className="w-16 h-16 rounded-lg" />
+      </div>
+
+      {/* Description */}
+      <Skeleton className="h-4 w-full mb-2" />
+      <Skeleton className="h-4 w-5/6 mb-4" />
+
+      {/* Program Areas */}
+      <div className="flex gap-2 mb-4">
+        <Skeleton className="h-6 w-20 rounded" />
+        <Skeleton className="h-6 w-24 rounded" />
+        <Skeleton className="h-6 w-16 rounded" />
+      </div>
+
+      {/* Metadata */}
+      <div className="space-y-2 border-t border-slate-700 pt-4">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-4 w-56" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 mt-4 pt-4 border-t border-slate-700">
+        <Skeleton className="flex-1 h-10 rounded-lg" />
+        <Skeleton className="w-32 h-10 rounded-lg" />
+      </div>
+    </div>
+  )
+}
 
 const FUNDER_TYPES = [
   { value: 'PRIVATE_FOUNDATION', label: 'Private Foundation' },
@@ -152,7 +196,7 @@ export default function OpportunitiesPage() {
   const deadlineRange = getDeadlineRange()
 
   // Query for listing opportunities with fit scores
-  const { data: opportunities, refetch: refetchOpportunities } = api.discovery.listOpportunities.useQuery(
+  const { data: opportunities, isLoading: isLoadingOpportunities, error: opportunitiesError, refetch: refetchOpportunities } = api.discovery.listOpportunities.useQuery(
     {
       sortBy,
       sortOrder,
@@ -1045,7 +1089,20 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
             </div>
 
             {/* Opportunity Cards */}
-            {opportunities && opportunities.length > 0 ? (
+            {opportunitiesError ? (
+              <ErrorState
+                title="Failed to load opportunities"
+                message={opportunitiesError.message || 'An error occurred while loading opportunities. Please try again.'}
+                onRetry={() => refetchOpportunities()}
+                className="py-12"
+              />
+            ) : isLoadingOpportunities ? (
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <OpportunityCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : opportunities && opportunities.length > 0 ? (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
                 {opportunities.map((opp) => {
                   const daysRemaining = opp.deadline ? getDaysRemaining(opp.deadline) : null

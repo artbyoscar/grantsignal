@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/trpc/client';
-import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Utility functions for date manipulation
@@ -485,7 +485,7 @@ export default function CalendarPage() {
             {['Month', 'Week', 'Agenda'].map((v) => (
               <button
                 key={v}
-                onClick={() => setView(v.toLowerCase() as any)}
+                onClick={() => setView(v.toLowerCase() as 'month' | 'week' | 'agenda')}
                 className={cn(
                   'px-3 py-1.5 rounded text-sm transition-colors',
                   view === v.toLowerCase()
@@ -528,7 +528,7 @@ export default function CalendarPage() {
           <div className="flex gap-2 flex-wrap">
             <select
               value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
+              onChange={(e) => setFilterType(e.target.value as EventType | 'all')}
               className="px-3 py-1.5 text-sm bg-slate-800 border border-slate-700 rounded text-slate-300 hover:border-slate-600"
             >
               <option value="all">All Types</option>

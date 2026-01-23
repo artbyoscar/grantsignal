@@ -92,7 +92,7 @@ export function createRestHandler<T = unknown>(
 ) {
   return async (
     request: NextRequest,
-    context?: { params: Promise<Record<string, string>> }
+    context: { params: Promise<Record<string, string>> }
   ): Promise<NextResponse> => {
     try {
       // 1. Authenticate API key
@@ -169,7 +169,7 @@ export function createRestHandler<T = unknown>(
       }
 
       // 4. Execute handler
-      const params = context?.params ? await context.params : undefined;
+      const params = await context.params;
       const result = await handler(
         {
           auth: authContext,

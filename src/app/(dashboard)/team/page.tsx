@@ -17,6 +17,54 @@ import { EditRoleModal } from '@/components/team/edit-role-modal'
 import { RemoveMemberDialog } from '@/components/team/remove-member-dialog'
 import { formatDistanceToNow } from 'date-fns'
 import { UserRole } from '@/types/client-types'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/ui/error-state'
+
+// Team Member Card Skeleton
+function TeamMemberSkeleton() {
+  return (
+    <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
+      <div className="flex items-start justify-between mb-4">
+        <Skeleton className="w-14 h-14 rounded-full" />
+        <Skeleton className="h-8 w-8 rounded" />
+      </div>
+
+      <div className="mb-4">
+        <Skeleton className="h-5 w-32 mb-2" />
+        <Skeleton className="h-4 w-full" />
+      </div>
+
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-20 rounded-full" />
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-4 w-16" />
+      </div>
+    </div>
+  )
+}
+
+// Team Page Loading Skeleton
+function TeamPageSkeleton() {
+  return (
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
+      {/* Header Skeleton */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <Skeleton className="h-9 w-32 mb-2" />
+          <Skeleton className="h-5 w-48" />
+        </div>
+        <Skeleton className="h-10 w-48" />
+      </div>
+
+      {/* Member Cards Grid Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <TeamMemberSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function TeamPage() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
@@ -29,7 +77,7 @@ export default function TeamPage() {
     role: UserRole
   } | null>(null)
 
-  const { data: members, isLoading } = api.team.listMembers.useQuery()
+  const { data: members, isLoading, error, refetch } = api.team.listMembers.useQuery()
   const { data: grantCounts } = api.team.getMemberGrantCounts.useQuery()
   const { data: invitations } = api.team.listInvitations.useQuery()
 
@@ -79,12 +127,21 @@ export default function TeamPage() {
     setRemoveMemberDialogOpen(true)
   }
 
-  if (isLoading) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-slate-400">Loading team members...</div>
+      <div className="container mx-auto py-8 px-4 max-w-7xl">
+        <ErrorState
+          title="Failed to load team members"
+          message={error.message || 'An error occurred while loading your team. Please try again.'}
+          onRetry={() => refetch()}
+          className="min-h-[50vh]"
+        />
       </div>
     )
+  }
+
+  if (isLoading) {
+    return <TeamPageSkeleton />
   }
 
   const totalMembers = (members?.length || 0) + (invitations?.length || 0)

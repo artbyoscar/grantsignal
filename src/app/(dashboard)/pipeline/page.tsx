@@ -12,6 +12,8 @@ import { AddGrantModal, type NewGrantData } from '@/components/pipeline/add-gran
 import { GrantStatus, FunderType, type Grant } from '@/types/client-types'
 import type { PipelineCardProps } from '@/components/pipeline/pipeline-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/ui/error-state'
 
 // Column configuration with colors
 const COLUMNS = [
@@ -24,6 +26,54 @@ const COLUMNS = [
   { id: GrantStatus.AWARDED, title: 'Awarded', color: '#10b981' },
   { id: GrantStatus.DECLINED, title: 'Declined', color: '#ef4444' },
 ] as const
+
+// Kanban Loading Skeleton
+function KanbanSkeleton() {
+  return (
+    <div className="h-full overflow-x-auto">
+      <div className="flex gap-4 p-4 h-full">
+        {COLUMNS.slice(0, 5).map((column) => (
+          <div key={column.id} className="flex-shrink-0 w-80 flex flex-col">
+            {/* Column Header Skeleton */}
+            <div className="mb-3">
+              <Skeleton className="h-6 w-32 mb-2" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+
+            {/* Card Skeletons */}
+            <div className="space-y-3 flex-1 overflow-y-auto">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+                  {/* Funder logo and name */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <Skeleton className="h-4 flex-1" />
+                  </div>
+
+                  {/* Grant title */}
+                  <Skeleton className="h-5 w-full mb-2" />
+                  <Skeleton className="h-5 w-3/4 mb-3" />
+
+                  {/* Program and amount */}
+                  <div className="flex items-center justify-between mb-3">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+
+                  {/* Deadline and assignee */}
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function PipelinePage() {
   const router = useRouter()
@@ -77,7 +127,7 @@ export default function PipelinePage() {
   }, [programId, selectedStatuses, funderType, assignedToId, router])
 
   // Fetch grants with filters
-  const { data, isLoading, refetch } = api.grants.list.useQuery({
+  const { data, isLoading, error, refetch } = api.grants.list.useQuery({
     programId,
     statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
     funderType,
@@ -381,10 +431,15 @@ export default function PipelinePage() {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full text-slate-400">
-            Loading...
-          </div>
+        {error ? (
+          <ErrorState
+            title="Failed to load grants"
+            message={error.message || 'An error occurred while loading your grants. Please try again.'}
+            onRetry={() => refetch()}
+            className="h-full flex items-center justify-center"
+          />
+        ) : isLoading ? (
+          <KanbanSkeleton />
         ) : grants.length === 0 && !hasActiveFilters ? (
           <EmptyState
             icon={Telescope}

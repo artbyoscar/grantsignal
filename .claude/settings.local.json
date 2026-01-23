@@ -62,7 +62,11 @@
       "Bash(npx shadcn@latest add:*)",
       "Bash(timeout 10 tail:*)",
       "Bash(pnpm clean:*)",
-      "Bash(pnpm run lint:*)"
+      "Bash(pnpm run lint:*)",
+      "Bash(npm view:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(npx create-next-app@latest:*)"
     ]
   }
 }

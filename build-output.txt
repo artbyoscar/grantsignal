@@ -1,0 +1,1406 @@
+
+> grantsignal@0.1.0 build
+> prisma generate && next build
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v6.19.2) to .\node_modules\.pnpm\@prisma+client@6.19.2_prism_6b2b1af085fe6797f5a5ea830937a8e3\node_modules\@prisma\client in 165ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+   ▲ Next.js 15.5.9
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     ⨯ reactCompiler
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings in 6.4s
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/lib/is-error.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\lib\is-error.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\lib\is-error.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/lib/is-error.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/lib/pretty-bytes.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\lib\pretty-bytes.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\lib\pretty-bytes.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/lib/pretty-bytes.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\get-page-files.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\get-page-files.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/htmlescape.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\htmlescape.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\htmlescape.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/htmlescape.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/constants.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\constants.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\tracer.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\constants.js|pages-dir-node
+    Used by 5 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\route-modules\pages\pages-handler.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/constants.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/tracer.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/tracer.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\tracer.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\tracer.js|pages-dir-node
+    Used by 5 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/tracer.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/utils.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\utils.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\utils.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/utils.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/utils.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\utils.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\utils.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/utils.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/pages/_app.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_app.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_app.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_app.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js?kind=PAGES&page=%2F_error&preferredRegion=&absolutePagePath=next%2Fdist%2Fpages%2F_error&absoluteAppPath=next%2Fdist%2Fpages%2F_app&absoluteDocumentPath=next%2Fdist%2Fpages%2F_document&middlewareConfigBase64=e30%3D!|pages-dir-node
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/pages/_document.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-route-loader\index.js?kind=PAGES&page=%2F_error&preferredRegion=&absolutePagePath=next%2Fdist%2Fpages%2F_error&absoluteAppPath=next%2Fdist%2Fpages%2F_app&absoluteDocumentPath=next%2Fdist%2Fpages%2F_document&middlewareConfigBase64=e30%3D!|pages-dir-node
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/constants.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\constants.js|pages-dir-node
+    Used by 3 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\constants.js|pages-dir-node
+    Used by 3 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/constants.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/encode-uri-path.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\encode-uri-path.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\encode-uri-path.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_document.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/encode-uri-path.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/is-plain-object.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\is-plain-object.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\lib\is-error.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\is-plain-object.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\lib\is-error.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/is-plain-object.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/lib/is-error.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/is-thenable.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\is-thenable.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\tracer.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\is-thenable.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\lib\trace\tracer.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/is-thenable.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/lib/trace/tracer.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/modern-browserslist-target.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\modern-browserslist-target.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\constants.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\modern-browserslist-target.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\constants.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/modern-browserslist-target.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/constants.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\denormalize-page-path.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\get-page-files.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\denormalize-page-path.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\get-page-files.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/ensure-leading-slash.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\ensure-leading-slash.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\normalize-page-path.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\ensure-leading-slash.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\normalize-page-path.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/ensure-leading-slash.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\normalize-page-path.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\get-page-files.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\normalize-page-path.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\server\get-page-files.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/normalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/normalize-path-sep.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\normalize-path-sep.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\denormalize-page-path.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\normalize-path-sep.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\denormalize-page-path.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/normalize-path-sep.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/app-paths.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\app-paths.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\interception-routes.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\app-paths.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\interception-routes.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/app-paths.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/index.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/index.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\index.js|pages-dir-node
+    Used by 3 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\denormalize-page-path.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\index.js|pages-dir-node
+    Used by 3 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\page-path\denormalize-page-path.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/index.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\interception-routes.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\is-dynamic.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\interception-routes.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\is-dynamic.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/index.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\is-dynamic.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\index.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\is-dynamic.js|pages-dir-node
+    Used by 1 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\index.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/index.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/sorted-routes.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\sorted-routes.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\index.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\sorted-routes.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\index.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/sorted-routes.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/index.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/segment.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\segment.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\app-paths.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\segment.js|pages-dir-node
+    Used by 2 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\router\utils\app-paths.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/segment.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/app-paths.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/interception-routes.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/is-dynamic.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/router/utils/index.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/page-path/denormalize-page-path.js
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/server/get-page-files.js
+
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/utils.js
+There are multiple modules with names that only differ in casing.
+This can lead to unexpected behavior when compiling on a filesystem with other case-semantic.
+Use equal casing. Compare these module identifiers:
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\utils.js|pages-dir-node
+    Used by 3 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!C:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_app.js|pages-dir-node
+* javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\shared\lib\utils.js|pages-dir-node
+    Used by 5 module(s), i. e.
+    javascript/auto|c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\build\webpack\loaders\next-swc-loader.js??ruleSet[1].rules[16].oneOf[8].use[0]!c:\Users\OscarNuñez\Desktop\grantsignal\node_modules\.pnpm\next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b\node_modules\next\dist\pages\_app.js|pages-dir-node
+
+Import trace for requested module:
+./node_modules/.pnpm/next@15.5.9_@babel+core@7.2_1b879e7e09e26ac2ab7947075aaf118b/node_modules/next/dist/shared/lib/utils.js
+
+ ✓ Compiled successfully in 9.7s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./src/app/(dashboard)/compliance/commitments/page.tsx
+6:3  Warning: 'FileText' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+7:3  Warning: 'ChevronDown' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+7:24  Warning: 'Filter' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+8:24  Warning: 'Tag' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+41:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+42:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+56:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/compliance/page.tsx
+7:9  Warning: 'Filter' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+7:25  Warning: 'ChevronDown' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+7:38  Warning: 'Calendar' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+8:13  Warning: 'User' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+31:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+105:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+118:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+245:67  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+319:11  Warning: 'user' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+406:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/dashboard/page.tsx
+85:29  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+85:36  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/(dashboard)/documents/health/page.tsx
+50:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+85:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+90:9  Warning: 'isLoading' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+146:23  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+146:30  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/app/(dashboard)/documents/page.tsx
+44:78  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+45:80  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+47:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+174:22  Error: Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\documents\page.tsx:174:22
+  172 |   // Upload a single file
+  173 |   const uploadFile = async (file: File) => {
+> 174 |     const uploadId = Math.random().toString(36).substring(7)
+      |                      ^^^^^^^^^^^^^ Cannot call impure function
+  175 |
+  176 |     // Add to uploading list
+  177 |     setUploadingFiles(prev => [  react-hooks/purity
+305:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+311:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+325:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+331:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/grants/[grantId]/page.tsx
+7:10  Warning: 'GrantStatus' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+75:57  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+75:78  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/(dashboard)/onboarding/complete/page.tsx
+23:6  Warning: React Hook useEffect has a missing dependency: 'completeOnboarding'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(dashboard)/onboarding/processing/page.tsx
+26:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\onboarding\processing\page.tsx:26:7
+  24 |     // Check if all documents are processed
+  25 |     if (totalDocuments > 0 && processedDocuments === totalDocuments) {
+> 26 |       setProcessingComplete(true)
+     |       ^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  27 |     }
+  28 |
+  29 |     // Show voice analysis option if 5+ documents  react-hooks/set-state-in-effect
+
+./src/app/(dashboard)/onboarding/team/page.tsx
+5:39  Warning: 'X' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+163:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+211:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/opportunities/funders/[id]/page.tsx
+66:53  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+66:74  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+325:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+325:71  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+406:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+433:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+448:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+458:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+458:80  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+484:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+494:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+495:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+533:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+535:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+614:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+648:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+656:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+700:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+855:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+856:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+973:99  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+1004:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/opportunities/page.tsx
+4:31  Warning: 'Database' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:41  Warning: 'Brain' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:48  Warning: 'ExternalLink' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:98  Warning: 'Filter' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:183  Warning: 'ChevronRight' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:197  Warning: 'ChevronDown' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+206:76  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+931:76  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1069:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/pipeline/page.tsx
+107:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\pipeline\page.tsx:107:7
+  105 |     const savedView = localStorage.getItem('pipeline-view')
+  106 |     if (savedView === 'kanban' || savedView === 'list' || savedView === 'calendar') {
+> 107 |       setActiveView(savedView)
+      |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  108 |     }
+  109 |   }, [])
+  110 |  react-hooks/set-state-in-effect
+152:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+234:60  Warning: 'newIndex' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+294:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/(dashboard)/settings/notifications/page.tsx
+27:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\settings\notifications\page.tsx:27:7
+  25 |   useEffect(() => {
+  26 |     if (preferences) {
+> 27 |       setGrantDeadlines(preferences.deadlineRemindersEnabled);
+     |       ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |       setDocumentProcessing(preferences.documentProcessedEnabled);
+  29 |       setComplianceAlerts(preferences.complianceAlertsEnabled);
+  30 |       setWeeklyDigest(preferences.weeklyDigestEnabled);  react-hooks/set-state-in-effect
+
+./src/app/(dashboard)/settings/organization/page.tsx
+124:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\settings\organization\page.tsx:124:7
+  122 |     if (org) {
+  123 |       const address = org.address as { street?: string; city?: string; state?: string; zip?: string } | null;
+> 124 |       setFormData({
+      |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  125 |         name: org.name || "",
+  126 |         ein: org.ein || "",
+  127 |         website: org.website || "",  react-hooks/set-state-in-effect
+174:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+448:75  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/(dashboard)/settings/voice/page.tsx
+18:6  Warning: 'Pattern' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+106:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+126:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+147:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+169:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+189:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+207:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+224:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+248:64  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+258:71  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+284:64  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+331:19  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+331:35  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+331:95  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+403:66  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+403:84  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+525:31  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+525:36  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+525:49  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+525:56  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+552:72  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+552:79  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/app/(dashboard)/settings/webhooks/page.tsx
+43:10  Warning: 'selectedWebhook' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+43:27  Warning: 'setSelectedWebhook' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+129:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/team/page.tsx
+110:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+120:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/(dashboard)/write/[grantId]/page.tsx
+100:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+100:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+145:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+169:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+183:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\write\[grantId]\page.tsx:183:7
+  181 |       });
+  182 |
+> 183 |       setSectionContents(initialContents);
+      |       ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  184 |     }
+  185 |   }, [grant?.draftContent]);
+  186 |  react-hooks/set-state-in-effect
+185:6  Warning: React Hook useEffect has a missing dependency: 'sectionContents'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+190:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\write\[grantId]\page.tsx:190:7
+  188 |   useEffect(() => {
+  189 |     if (STANDARD_SECTIONS.length > 0 && !activeSection) {
+> 190 |       setActiveSection(STANDARD_SECTIONS[0].id);
+      |       ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  191 |     }
+  192 |   }, [activeSection]);
+  193 |  react-hooks/set-state-in-effect
+197:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\write\[grantId]\page.tsx:197:7
+  195 |   useEffect(() => {
+  196 |     if (activeSection) {
+> 197 |       setEditorContent(sectionContents[activeSection] || '');
+      |       ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  198 |     }
+  199 |   }, [activeSection, sectionContents]);
+  200 |  react-hooks/set-state-in-effect
+206:5  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\app\(dashboard)\write\[grantId]\page.tsx:206:5
+  204 |
+  205 |     // Mark as unsaved when content changes
+> 206 |     setSaveStatus('unsaved');
+      |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  207 |
+  208 |     const timeoutId = setTimeout(() => {
+  209 |       setSaveStatus('saving');  react-hooks/set-state-in-effect
+220:6  Warning: React Hook useEffect has a missing dependency: 'saveDraft'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/app/(public)/api-docs/page.tsx
+9:9  Warning: Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+
+./src/app/api/v1/documents/route.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/v1/documents/search/route.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/v1/documents/[id]/route.ts
+71:13  Warning: 'body' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+74:14  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/api/v1/grants/route.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+53:11  Warning: 'skip' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/v1/grants/[id]/route.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+6:3  Warning: 'errorResponse' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+81:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/v1/reports/executive-summary/route.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/v1/reports/pipeline/route.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+24:11  Warning: 'params' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/api/v1/reports/win-loss/route.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/app/invite/accept/page.tsx
+16:11  Warning: 'user' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+56:6  Warning: React Hook useEffect has a missing dependency: 'acceptMutation'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+105:16  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+121:71  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+123:18  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/not-found.tsx
+145:25  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+145:46  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/components/calendar/month-view.tsx
+9:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/command-palette/command-palette.tsx
+36:10  Warning: 'pages' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+36:17  Warning: 'setPages' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/compliance/add-commitment-modal.tsx
+6:3  Warning: 'Select' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+7:3  Warning: 'SelectContent' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+8:3  Warning: 'SelectItem' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+9:3  Warning: 'SelectTrigger' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+10:3  Warning: 'SelectValue' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+110:68  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+162:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/compliance/resolve-conflict-modal.tsx
+10:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/dashboard/activity-feed-client.tsx
+11:22  Warning: 'setActivities' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+12:19  Warning: 'setHasMore' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/dashboard/activity-feed.tsx
+2:10  Warning: 'Button' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:10  Warning: 'cn' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+40:9  Warning: 'diffDays' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+90:44  Warning: 'onLoadMore' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+118:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+145:29  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+145:50  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/components/dashboard/compliance-widget.tsx
+4:46  Warning: 'Clock' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+105:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/dashboard/dashboard-skeleton.tsx
+2:35  Warning: 'RefreshCw' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/dashboard/fit-opportunities-widget.tsx
+36:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+150:89  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/components/dashboard/grants-by-program.tsx
+10:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+11:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/documents/document-card.tsx
+98:14  Error: Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\documents\document-card.tsx:98:14
+   96 |         <div className="flex items-center gap-2 min-w-0">
+   97 |           <div className="p-2 bg-blue-500/10 rounded border border-blue-500/20 flex-shrink-0">
+>  98 |             <Icon className="w-4 h-4 text-blue-400" />
+      |              ^^^^ This component is created during render
+   99 |           </div>
+  100 |           <div className="flex-1 min-w-0">
+  101 |             <h3 className="text-[13px] font-medium text-white truncate group-hover:text-blue-400 transition-colors">
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\documents\document-card.tsx:85:16
+  83 |
+  84 | export function DocumentCard({ document, onClick, onReview, onDelete }: DocumentCardProps) {
+> 85 |   const Icon = getFileIcon(document.mimeType)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ The component is created during render here
+  86 |   const statusBadge = getStatusBadge(document.status)
+  87 |   const timeAgo = formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })
+  88 |  react-hooks/static-components
+
+./src/components/documents/document-health-stats.tsx
+3:47  Warning: 'Clock' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/documents/document-health-table.tsx
+13:3  Warning: 'MoreVertical' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:10  Warning: 'DocumentType' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+16:24  Warning: 'ProcessingStatus' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+27:50  Warning: 'HealthFilter' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+124:10  Warning: 'showActions' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+124:23  Warning: 'setShowActions' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+134:14  Error: Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\documents\document-health-table.tsx:134:14
+  132 |         <div className="flex items-center gap-3">
+  133 |           <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20 flex-shrink-0">
+> 134 |             <Icon className="w-4 h-4 text-blue-400" />
+      |              ^^^^ This component is created during render
+  135 |           </div>
+  136 |           <div className="min-w-0">
+  137 |             <p className="text-sm text-white truncate max-w-xs">{document.name}</p>
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\documents\document-health-table.tsx:125:16
+  123 | }) {
+  124 |   const [showActions, setShowActions] = useState(false)
+> 125 |   const Icon = getFileIcon(document.mimeType)
+      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ The component is created during render here
+  126 |   const uploadDate = formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })
+  127 |
+  128 |   return (  react-hooks/static-components
+
+./src/components/documents/document-review-modal.tsx
+16:78  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/funders/peer-intelligence-widget.tsx
+177:66  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/components/funders/research-funder-modal.tsx
+26:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+228:23  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+258:60  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/components/grants/assignee-selector.tsx
+39:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/notifications/notification-dropdown.tsx
+4:20  Warning: 'Check' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/onboarding/tour-overlay.tsx
+59:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\onboarding\tour-overlay.tsx:59:7
+  57 |     const tourCompleted = localStorage.getItem('onboarding-tour-completed')
+  58 |     if (!tourCompleted) {
+> 59 |       setIsVisible(true)
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  60 |     }
+  61 |   }, [])
+  62 |  react-hooks/set-state-in-effect
+
+./src/components/pipeline/add-grant-modal.tsx
+46:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\pipeline\add-grant-modal.tsx:46:7
+  44 |   useEffect(() => {
+  45 |     if (isOpen && defaultStatus) {
+> 46 |       setFormData((prev) => ({
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  47 |         ...prev,
+  48 |         status: defaultStatus,
+  49 |       }))  react-hooks/set-state-in-effect
+
+./src/components/pipeline/funder-logo.tsx
+74:7  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/pipeline/grant-edit-modal.tsx
+47:5  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\pipeline\grant-edit-modal.tsx:47:5
+  45 |   // Update form when grant changes
+  46 |   useEffect(() => {
+> 47 |     setAmount(grant.amountRequested?.toString() || '')
+     |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  48 |     setDeadline(grant.deadline ? new Date(grant.deadline) : undefined)
+  49 |     setStatus(grant.status)
+  50 |   }, [grant])  react-hooks/set-state-in-effect
+118:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pipeline/kanban-board.tsx
+226:41  Warning: 'event' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/pipeline/kanban-column.tsx
+5:15  Warning: 'PipelineCardProps' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+69:3  Warning: 'description' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/pipeline/pipeline-card.tsx
+117:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+325:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+466:3  Warning: 'id' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+504:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+570:15  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/components/pipeline/pipeline-kanban.tsx
+88:9  Warning: 'router' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+168:23  Error: Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\pipeline\pipeline-kanban.tsx:168:23
+  166 |     if (grant.status !== GrantStatus.WRITING) return 0
+  167 |     // Mock progress - in reality, this would be calculated from document completion
+> 168 |     return Math.floor(Math.random() * 100)
+      |                       ^^^^^^^^^^^^^ Cannot call impure function
+  169 |   }
+  170 |
+  171 |   // Get funder logo URL (mock - would come from backend)  react-hooks/purity
+209:22  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+216:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/pipeline/pipeline-table.tsx
+5:69  Warning: 'MoreHorizontal' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+156:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+157:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+185:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+186:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+252:9  Warning: 'handleStatusChange' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+532:64  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/reports/executive-summary-pdf.tsx
+366:11  Warning: 'blob' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+366:17  Warning: 'url' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+366:31  Warning: 'error' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/reports/executive-summary.tsx
+3:20  Warning: 'Suspense' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+7:3  Warning: 'FileDown' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+9:3  Warning: 'TrendingUp' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+10:3  Warning: 'DollarSign' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+11:3  Warning: 'Target' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+12:3  Warning: 'Award' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:3  Warning: 'Clock' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+19:10  Warning: 'Badge' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+52:7  Warning: 'STATUS_COLORS' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+63:10  Warning: 'showPreview' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+75:9  Warning: 'handleGenerateReport' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+80:9  Warning: 'handleExportPDF' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/reports/funding-donut-chart.tsx
+4:52  Warning: 'Legend' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/reports/pipeline-by-stage-chart.tsx
+47:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/team/edit-role-modal.tsx
+43:7  Error: Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\team\edit-role-modal.tsx:43:7
+  41 |   useEffect(() => {
+  42 |     if (open) {
+> 43 |       setNewRole(member.role)
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  44 |     }
+  45 |   }, [open, member.role])
+  46 |  react-hooks/set-state-in-effect
+
+./src/components/team/remove-member-dialog.tsx
+5:10  Warning: 'Button' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/input.tsx
+4:18  Warning: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+
+./src/components/ui/label.tsx
+4:18  Warning: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+
+./src/components/ui/skeleton.tsx
+3:11  Warning: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+
+./src/components/ui/source-attribution-demo.tsx
+158:37  Error: Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\ui\source-attribution-demo.tsx:158:37
+  156 |             <SourceAttributionPanel
+  157 |               sources={highConfidenceSources}
+> 158 |               generatedAt={new Date(Date.now() - 5 * 60000)} // 5 mins ago
+      |                                     ^^^^^^^^^^ Cannot call impure function
+  159 |               onSourceClick={handleSourceClick}
+  160 |               onCopyWithAttribution={() => handleCopy(highConfidenceSources, "Generated content here...")}
+  161 |             />  react-hooks/purity
+194:37  Error: Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\ui\source-attribution-demo.tsx:194:37
+  192 |             <SourceAttributionPanel
+  193 |               sources={mediumConfidenceSources}
+> 194 |               generatedAt={new Date(Date.now() - 15 * 60000)} // 15 mins ago
+      |                                     ^^^^^^^^^^ Cannot call impure function
+  195 |               onSourceClick={handleSourceClick}
+  196 |               onCopyWithAttribution={() => handleCopy(mediumConfidenceSources, "Generated content here...")}
+  197 |               defaultExpanded={true} // Auto-expand for lower confidence  react-hooks/purity
+234:39  Error: Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\ui\source-attribution-demo.tsx:234:39
+  232 |               <SourceAttributionPanel
+  233 |                 sources={lowConfidenceSources}
+> 234 |                 generatedAt={new Date(Date.now() - 2 * 60000)} // 2 mins ago
+      |                                       ^^^^^^^^^^ Cannot call impure function
+  235 |                 onSourceClick={handleSourceClick}
+  236 |                 defaultExpanded={true} // Always expanded for manual review
+  237 |               />  react-hooks/purity
+252:19  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+252:41  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/components/ui/source-attribution-panel.example.tsx
+81:31  Error: Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\ui\source-attribution-panel.example.tsx:81:31
+  79 |       <SourceAttributionPanel
+  80 |         sources={exampleSources}
+> 81 |         generatedAt={new Date(Date.now() - 5 * 60000)} // 5 minutes ago
+     |                               ^^^^^^^^^^ Cannot call impure function
+  82 |         onSourceClick={handleSourceClick}
+  83 |         onCopyWithAttribution={handleCopyWithAttribution}
+  84 |         defaultExpanded={false}  react-hooks/purity
+
+./src/components/ui/textarea.tsx
+4:18  Warning: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+
+./src/components/ui/toast.examples.tsx
+33:9  Warning: 'handleCardMove' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+48:22  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+55:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+72:9  Warning: 'handleDelete' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+84:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+118:9  Warning: 'performLongOperation' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+129:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+148:9  Warning: 'handleGrantMove' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+152:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+174:22  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+181:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/writer/ai-writer.tsx
+11:27  Warning: 'setSectionContents' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+25:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/writer/editor-toolbar.tsx
+151:11  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/writing/ai-generation-panel.tsx
+28:47  Warning: 'index' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+218:40  Error: Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\writing\ai-generation-panel.tsx:218:40
+  216 |                     key={i}
+  217 |                     className="h-4 bg-slate-200 rounded animate-pulse"
+> 218 |                     style={{ width: `${Math.random() * 30 + 70}%` }}
+      |                                        ^^^^^^^^^^^^^ Cannot call impure function
+  219 |                   />
+  220 |                 ))}
+  221 |               </div>  react-hooks/purity
+
+./src/components/writing/apply-voice-modal.tsx
+5:10  Warning: 'api' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+21:25  Warning: 'setRewrittenText' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+23:30  Warning: 'setOriginalConfidence' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+24:31  Warning: 'setRewrittenConfidence' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+97:81  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/components/writing/rich-editor.tsx
+64:9  Error: Error: Cannot access variable before it is declared
+
+`formatText` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\writing\rich-editor.tsx:64:9
+  62 |       if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+  63 |         e.preventDefault();
+> 64 |         formatText("bold");
+     |         ^^^^^^^^^^ `formatText` accessed before it is declared
+  65 |       } else if ((e.metaKey || e.ctrlKey) && e.key === "i") {
+  66 |         e.preventDefault();
+  67 |         formatText("italic");
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\writing\rich-editor.tsx:107:3
+  105 |
+  106 |   // Formatting functions
+> 107 |   const formatText = (command: string, value?: string) => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 108 |     document.execCommand(command, false, value);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 109 |     editorRef.current?.focus();
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 110 |   };
+      | ^^^^^ `formatText` is declared here
+  111 |
+  112 |   const clearFormatting = () => {
+  113 |     const selection = window.getSelection();  react-hooks/immutability
+
+./src/components/writing/voice-consistency-indicator.tsx
+5:10  Warning: 'api' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+17:23  Warning: 'setIsAnalyzing' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+33:7  Error: Error: Cannot access variable before it is declared
+
+`performAnalysis` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\writing\voice-consistency-indicator.tsx:33:7
+  31 |
+  32 |     const timeoutId = setTimeout(() => {
+> 33 |       performAnalysis()
+     |       ^^^^^^^^^^^^^^^ `performAnalysis` accessed before it is declared
+  34 |     }, 2000) // Wait 2 seconds after user stops typing
+  35 |
+  36 |     return () => clearTimeout(timeoutId)
+
+c:\Users\OscarNuñez\Desktop\grantsignal\src\components\writing\voice-consistency-indicator.tsx:39:3
+  37 |   }, [text])
+  38 |
+> 39 |   const performAnalysis = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 40 |     if (!text || text.trim().length < 50) return
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 41 |
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |     // TODO: Replace with actual API call when voice router is implemented
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |     setConsistencyData(null)
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |   }
+     | ^^^^ `performAnalysis` is declared here
+  45 |
+  46 |   if (!text || text.trim().length < 50) {
+  47 |     return null  react-hooks/immutability
+37:6  Warning: React Hook useEffect has a missing dependency: 'performAnalysis'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+136:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+137:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/hooks/use-toast.ts
+4:10  Warning: 'useState' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/inngest/functions/analyze-voice.ts
+146:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/inngest/functions/detect-conflicts.ts
+40:17  Warning: 'newCriticalConflicts' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/inngest/functions/parse-rfp.ts
+32:30  Warning: 'organizationId' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+83:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/inngest/functions/process-document.ts
+103:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+256:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/inngest/functions/webhook-delivery.ts
+3:41  Warning: 'AnyWebhookEvent' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/inngest/send-compliance-alert.ts
+18:40  Warning: 'severity' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+59:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/inngest/send-deadline-reminders.ts
+82:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/inngest/send-document-processed.ts
+19:40  Warning: 'status' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+59:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/inngest/send-weekly-digest.ts
+114:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/ai/generate-content.ts
+2:10  Warning: 'confidenceScoring' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+5:15  Warning: 'SourceDocument' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+39:3  Warning: 'grantId' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+40:3  Warning: 'sectionId' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/email-templates/compliance-alert.tsx
+33:7  Warning: Do not use `<head>` element. Use `<Head />` from `next/head` instead. See: https://nextjs.org/docs/messages/no-head-element  @next/next/no-head-element
+110:19  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/lib/email-templates/deadline-reminder.tsx
+24:7  Warning: Do not use `<head>` element. Use `<Head />` from `next/head` instead. See: https://nextjs.org/docs/messages/no-head-element  @next/next/no-head-element
+74:19  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/lib/email-templates/document-processed.tsx
+34:7  Warning: Do not use `<head>` element. Use `<Head />` from `next/head` instead. See: https://nextjs.org/docs/messages/no-head-element  @next/next/no-head-element
+153:19  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/lib/email-templates/weekly-digest.tsx
+36:7  Warning: Do not use `<head>` element. Use `<Head />` from `next/head` instead. See: https://nextjs.org/docs/messages/no-head-element  @next/next/no-head-element
+51:32  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+142:19  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/lib/fit-scoring.ts
+96:13  Warning: 'docIds' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+146:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+150:3  Warning: 'relevantContent' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+236:69  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+317:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/invitation-token.ts
+50:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/server/api/middleware/rate-limit.ts
+134:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/context.ts
+8:37  Warning: 'opts' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/ai.ts
+280:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+315:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/audit.ts
+224:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+317:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+366:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/compliance.ts
+15:24  Warning: 'ctx' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/dashboard.ts
+346:21  Warning: 'ctx' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+346:26  Warning: 'input' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/discovery.ts
+5:38  Warning: 'GetObjectCommand' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+43:24  Warning: 'ctx' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+298:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/documents.ts
+390:11  Warning: 'where' is never reassigned. Use 'const' instead.  prefer-const
+390:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+440:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+450:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+750:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/funders.ts
+255:13  Warning: 'org' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+291:16  Warning: 'key' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+342:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+348:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/grants.ts
+601:73  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+736:67  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/organizations.ts
+74:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+120:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+152:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+159:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+214:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/routers/reports.ts
+906:13  Warning: 'quarterNum' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+958:24  Warning: 'ctx' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/team.ts
+53:18  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+146:13  Warning: 'existingMember' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+240:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/server/routers/writing.ts
+4:10  Warning: 'generateEmbedding' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+103:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+206:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+264:21  Warning: 'ctx' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/services/ai/claude-generate.ts
+9:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/services/ai/confidence-scoring.ts
+409:78  Warning: 'sources' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/services/ai/voice-analyzer.ts
+148:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+224:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/server/services/ai/voice.ts
+107:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/services/ai/writer.ts
+2:40  Warning: 'RAGContext' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/services/compliance/commitment-extractor.ts
+106:3  Warning: 'text' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+107:3  Warning: 'grantId' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+108:3  Warning: 'organizationId' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/services/compliance/conflict-detector.ts
+87:15  Warning: 'desc' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/services/discovery/fit-scorer.ts
+118:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+129:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+317:3  Warning: 'organization' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+327:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+329:9  Warning: 'funderCity' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+424:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/services/discovery/propublica.ts
+48:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+64:11  Warning: 'ScheduleIResponse' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/services/documents/chunker.ts
+74:5  Warning: 'globalCharCount' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/server/services/documents/parser.ts
+71:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+368:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/server/services/webhooks/emitter.ts
+153:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/test/components/confidence-badge.test.tsx
+176:15  Warning: 'container' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/test/components/source-attribution-panel.test.tsx
+521:13  Warning: 'user' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/test/mocks/anthropic.ts
+72:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+81:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/test/setup.ts
+2:10  Warning: 'expect' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/test/trust-architecture/audit-trail.test.ts
+350:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+362:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/test/trust-architecture/confidence-scoring.test.ts
+60:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+126:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+136:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+187:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+197:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+267:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+297:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/test/trust-architecture/rag-retrieval.test.ts
+11:35  Warning: 'text' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+294:13  Warning: 'org2Query' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+312:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/test/trust-architecture/source-attribution.test.ts
+96:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/types/document-health.ts
+39:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+40:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+48:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
