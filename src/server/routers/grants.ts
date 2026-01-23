@@ -284,25 +284,28 @@ export const grantsRouter = router({
         startDate: z.date().optional(),
         endDate: z.date().optional(),
         notes: z.string().optional(),
+        draftContent: z.record(z.string(), z.any()).optional(), // Section content: { [sectionId]: { content: string, wordCount: number, lastUpdated: Date } }
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input
 
-      const grant = await ctx.db.grant.updateMany({
+      // Verify grant belongs to organization
+      const existingGrant = await ctx.db.grant.findFirst({
         where: {
           id,
           organizationId: ctx.organizationId,
         },
-        data,
       })
 
-      if (grant.count === 0) {
+      if (!existingGrant) {
         throw new Error('Grant not found or access denied')
       }
 
-      return ctx.db.grant.findUnique({
+      // Update the grant
+      return ctx.db.grant.update({
         where: { id },
+        data,
         include: {
           funder: true,
           opportunity: true,
@@ -557,6 +560,57 @@ export const grantsRouter = router({
       })
 
       return updatedGrant
+    }),
+
+  /**
+   * Save draft content for a grant (auto-save)
+   */
+  saveDraft: orgProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        sectionId: z.string(),
+        content: z.string(),
+        wordCount: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, sectionId, content, wordCount } = input
+
+      // Verify the grant belongs to the organization
+      const grant = await ctx.db.grant.findFirst({
+        where: {
+          id,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      if (!grant) {
+        throw new Error('Grant not found or access denied')
+      }
+
+      // Get current draft content
+      const currentDraftContent = (grant.draftContent as Record<string, any>) || {}
+
+      // Update the specific section
+      const updatedDraftContent = {
+        ...currentDraftContent,
+        [sectionId]: {
+          content,
+          wordCount,
+          lastUpdated: new Date().toISOString(),
+        },
+      }
+
+      // Save to database
+      await ctx.db.grant.update({
+        where: { id },
+        data: {
+          draftContent: updatedDraftContent,
+        },
+      })
+
+      return { success: true }
     }),
 
   /**

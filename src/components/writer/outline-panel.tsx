@@ -1,38 +1,33 @@
 'use client';
 
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
+import {
+  STANDARD_SECTIONS,
+  calculateSectionProgress,
+  calculateOverallProgress,
+  type SectionProgress,
+} from '@/lib/writer/sections';
 
 interface OutlinePanelProps {
   activeSection: string | null;
   onSectionSelect: (section: string) => void;
+  sectionContents: Record<string, string>;
 }
 
-interface Section {
-  id: string;
-  title: string;
-  completion: number;
-  status: 'not-started' | 'in-progress' | 'completed';
-}
+export function OutlinePanel({
+  activeSection,
+  onSectionSelect,
+  sectionContents
+}: OutlinePanelProps) {
+  // Calculate real progress for each section
+  const sections: SectionProgress[] = STANDARD_SECTIONS.map((section) => {
+    const content = sectionContents[section.id] || '';
+    return calculateSectionProgress(section, content);
+  });
 
-export function OutlinePanel({ activeSection, onSectionSelect }: OutlinePanelProps) {
-  // Mock data - will be replaced with real data
-  const sections: Section[] = [
-    { id: '1', title: 'Executive Summary', completion: 100, status: 'completed' },
-    { id: '2', title: 'Organization Background', completion: 75, status: 'in-progress' },
-    { id: '3', title: 'Problem Statement', completion: 50, status: 'in-progress' },
-    { id: '4', title: 'Project Description', completion: 0, status: 'not-started' },
-    { id: '5', title: 'Goals and Objectives', completion: 0, status: 'not-started' },
-    { id: '6', title: 'Methods and Strategies', completion: 0, status: 'not-started' },
-    { id: '7', title: 'Evaluation Plan', completion: 0, status: 'not-started' },
-    { id: '8', title: 'Budget and Justification', completion: 0, status: 'not-started' },
-    { id: '9', title: 'Sustainability Plan', completion: 0, status: 'not-started' },
-  ];
+  const overallCompletion = calculateOverallProgress(sections);
 
-  const overallCompletion = Math.round(
-    sections.reduce((acc, section) => acc + section.completion, 0) / sections.length
-  );
-
-  const getStatusIcon = (status: Section['status']) => {
+  const getStatusIcon = (status: SectionProgress['status']) => {
     switch (status) {
       case 'completed':
         return <CheckCircle2 className="w-4 h-4 text-green-500" />;
@@ -64,10 +59,10 @@ export function OutlinePanel({ activeSection, onSectionSelect }: OutlinePanelPro
         <div className="p-2 space-y-1">
           {sections.map((section) => (
             <button
-              key={section.id}
-              onClick={() => onSectionSelect(section.title)}
+              key={section.sectionId}
+              onClick={() => onSectionSelect(section.sectionId)}
               className={`w-full px-3 py-3 rounded-lg transition-colors text-left ${
-                activeSection === section.title
+                activeSection === section.sectionId
                   ? 'bg-blue-900/30 border border-blue-700'
                   : 'hover:bg-slate-800/50'
               }`}
@@ -90,12 +85,15 @@ export function OutlinePanel({ activeSection, onSectionSelect }: OutlinePanelPro
                             ? 'bg-blue-500'
                             : 'bg-slate-600'
                         }`}
-                        style={{ width: `${section.completion}%` }}
+                        style={{ width: `${section.completionPercentage}%` }}
                       />
                     </div>
                     <span className="text-xs text-slate-400 tabular-nums">
-                      {section.completion}%
+                      {section.completionPercentage}%
                     </span>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {section.currentWordCount} / {section.targetWordCount} words
                   </div>
                 </div>
               </div>

@@ -76,14 +76,32 @@ export const PUT = createRestHandler(
       db,
     });
 
+    // Separate draftContent handling - parse if string, pass if object
+    const { draftContent, ...updateFields } = body;
+    let parsedDraftContent: Record<string, any> | undefined;
+
+    if (draftContent) {
+      if (typeof draftContent === 'string') {
+        try {
+          parsedDraftContent = JSON.parse(draftContent);
+        } catch {
+          // Invalid JSON, skip it
+          parsedDraftContent = undefined;
+        }
+      } else {
+        parsedDraftContent = draftContent;
+      }
+    }
+
     const grant = await caller.grants.update({
       id: params.id,
-      ...body,
+      ...updateFields,
       deadline: body.deadline ? new Date(body.deadline) : undefined,
       submittedAt: body.submittedAt ? new Date(body.submittedAt) : undefined,
       awardedAt: body.awardedAt ? new Date(body.awardedAt) : undefined,
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       endDate: body.endDate ? new Date(body.endDate) : undefined,
+      draftContent: parsedDraftContent,
     });
 
     return grant;

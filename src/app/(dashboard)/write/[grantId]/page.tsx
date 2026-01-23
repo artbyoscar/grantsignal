@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/trpc/client';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, Cloud } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RFPRequirements } from '@/components/writer/rfp-requirements';
@@ -12,6 +12,7 @@ import { MemorySearch } from '@/components/writing/memory-search';
 import { GrantEditor } from '@/components/writer/grant-editor';
 import { AIToolbar } from '@/components/writer/ai-toolbar';
 import { OutlinePanel } from '@/components/writer/outline-panel';
+import { STANDARD_SECTIONS, calculateWordCount } from '@/lib/writer/sections';
 
 interface RFPSection {
   id: string;
@@ -78,6 +79,21 @@ export default function WriterPage({ params }: PageProps) {
       enabled: !!grant?.funderId, // Only fetch if we have a funderId
     }
   );
+
+  // Save status tracking
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+
+  // Save draft mutation
+  const saveDraft = api.grants.saveDraft.useMutation({
+    onSuccess: () => {
+      setSaveStatus('saved');
+    },
+    onError: (error) => {
+      console.error('Failed to save draft:', error);
+      toast.error('Failed to save draft');
+      setSaveStatus('unsaved');
+    },
+  });
 
   // Parse RFP sections from grant opportunity requirements
   const rfpSections: RFPSection[] = grant?.opportunity?.requirements
@@ -147,12 +163,33 @@ export default function WriterPage({ params }: PageProps) {
     return null;
   }
 
+  // Initialize section contents from grant draftContent
+  useEffect(() => {
+    if (grant?.draftContent && Object.keys(sectionContents).length === 0) {
+      const draftContent = grant.draftContent as Record<string, any>;
+      const initialContents: Record<string, string> = {};
+
+      STANDARD_SECTIONS.forEach((section) => {
+        const sectionData = draftContent[section.id];
+        if (sectionData && typeof sectionData === 'object' && 'content' in sectionData) {
+          initialContents[section.id] = sectionData.content || '';
+        } else if (typeof sectionData === 'string') {
+          initialContents[section.id] = sectionData;
+        } else {
+          initialContents[section.id] = '';
+        }
+      });
+
+      setSectionContents(initialContents);
+    }
+  }, [grant?.draftContent]);
+
   // Initialize first section
   useEffect(() => {
-    if (rfpSections.length > 0 && !activeSection) {
-      setActiveSection(rfpSections[0].name);
+    if (STANDARD_SECTIONS.length > 0 && !activeSection) {
+      setActiveSection(STANDARD_SECTIONS[0].id);
     }
-  }, [rfpSections.length, activeSection]);
+  }, [activeSection]);
 
   // Update editor content when active section changes
   useEffect(() => {
@@ -160,6 +197,27 @@ export default function WriterPage({ params }: PageProps) {
       setEditorContent(sectionContents[activeSection] || '');
     }
   }, [activeSection, sectionContents]);
+
+  // Auto-save draft content (debounced)
+  useEffect(() => {
+    if (!activeSection) return;
+
+    // Mark as unsaved when content changes
+    setSaveStatus('unsaved');
+
+    const timeoutId = setTimeout(() => {
+      setSaveStatus('saving');
+      const wordCount = calculateWordCount(editorContent);
+      saveDraft.mutate({
+        id: grantId,
+        sectionId: activeSection,
+        content: editorContent || '',
+        wordCount,
+      });
+    }, 2000); // Save 2 seconds after user stops typing
+
+    return () => clearTimeout(timeoutId);
+  }, [editorContent, activeSection, grantId]);
 
   // Handlers
   const handleSectionClick = (sectionId: string) => {
@@ -271,7 +329,7 @@ export default function WriterPage({ params }: PageProps) {
     }, 1500);
   };
 
-  const handleSectionSelect = (section: string) => {
+  const handleSectionSelect = (sectionId: string) => {
     // Save current section content before switching
     if (activeSection) {
       setSectionContents(prev => ({
@@ -279,7 +337,7 @@ export default function WriterPage({ params }: PageProps) {
         [activeSection]: editorContent,
       }));
     }
-    setActiveSection(section);
+    setActiveSection(sectionId);
   };
 
   // Loading state
@@ -350,12 +408,36 @@ export default function WriterPage({ params }: PageProps) {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-800 bg-slate-800">
-          <h1 className="text-xl font-bold text-white truncate">
-            {grant.opportunity?.title || 'Untitled Grant'}
-          </h1>
-          <p className="text-sm text-slate-400 truncate">
-            {grant.funder?.name || 'Unknown Funder'}
-          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-white truncate">
+                {grant.opportunity?.title || 'Untitled Grant'}
+              </h1>
+              <p className="text-sm text-slate-400 truncate">
+                {grant.funder?.name || 'Unknown Funder'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                  <span className="text-slate-400">Saving...</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check className="w-4 h-4 text-green-500" />
+                  <span className="text-slate-400">Saved</span>
+                </>
+              )}
+              {saveStatus === 'unsaved' && (
+                <>
+                  <Cloud className="w-4 h-4 text-slate-500" />
+                  <span className="text-slate-500">Unsaved</span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Editor Area */}
@@ -384,6 +466,7 @@ export default function WriterPage({ params }: PageProps) {
         <OutlinePanel
           activeSection={activeSection}
           onSectionSelect={handleSectionSelect}
+          sectionContents={sectionContents}
         />
       </div>
     </div>

@@ -8,6 +8,7 @@ import { OutlinePanel } from './outline-panel';
 export function AIWriter() {
   const [content, setContent] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [sectionContents, setSectionContents] = useState<Record<string, string>>({});
 
   // Mock data for LeftPanel
   const mockRfpSections = [
@@ -70,6 +71,7 @@ export function AIWriter() {
         <OutlinePanel
           activeSection={activeSection}
           onSectionSelect={setActiveSection}
+          sectionContents={sectionContents}
         />
       </div>
     </div>
