@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
 import { TRPCProvider } from '@/trpc/react'
 import { Toaster } from 'sonner'
+import { OfflineBanner } from '@/components/offline-banner'
 import "./globals.css";
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +23,7 @@ export default function RootLayout({
       <html lang="en" className="dark">
         <body className="bg-slate-900 text-slate-100 antialiased">
           <TRPCProvider>
+            <OfflineBanner />
             {children}
             <Toaster position="bottom-right" theme="dark" />
           </TRPCProvider>

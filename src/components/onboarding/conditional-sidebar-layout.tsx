@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Menu, X } from 'lucide-react'
 import { Sidebar } from '@/components/layout/sidebar'
 import { NotificationBell } from '@/components/notifications/notification-bell'
+import { BottomTabBar } from '@/components/layout/bottom-tab-bar'
+import { MobileDrawer } from '@/components/layout/mobile-drawer'
+import { SkipLink } from '@/components/ui/skip-link'
 
 interface ConditionalSidebarLayoutProps {
   children: React.ReactNode
@@ -13,63 +15,48 @@ interface ConditionalSidebarLayoutProps {
 export function ConditionalSidebarLayout({ children }: ConditionalSidebarLayoutProps) {
   const pathname = usePathname()
   const isOnboardingPath = pathname.startsWith('/onboarding')
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   if (isOnboardingPath) {
     return <>{children}</>
   }
 
-  const closeSidebar = () => setIsSidebarOpen(false)
+  const closeDrawer = () => setIsDrawerOpen(false)
+  const openDrawer = () => setIsDrawerOpen(true)
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Mobile Header with Hamburger */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700">
-        <h1 className="text-lg font-bold text-white">GrantSignal</h1>
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-            aria-label="Toggle menu"
-          >
-            {isSidebarOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
+    <>
+      {/* Skip to main content link for keyboard users */}
+      <SkipLink href="#main-content">Skip to main content</SkipLink>
+
+      <div className="min-h-screen bg-slate-900">
+        {/* Mobile Header - Simplified (no hamburger, bottom nav handles navigation) */}
+        <header className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700">
+          <h1 className="text-lg font-bold text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+            GrantSignal
+          </h1>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+          </div>
+        </header>
+
+        {/* Mobile Drawer */}
+        <MobileDrawer isOpen={isDrawerOpen} onClose={closeDrawer} />
+
+        <div className="flex pt-14 md:pt-0">
+          {/* Desktop Sidebar (always visible) */}
+          <div className="hidden md:block">
+            <Sidebar />
+          </div>
+
+          <main id="main-content" className="flex-1 p-4 md:p-8 min-w-0 pb-20 md:pb-4">
+            {children}
+          </main>
         </div>
+
+        {/* Bottom Tab Bar (mobile only) */}
+        <BottomTabBar onMoreClick={openDrawer} />
       </div>
-
-      {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="md:hidden fixed inset-0 z-40 bg-black/50"
-          onClick={closeSidebar}
-        />
-      )}
-
-      <div className="flex pt-14 md:pt-0">
-        {/* Desktop Sidebar (always visible) */}
-        <div className="hidden md:block">
-          <Sidebar onNavigate={closeSidebar} />
-        </div>
-
-        {/* Mobile Sidebar (slide-out drawer) */}
-        <div
-          className={`
-            md:hidden fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out
-            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          `}
-        >
-          <Sidebar onNavigate={closeSidebar} />
-        </div>
-
-        <main className="flex-1 p-4 md:p-8 min-w-0">
-          {children}
-        </main>
-      </div>
-    </div>
+    </>
   )
 }

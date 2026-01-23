@@ -152,7 +152,7 @@ export default function TeamPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-100">Team</h1>
-          <p className="text-slate-400 mt-1">
+          <p className="text-slate-300 mt-1">
             {totalMembers} {totalMembers === 1 ? 'member' : 'members'}
             {invitations && invitations.length > 0 && (
               <span className="text-slate-500">
@@ -190,7 +190,7 @@ export default function TeamPage() {
                   </Avatar>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Member actions menu">
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>

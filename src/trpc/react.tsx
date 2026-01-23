@@ -7,6 +7,8 @@ import { createTRPCReact } from '@trpc/react-query'
 import { useState } from 'react'
 import superjson from 'superjson'
 import { useAuth } from '@clerk/nextjs'
+import { toast } from 'sonner'
+import { TRPCClientError } from '@trpc/client'
 
 import { type AppRouter } from '@/server/routers'
 
@@ -28,6 +30,79 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 5 * 1000,
             refetchOnWindowFocus: false,
+            retry: (failureCount, error) => {
+              // Don't retry on auth errors or client errors
+              if (error instanceof TRPCClientError) {
+                const httpStatus = error.data?.httpStatus
+                if (httpStatus === 401 || httpStatus === 403 || httpStatus === 404) {
+                  return false
+                }
+              }
+              return failureCount < 2
+            },
+          },
+          mutations: {
+            onError: (error) => {
+              // Handle mutation errors with toast notifications
+              if (error instanceof TRPCClientError) {
+                const httpStatus = error.data?.httpStatus
+
+                // Auth errors
+                if (httpStatus === 401) {
+                  toast.error('Authentication required', {
+                    description: 'Please sign in to continue.',
+                  })
+                  // Optionally redirect to sign-in
+                  // window.location.href = '/sign-in'
+                  return
+                }
+
+                // Permission errors
+                if (httpStatus === 403) {
+                  toast.error('Access denied', {
+                    description: "You don't have permission to perform this action.",
+                  })
+                  return
+                }
+
+                // Not found errors
+                if (httpStatus === 404) {
+                  toast.error('Not found', {
+                    description: 'The requested resource was not found.',
+                  })
+                  return
+                }
+
+                // Validation errors
+                if (httpStatus === 400) {
+                  toast.error('Invalid request', {
+                    description: error.message || 'Please check your input and try again.',
+                  })
+                  return
+                }
+
+                // Server errors
+                if (httpStatus && httpStatus >= 500) {
+                  toast.error('Server error', {
+                    description: 'Something went wrong. Please try again later.',
+                  })
+                  return
+                }
+              }
+
+              // Network errors
+              if (error.message.includes('fetch')) {
+                toast.error('Connection error', {
+                  description: 'Unable to connect. Check your internet connection.',
+                })
+                return
+              }
+
+              // Generic error
+              toast.error('An error occurred', {
+                description: error.message || 'Please try again.',
+              })
+            },
           },
         },
       })

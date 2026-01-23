@@ -32,6 +32,7 @@ interface InviteMemberModalProps {
 export function InviteMemberModal({ open, onOpenChange }: InviteMemberModalProps) {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<UserRole>('MEMBER')
+  const [emailError, setEmailError] = useState('')
 
   const utils = api.useUtils()
 
@@ -51,8 +52,13 @@ export function InviteMemberModal({ open, onOpenChange }: InviteMemberModalProps
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Reset errors
+    setEmailError('')
+
     if (!email) {
-      toast.error('Please enter an email address')
+      const errorMsg = 'Please enter an email address'
+      setEmailError(errorMsg)
+      toast.error(errorMsg)
       return
     }
 
@@ -79,21 +85,37 @@ export function InviteMemberModal({ open, onOpenChange }: InviteMemberModalProps
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email">
+              Email Address <span className="text-red-400" aria-hidden="true">*</span>
+            </Label>
             <Input
               id="email"
               type="email"
               placeholder="colleague@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (emailError) setEmailError('')
+              }}
               disabled={inviteMutation.isPending}
+              required
+              aria-required="true"
+              aria-invalid={emailError ? 'true' : 'false'}
+              aria-describedby={emailError ? 'email-error' : undefined}
             />
+            {emailError && (
+              <p id="email-error" className="text-sm text-red-400" role="alert">
+                {emailError}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-              <SelectTrigger id="role" disabled={inviteMutation.isPending}>
+            <Label htmlFor="role">
+              Role <span className="text-red-400" aria-hidden="true">*</span>
+            </Label>
+            <Select value={role} onValueChange={(value) => setRole(value as UserRole)} required>
+              <SelectTrigger id="role" disabled={inviteMutation.isPending} aria-required="true">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>

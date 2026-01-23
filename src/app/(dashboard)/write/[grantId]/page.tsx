@@ -359,11 +359,71 @@ export default function WriterPage({ params }: PageProps) {
     );
   }
 
+  // Mobile tab state
+  const [mobileTab, setMobileTab] = useState<'assist' | 'editor' | 'outline'>('editor');
+
   return (
     <div className="flex h-screen bg-slate-900">
-      {/* Left Panel - 320px */}
-      <div className="w-80 shrink-0 border-r border-slate-800 overflow-y-auto">
-        <div className="p-4 border-b border-slate-800">
+      {/* Mobile Header with Back Button - Only visible on mobile */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-20 bg-slate-800 border-b border-slate-700 h-14 flex items-center px-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push('/pipeline')}
+          className="gap-1 shrink-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-xs">Back</span>
+        </Button>
+        <div className="flex-1 text-center px-2">
+          <h1 className="text-sm font-semibold text-white truncate">
+            {grant.opportunity?.title || 'Untitled Grant'}
+          </h1>
+        </div>
+        <div className="w-16 shrink-0" />
+      </div>
+
+      {/* Mobile Tab Bar - Only visible on mobile */}
+      <div className="md:hidden fixed top-14 left-0 right-0 z-20 bg-slate-800 border-b border-slate-700">
+        <div className="flex">
+          <button
+            onClick={() => setMobileTab('assist')}
+            className={`flex-1 px-3 py-3 text-xs font-medium transition-colors touch-manipulation ${
+              mobileTab === 'assist'
+                ? 'text-blue-400 bg-blue-600/20 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-slate-200 active:bg-slate-700'
+            }`}
+          >
+            Assist
+          </button>
+          <button
+            onClick={() => setMobileTab('editor')}
+            className={`flex-1 px-3 py-3 text-xs font-medium transition-colors touch-manipulation ${
+              mobileTab === 'editor'
+                ? 'text-blue-400 bg-blue-600/20 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-slate-200 active:bg-slate-700'
+            }`}
+          >
+            Editor
+          </button>
+          <button
+            onClick={() => setMobileTab('outline')}
+            className={`flex-1 px-3 py-3 text-xs font-medium transition-colors touch-manipulation ${
+              mobileTab === 'outline'
+                ? 'text-blue-400 bg-blue-600/20 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-slate-200 active:bg-slate-700'
+            }`}
+          >
+            Progress
+          </button>
+        </div>
+      </div>
+
+      {/* Left Panel - 320px - Hidden on mobile unless active tab */}
+      <div className={`w-80 shrink-0 border-r border-slate-800 overflow-y-auto ${
+        mobileTab === 'assist' ? 'block md:block' : 'hidden md:block'
+      } md:relative fixed inset-0 z-10 md:z-auto pt-28 md:pt-0 pb-24 md:pb-0`}>
+        <div className="hidden md:block p-4 border-b border-slate-800">
           <Button
             variant="ghost"
             size="sm"
@@ -404,20 +464,22 @@ export default function WriterPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Center Panel - Editor */}
-      <div className="flex-1 flex flex-col">
+      {/* Center Panel - Editor - Hidden on mobile unless active tab */}
+      <div className={`flex-1 flex flex-col ${
+        mobileTab === 'editor' ? 'flex md:flex' : 'hidden md:flex'
+      } md:relative fixed inset-0 z-10 md:z-auto pt-28 md:pt-0`}>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 bg-slate-800">
-          <div className="flex items-center justify-between">
+        <div className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-800 bg-slate-800">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-white truncate">
+              <h1 className="text-base md:text-xl font-bold text-white truncate">
                 {grant.opportunity?.title || 'Untitled Grant'}
               </h1>
-              <p className="text-sm text-slate-400 truncate">
+              <p className="text-xs md:text-sm text-slate-400 truncate">
                 {grant.funder?.name || 'Unknown Funder'}
               </p>
             </div>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="hidden md:flex items-center gap-2 text-sm">
               {saveStatus === 'saving' && (
                 <>
                   <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
@@ -441,7 +503,7 @@ export default function WriterPage({ params }: PageProps) {
         </div>
 
         {/* Editor Area */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32 md:pb-6">
           <GrantEditor
             content={editorContent}
             onChange={handleEditorChange}
@@ -450,19 +512,23 @@ export default function WriterPage({ params }: PageProps) {
           />
         </div>
 
-        {/* AI Toolbar */}
-        <AIToolbar
-          onAskClaude={handleAskClaude}
-          onSuggestImprovements={handleSuggestImprovements}
-          onCheckTone={handleCheckTone}
-          onFindStatistics={handleFindStatistics}
-          suggestion={aiSuggestion}
-          isStreaming={isStreaming}
-        />
+        {/* AI Toolbar - Floating on mobile */}
+        <div className="md:relative fixed bottom-14 left-0 right-0 md:bottom-auto md:left-auto md:right-auto z-30">
+          <AIToolbar
+            onAskClaude={handleAskClaude}
+            onSuggestImprovements={handleSuggestImprovements}
+            onCheckTone={handleCheckTone}
+            onFindStatistics={handleFindStatistics}
+            suggestion={aiSuggestion}
+            isStreaming={isStreaming}
+          />
+        </div>
       </div>
 
-      {/* Right Panel - Outline - 200px */}
-      <div className="w-52 shrink-0 border-l border-slate-800 p-4">
+      {/* Right Panel - Outline - 200px - Hidden on mobile unless active tab */}
+      <div className={`w-full md:w-52 shrink-0 border-l border-slate-800 p-4 ${
+        mobileTab === 'outline' ? 'block md:block' : 'hidden md:block'
+      } md:relative fixed inset-0 z-10 md:z-auto pt-28 md:pt-0 pb-24 md:pb-0 overflow-y-auto`}>
         <OutlinePanel
           activeSection={activeSection}
           onSectionSelect={handleSectionSelect}
