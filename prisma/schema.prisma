@@ -167,7 +167,7 @@ model Organization {
 
   // Onboarding fields
   onboardingCompleted Boolean         @default(false)
-  onboardingStep      Int?            // Current step if incomplete (1-4)
+  onboardingStep      Int?            // Current step if incomplete (1-6)
   primaryProgramAreas String[]        // Array of program focus areas
   geographicArea      String?         // Service area description
 

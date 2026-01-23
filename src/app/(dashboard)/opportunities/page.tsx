@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock, Building2, X } from 'lucide-react'
+import { Search, Upload, Zap, Database, Brain, ExternalLink, Loader2, CheckCircle2, AlertCircle, Filter, SlidersHorizontal, Calendar, TrendingUp, Clock, Building2, X, Grid3x3, List, ChevronRight, ChevronDown, DollarSign, MapPin, Tag } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { useRouter } from 'next/navigation'
 import { FitScoreCard } from '@/components/fit-score-card'
@@ -64,6 +64,37 @@ type UploadingFile = {
   error?: string
 }
 
+type ViewMode = 'grid' | 'list'
+
+const FUNDER_TYPES = [
+  { value: 'PRIVATE_FOUNDATION', label: 'Private Foundation' },
+  { value: 'COMMUNITY_FOUNDATION', label: 'Community Foundation' },
+  { value: 'CORPORATE', label: 'Corporate' },
+  { value: 'FEDERAL', label: 'Federal' },
+  { value: 'STATE', label: 'State' },
+] as const
+
+const US_STATES = [
+  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
+  'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
+  'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ',
+  'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC',
+  'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY',
+]
+
+const PROGRAM_AREAS = [
+  'Education',
+  'Health',
+  'Environment',
+  'Arts & Culture',
+  'Human Services',
+  'Community Development',
+  'Economic Development',
+  'Youth Development',
+  'Senior Services',
+  'Housing',
+]
+
 export default function OpportunitiesPage() {
   const router = useRouter()
   const [inputUrl, setInputUrl] = useState('')
@@ -80,16 +111,45 @@ export default function OpportunitiesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Opportunity list state
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'deadline' | 'fitScore' | 'createdAt'>('deadline')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [minFitScore, setMinFitScore] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
+  const [showAnalyze, setShowAnalyze] = useState(false)
+
+  // Filter state
+  const [selectedFunderTypes, setSelectedFunderTypes] = useState<string[]>([])
+  const [amountMin, setAmountMin] = useState<number | undefined>()
+  const [amountMax, setAmountMax] = useState<number | undefined>()
+  const [deadlinePreset, setDeadlinePreset] = useState<'30' | '60' | '90' | 'custom' | ''>('')
+  const [deadlineFrom, setDeadlineFrom] = useState<Date | undefined>()
+  const [deadlineTo, setDeadlineTo] = useState<Date | undefined>()
+  const [selectedProgramAreas, setSelectedProgramAreas] = useState<string[]>([])
+  const [selectedStates, setSelectedStates] = useState<string[]>([])
 
   const parseRfpMutation = api.discovery.parseRfp.useMutation()
   const calculateFitMutation = api.discovery.calculateFitScore.useMutation()
   const saveOpportunityMutation = api.discovery.saveOpportunity.useMutation()
   const createRfpUploadUrlMutation = api.discovery.createRfpUploadUrl.useMutation()
   const parseRfpFileMutation = api.discovery.parseRfpFile.useMutation()
+
+  // Calculate deadline range based on preset
+  const getDeadlineRange = () => {
+    if (deadlinePreset === 'custom') {
+      return { from: deadlineFrom, to: deadlineTo }
+    }
+    if (deadlinePreset) {
+      const now = new Date()
+      const to = new Date()
+      to.setDate(now.getDate() + parseInt(deadlinePreset))
+      return { from: now, to }
+    }
+    return { from: deadlineFrom, to: deadlineTo }
+  }
+
+  const deadlineRange = getDeadlineRange()
 
   // Query for listing opportunities with fit scores
   const { data: opportunities, refetch: refetchOpportunities } = api.discovery.listOpportunities.useQuery(
@@ -98,6 +158,14 @@ export default function OpportunitiesPage() {
       sortOrder,
       minFitScore,
       includeDeadlinePassed: false,
+      search: searchQuery || undefined,
+      funderTypes: selectedFunderTypes.length > 0 ? selectedFunderTypes as any : undefined,
+      amountMin,
+      amountMax,
+      deadlineFrom: deadlineRange.from,
+      deadlineTo: deadlineRange.to,
+      programAreas: selectedProgramAreas.length > 0 ? selectedProgramAreas : undefined,
+      states: selectedStates.length > 0 ? selectedStates : undefined,
     },
     {
       enabled: analysisStep === 'idle', // Only fetch when not analyzing
@@ -125,7 +193,7 @@ export default function OpportunitiesPage() {
       setParsedRfp(parsed)
       setAnalysisStep('scoring')
 
-      // Step 2: Save opportunity temporarily to get an ID (we can enhance this later)
+      // Step 2: Save opportunity temporarily to get an ID
       const tempOpportunity = await saveOpportunityMutation.mutateAsync({
         title: parsed.title,
         description: parsed.description,
@@ -240,7 +308,6 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
       })
 
       // For now, simulate the parsing result
-      // In production, this would be replaced by polling or webhooks
       await delay(3000)
 
       const parsed = await parseRfpMutation.mutateAsync({
@@ -318,25 +385,89 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
     handleFileSelect(files)
   }
 
+  // Filter helpers
+  const toggleFunderType = (type: string) => {
+    setSelectedFunderTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    )
+  }
+
+  const toggleProgramArea = (area: string) => {
+    setSelectedProgramAreas(prev =>
+      prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]
+    )
+  }
+
+  const toggleState = (state: string) => {
+    setSelectedStates(prev =>
+      prev.includes(state) ? prev.filter(s => s !== state) : [...prev, state]
+    )
+  }
+
+  const clearAllFilters = () => {
+    setSelectedFunderTypes([])
+    setAmountMin(undefined)
+    setAmountMax(undefined)
+    setDeadlinePreset('')
+    setDeadlineFrom(undefined)
+    setDeadlineTo(undefined)
+    setSelectedProgramAreas([])
+    setSelectedStates([])
+    setMinFitScore(0)
+    setSearchQuery('')
+  }
+
+  const activeFilterCount =
+    selectedFunderTypes.length +
+    (amountMin !== undefined ? 1 : 0) +
+    (amountMax !== undefined ? 1 : 0) +
+    (deadlinePreset !== '' ? 1 : 0) +
+    selectedProgramAreas.length +
+    selectedStates.length +
+    (minFitScore > 0 ? 1 : 0)
+
+  const getDaysRemaining = (deadline: Date) => {
+    const now = new Date()
+    const diffTime = new Date(deadline).getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  const getDeadlineColor = (daysRemaining: number) => {
+    if (daysRemaining < 0) return 'text-slate-500'
+    if (daysRemaining <= 7) return 'text-red-400'
+    if (daysRemaining <= 30) return 'text-amber-400'
+    return 'text-emerald-400'
+  }
+
   const isAnalyzing = analysisStep === 'parsing' || analysisStep === 'scoring'
   const hasInput = Boolean(inputUrl || inputText)
   const isUploading = uploadingFile?.status === 'uploading' || uploadingFile?.status === 'parsing'
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Smart Discovery</h1>
           <p className="text-slate-400 mt-1">Find and analyze grant opportunities.</p>
         </div>
-        <button
-          onClick={() => setShowResearchModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-        >
-          <Building2 className="w-4 h-4" />
-          Research Funder
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowAnalyze(!showAnalyze)}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+          >
+            <Zap className="w-4 h-4" />
+            Analyze New RFP
+          </button>
+          <button
+            onClick={() => setShowResearchModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            <Building2 className="w-4 h-4" />
+            Research Funder
+          </button>
+        </div>
       </div>
 
       {/* Research Funder Modal */}
@@ -345,133 +476,143 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
         onClose={() => setShowResearchModal(false)}
       />
 
-      {/* Main Input Area */}
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
-        <h2 className="text-lg font-semibold text-white mb-4">Analyze Opportunity</h2>
-        <p className="text-slate-400 text-sm mb-6">
-          Paste a grant URL or upload an RFP document to get instant fit analysis.
-        </p>
-
-        {/* URL Input */}
-        <div className="flex gap-3 mb-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Paste grant URL or RFP link..."
-              className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-              value={inputUrl}
-              onChange={(e) => {
-                setInputUrl(e.target.value)
-                setInputText('') // Clear text if URL is provided
-              }}
-              disabled={isAnalyzing}
-            />
+      {/* Analyze Section (Collapsible) */}
+      {showAnalyze && (
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white">Analyze Opportunity</h2>
+            <button
+              onClick={() => setShowAnalyze(false)}
+              className="p-1 hover:bg-slate-700 rounded transition-colors"
+            >
+              <X className="w-5 h-5 text-slate-400" />
+            </button>
           </div>
-          <button
-            onClick={handleAnalyze}
-            disabled={!hasInput || isAnalyzing}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Analyzing
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4" />
-                Analyze
-              </>
-            )}
-          </button>
-        </div>
+          <p className="text-slate-400 text-sm mb-6">
+            Paste a grant URL or upload an RFP document to get instant fit analysis.
+          </p>
 
-        {/* Or divider */}
-        <div className="flex items-center gap-4 my-6">
-          <div className="flex-1 h-px bg-slate-700" />
-          <span className="text-sm text-slate-500">or</span>
-          <div className="flex-1 h-px bg-slate-700" />
-        </div>
+          {/* URL Input */}
+          <div className="flex gap-3 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Paste grant URL or RFP link..."
+                className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                value={inputUrl}
+                onChange={(e) => {
+                  setInputUrl(e.target.value)
+                  setInputText('') // Clear text if URL is provided
+                }}
+                disabled={isAnalyzing}
+              />
+            </div>
+            <button
+              onClick={handleAnalyze}
+              disabled={!hasInput || isAnalyzing}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analyzing
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  Analyze
+                </>
+              )}
+            </button>
+          </div>
 
-        {/* Text Input Area */}
-        <textarea
-          placeholder="Or paste the full RFP text here..."
-          className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors min-h-[150px] mb-4"
-          value={inputText}
-          onChange={(e) => {
-            setInputText(e.target.value)
-            setInputUrl('') // Clear URL if text is provided
-          }}
-          disabled={isAnalyzing}
-        />
+          {/* Or divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-slate-700" />
+            <span className="text-sm text-slate-500">or</span>
+            <div className="flex-1 h-px bg-slate-700" />
+          </div>
 
-        {/* Upload Area */}
-        <div
-          onDragEnter={handleDragEnter}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
-            isDragging
-              ? 'border-blue-500 bg-blue-500/10'
-              : isUploading
-              ? 'border-slate-600 bg-slate-900 cursor-wait'
-              : 'border-slate-600 hover:border-slate-500 hover:bg-slate-900'
-          } ${isAnalyzing && !isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.doc,.docx"
-            onChange={(e) => handleFileSelect(e.target.files)}
+          {/* Text Input Area */}
+          <textarea
+            placeholder="Or paste the full RFP text here..."
+            className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors min-h-[150px] mb-4"
+            value={inputText}
+            onChange={(e) => {
+              setInputText(e.target.value)
+              setInputUrl('') // Clear URL if text is provided
+            }}
             disabled={isAnalyzing}
-            className="hidden"
           />
 
-          {isUploading && uploadingFile ? (
-            <div className="space-y-3">
-              <Loader2 className="w-10 h-10 text-blue-500 mx-auto animate-spin" />
-              <div>
-                <p className="text-slate-300 font-medium">{uploadingFile.file.name}</p>
-                <p className="text-sm text-slate-500 mt-1">
-                  {uploadingFile.status === 'uploading'
-                    ? `Uploading... ${uploadingFile.progress}%`
-                    : 'Processing RFP...'}
-                </p>
-              </div>
-              {uploadingFile.status === 'uploading' && (
-                <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${uploadingFile.progress}%` }}
-                  />
+          {/* Upload Area */}
+          <div
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer ${
+              isDragging
+                ? 'border-blue-500 bg-blue-500/10'
+                : isUploading
+                ? 'border-slate-600 bg-slate-900 cursor-wait'
+                : 'border-slate-600 hover:border-slate-500 hover:bg-slate-900'
+            } ${isAnalyzing && !isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => handleFileSelect(e.target.files)}
+              disabled={isAnalyzing}
+              className="hidden"
+            />
+
+            {isUploading && uploadingFile ? (
+              <div className="space-y-3">
+                <Loader2 className="w-10 h-10 text-blue-500 mx-auto animate-spin" />
+                <div>
+                  <p className="text-slate-300 font-medium">{uploadingFile.file.name}</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {uploadingFile.status === 'uploading'
+                      ? `Uploading... ${uploadingFile.progress}%`
+                      : 'Processing RFP...'}
+                  </p>
                 </div>
-              )}
+                {uploadingFile.status === 'uploading' && (
+                  <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      style={{ width: `${uploadingFile.progress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                <p className="text-slate-300 font-medium">
+                  {isDragging ? 'Drop RFP file here' : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-sm text-slate-500 mt-1">PDF, DOCX up to 25MB</p>
+              </>
+            )}
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-300 font-medium">Analysis Failed</p>
+                <p className="text-red-400 text-sm mt-1">{error}</p>
+              </div>
             </div>
-          ) : (
-            <>
-              <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-              <p className="text-slate-300 font-medium">
-                {isDragging ? 'Drop RFP file here' : 'Click to upload or drag and drop'}
-              </p>
-              <p className="text-sm text-slate-500 mt-1">PDF, DOCX up to 25MB</p>
-            </>
           )}
         </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="mt-4 p-4 bg-red-900/20 border border-red-800 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-red-300 font-medium">Analysis Failed</p>
-              <p className="text-red-400 text-sm mt-1">{error}</p>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Loading State */}
       {isAnalyzing && (
@@ -648,14 +789,6 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
                   <span className="text-slate-400 text-sm">Estimated Effort:</span>
                   <span className="text-white ml-2 font-medium">{fitScore.estimatedHours} hours</span>
                 </div>
-                {fitScore.reusableContent.relevantDocuments.length > 0 && (
-                  <div className="col-span-2 pt-2 border-t border-slate-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-slate-400 text-sm">Relevant Documents:</span>
-                      <span className="text-emerald-400 font-medium">{fitScore.reusableContent.relevantDocuments.length}</span>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -678,214 +811,135 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
               )}
             </button>
           </div>
-
-          {/* Analysis Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Strengths */}
-            {fitScore.reusableContent.strengths.length > 0 && (
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                  Strengths
-                </h3>
-                <ul className="space-y-2">
-                  {fitScore.reusableContent.strengths.map((strength, idx) => (
-                    <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                      <span className="text-emerald-500 mt-1">•</span>
-                      <span>{strength}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Concerns */}
-            {fitScore.reusableContent.concerns.length > 0 && (
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-amber-500" />
-                  Considerations
-                </h3>
-                <ul className="space-y-2">
-                  {fitScore.reusableContent.concerns.map((concern, idx) => (
-                    <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                      <span className="text-amber-500 mt-1">•</span>
-                      <span>{concern}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Requirements Checklist */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Requirements</h3>
-            <div className="space-y-3">
-              {parsedRfp.requirements.map((req, idx) => (
-                <div key={idx} className="border border-slate-700 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-white">{req.section}</h4>
-                    <span className="text-sm text-slate-400">{req.wordLimit} words</span>
-                  </div>
-                  <p className="text-sm text-slate-400">{req.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Eligibility Criteria */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Eligibility Criteria</h3>
-            <ul className="space-y-2">
-              {parsedRfp.eligibility.map((criterion, idx) => (
-                <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-slate-500 flex-shrink-0 mt-0.5" />
-                  <span>{criterion}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Recommendations */}
-          {fitScore.reusableContent.recommendations.length > 0 && (
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">AI Recommendations</h3>
-              <ul className="space-y-2">
-                {fitScore.reusableContent.recommendations.map((rec, idx) => (
-                  <li key={idx} className="text-slate-300 text-sm flex items-start gap-2">
-                    <Brain className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                    <span>{rec}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Relevant Documents */}
-          {fitScore.reusableContent.relevantDocuments.length > 0 && (
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Relevant Documents</h3>
-              <div className="space-y-3">
-                {fitScore.reusableContent.relevantDocuments.map((doc, idx) => (
-                  <div key={idx} className="border border-slate-700 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <Database className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="font-medium text-white text-sm">{doc.name}</h4>
-                        <p className="text-xs text-slate-400 mt-1">{doc.relevance}</p>
-                        <span className="inline-block mt-2 px-2 py-1 bg-slate-700 text-slate-300 text-xs rounded">
-                          {doc.type}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Opportunity List - Only show when not analyzing or showing results */}
+      {/* Opportunity Discovery Section */}
       {analysisStep === 'idle' && (
-        <>
-          {/* Intelligence Status */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Active Intelligence</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3 p-4 bg-slate-900 rounded-lg">
-                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                <Database className="w-5 h-5 text-slate-400" />
-                <div>
-                  <p className="text-sm font-medium text-white">Grants.gov API</p>
-                  <p className="text-xs text-slate-500">Connected</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-slate-900 rounded-lg">
-                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                <ExternalLink className="w-5 h-5 text-slate-400" />
-                <div>
-                  <p className="text-sm font-medium text-white">ProPublica 990</p>
-                  <p className="text-xs text-slate-500">Connected</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-slate-900 rounded-lg">
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
-                <Brain className="w-5 h-5 text-slate-400" />
-                <div>
-                  <p className="text-sm font-medium text-white">Organizational Memory</p>
-                  <p className="text-xs text-slate-500">No documents yet</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Opportunities Section */}
-          <div className="space-y-4">
-            {/* Controls Bar */}
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-xl font-semibold text-white">
-                Analyzed Opportunities
-                {opportunities && opportunities.length > 0 && (
-                  <span className="ml-2 text-slate-400 text-base">({opportunities.length})</span>
-                )}
-              </h2>
-              <div className="flex items-center gap-3">
-                {/* Sort Controls */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-slate-400">Sort by:</label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="deadline">Deadline</option>
-                    <option value="fitScore">Fit Score</option>
-                    <option value="createdAt">Recently Added</option>
-                  </select>
-                  <button
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    className="p-2 bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
-                    title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
-                  >
-                    <TrendingUp
-                      className={`w-4 h-4 text-slate-400 transition-transform ${
-                        sortOrder === 'desc' ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Filter Toggle */}
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    showFilters || minFitScore > 0
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-800 border border-slate-600 text-slate-400 hover:bg-slate-700'
-                  }`}
-                >
-                  <Filter className="w-4 h-4" />
-                  <span className="text-sm">Filters</span>
-                  {minFitScore > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs font-medium">
-                      1
-                    </span>
+        <div className="flex gap-6">
+          {/* Left Sidebar - Filters */}
+          {showFilters && (
+            <div className="w-80 flex-shrink-0 space-y-4">
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 sticky top-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Filters</h3>
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={clearAllFilters}
+                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Clear all
+                    </button>
                   )}
-                </button>
-              </div>
-            </div>
+                </div>
 
-            {/* Filter Panel */}
-            {showFilters && (
-              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                <h3 className="text-sm font-semibold text-white mb-4">Filter Options</h3>
-                <div className="space-y-4">
-                  {/* Minimum Fit Score Slider */}
+                <div className="space-y-6">
+                  {/* Funder Type */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-3 block">
+                      Funder Type
+                    </label>
+                    <div className="space-y-2">
+                      {FUNDER_TYPES.map((type) => (
+                        <label key={type.value} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedFunderTypes.includes(type.value)}
+                            onChange={() => toggleFunderType(type.value)}
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
+                          />
+                          <span className="text-sm text-slate-300">{type.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Amount Range */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-3 block">
+                      Amount Range
+                    </label>
+                    <div className="space-y-2">
+                      <input
+                        type="number"
+                        placeholder="Min amount"
+                        value={amountMin ?? ''}
+                        onChange={(e) => setAmountMin(e.target.value ? parseInt(e.target.value) : undefined)}
+                        className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max amount"
+                        value={amountMax ?? ''}
+                        onChange={(e) => setAmountMax(e.target.value ? parseInt(e.target.value) : undefined)}
+                        className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Deadline */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-3 block">
+                      Deadline
+                    </label>
+                    <select
+                      value={deadlinePreset}
+                      onChange={(e) => setDeadlinePreset(e.target.value as any)}
+                      className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">All deadlines</option>
+                      <option value="30">Next 30 days</option>
+                      <option value="60">Next 60 days</option>
+                      <option value="90">Next 90 days</option>
+                    </select>
+                  </div>
+
+                  {/* Program Area */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-3 block">
+                      Program Area
+                    </label>
+                    <div className="max-h-48 overflow-y-auto space-y-2">
+                      {PROGRAM_AREAS.map((area) => (
+                        <label key={area} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedProgramAreas.includes(area)}
+                            onChange={() => toggleProgramArea(area)}
+                            className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
+                          />
+                          <span className="text-sm text-slate-300">{area}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Geographic Focus */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-300 mb-3 block">
+                      Geographic Focus
+                    </label>
+                    <div className="max-h-48 overflow-y-auto">
+                      <div className="grid grid-cols-2 gap-2">
+                        {US_STATES.map((state) => (
+                          <label key={state} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedStates.includes(state)}
+                              onChange={() => toggleState(state)}
+                              className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
+                            />
+                            <span className="text-xs text-slate-300">{state}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Minimum Fit Score */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm text-slate-400">Minimum Fit Score</label>
+                      <label className="text-sm font-medium text-slate-300">Minimum Fit Score</label>
                       <span className="text-sm font-medium text-white">{minFitScore}%</span>
                     </div>
                     <input
@@ -899,108 +953,260 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
                     />
                     <div className="flex justify-between text-xs text-slate-500 mt-1">
                       <span>0%</span>
-                      <span>25%</span>
                       <span>50%</span>
-                      <span>75%</span>
                       <span>100%</span>
                     </div>
                   </div>
-
-                  {/* Reset Filters */}
-                  {minFitScore > 0 && (
-                    <button
-                      onClick={() => setMinFitScore(0)}
-                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                      Reset filters
-                    </button>
-                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Main Content */}
+          <div className="flex-1 space-y-4">
+            {/* Search and Controls Bar */}
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-center gap-4">
+                {/* Search Bar */}
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Search grants, funders, or keywords..."
+                    className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                {/* View Toggle */}
+                <div className="flex items-center gap-1 bg-slate-900 border border-slate-600 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded transition-colors ${
+                      viewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Grid view"
+                  >
+                    <Grid3x3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded transition-colors ${
+                      viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="List view"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Filter Toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-colors ${
+                    showFilters
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-900 border border-slate-600 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span className="text-sm font-medium">Filters</span>
+                  {activeFilterCount > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-xs font-medium">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Sort Controls */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="deadline">Deadline</option>
+                  <option value="fitScore">Fit Score</option>
+                  <option value="createdAt">Recently Added</option>
+                </select>
+
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="p-2.5 bg-slate-900 border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
+                  title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+                >
+                  <TrendingUp
+                    className={`w-4 h-4 text-slate-400 transition-transform ${
+                      sortOrder === 'desc' ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
 
             {/* Opportunity Cards */}
             {opportunities && opportunities.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {opportunities.map((opp) => (
-                  <div
-                    key={opp.id}
-                    className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-600 transition-colors cursor-pointer"
-                    onClick={() => router.push(`/opportunities/${opp.id}`)}
-                  >
-                    {/* Header with Fit Score */}
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white mb-2">{opp.title}</h3>
-                        <p className="text-sm text-slate-400 line-clamp-2">
-                          {opp.description || 'No description available'}
-                        </p>
-                      </div>
-                      {opp.fitScore && (
-                        <div className="flex-shrink-0">
-                          <FitScoreCard fitScore={opp.fitScore} variant="mini" />
-                        </div>
-                      )}
-                    </div>
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
+                {opportunities.map((opp) => {
+                  const daysRemaining = opp.deadline ? getDaysRemaining(opp.deadline) : null
+                  const programAreas = Array.isArray(opp.funder?.programAreas) ? opp.funder.programAreas : []
 
-                    {/* Metadata */}
-                    <div className="flex flex-wrap gap-4 text-sm border-t border-slate-700 pt-4">
-                      {opp.deadline && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-slate-500" />
-                          <span className="text-slate-400">Deadline:</span>
-                          <span className="text-white font-medium">
-                            {new Date(opp.deadline).toLocaleDateString()}
-                          </span>
+                  return (
+                    <div
+                      key={opp.id}
+                      className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-600 transition-all cursor-pointer group"
+                      onClick={() => router.push(`/grants/${opp.id}`)}
+                    >
+                      {/* Header with Funder */}
+                      <div className="flex items-start gap-3 mb-4">
+                        {opp.funder ? (
+                          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                            {opp.funder.name.charAt(0)}
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                            <Building2 className="w-5 h-5 text-slate-400" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          {opp.funder && (
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm text-slate-400 truncate">{opp.funder.name}</p>
+                              <span className="px-2 py-0.5 bg-blue-900/50 text-blue-300 text-xs rounded flex-shrink-0">
+                                {opp.funder.type.replace('_', ' ')}
+                              </span>
+                            </div>
+                          )}
+                          <h3 className="text-lg font-semibold text-white line-clamp-2 group-hover:text-blue-400 transition-colors">
+                            {opp.title}
+                          </h3>
                         </div>
-                      )}
-                      {(opp.amountMin || opp.amountMax) && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400">Amount:</span>
-                          <span className="text-white font-medium">
-                            {opp.amountMin && `$${opp.amountMin.toLocaleString()}`}
-                            {opp.amountMin && opp.amountMax && ' - '}
-                            {opp.amountMax && `$${opp.amountMax.toLocaleString()}`}
-                          </span>
-                        </div>
-                      )}
-                      {opp.fitScore?.estimatedHours && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-slate-500" />
-                          <span className="text-slate-400">Est. Effort:</span>
-                          <span className="text-white font-medium">{opp.fitScore.estimatedHours}h</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Relevant Documents Badge */}
-                    {opp.fitScore?.reusableContent &&
-                     typeof opp.fitScore.reusableContent === 'object' &&
-                     'relevantDocuments' in opp.fitScore.reusableContent &&
-                     opp.fitScore.reusableContent.relevantDocuments &&
-                     Array.isArray(opp.fitScore.reusableContent.relevantDocuments) &&
-                     opp.fitScore.reusableContent.relevantDocuments.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-slate-700">
-                        <div className="flex items-center gap-2 text-xs text-slate-400">
-                          <Database className="w-4 h-4 text-emerald-500" />
-                          <span>{opp.fitScore.reusableContent.relevantDocuments.length} relevant document{opp.fitScore.reusableContent.relevantDocuments.length !== 1 ? 's' : ''} found</span>
-                        </div>
+                        {opp.fitScore && (
+                          <div className="flex-shrink-0">
+                            <FitScoreCard fitScore={opp.fitScore} variant="mini" />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* Description */}
+                      <p className="text-sm text-slate-400 line-clamp-2 mb-4">
+                        {opp.description || 'No description available'}
+                      </p>
+
+                      {/* Program Areas */}
+                      {programAreas.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {programAreas.slice(0, 3).map((area, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-1 bg-slate-700 text-slate-300 text-xs rounded flex items-center gap-1"
+                            >
+                              <Tag className="w-3 h-3" />
+                              {String(area)}
+                            </span>
+                          ))}
+                          {programAreas.length > 3 && (
+                            <span className="px-2 py-1 bg-slate-700 text-slate-400 text-xs rounded">
+                              +{programAreas.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Metadata */}
+                      <div className="space-y-2 border-t border-slate-700 pt-4">
+                        {/* Amount */}
+                        {(opp.amountMin || opp.amountMax) && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <DollarSign className="w-4 h-4 text-emerald-500" />
+                            <span className="text-slate-400">Amount:</span>
+                            <span className="text-white font-medium">
+                              {opp.amountMin && `$${opp.amountMin.toLocaleString()}`}
+                              {opp.amountMin && opp.amountMax && ' - '}
+                              {opp.amountMax && `$${opp.amountMax.toLocaleString()}`}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Deadline */}
+                        {opp.deadline && daysRemaining !== null && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className={`w-4 h-4 ${getDeadlineColor(daysRemaining)}`} />
+                            <span className="text-slate-400">Deadline:</span>
+                            <span className="text-white font-medium">
+                              {new Date(opp.deadline).toLocaleDateString()}
+                            </span>
+                            <span className={`text-xs ${getDeadlineColor(daysRemaining)}`}>
+                              ({daysRemaining > 0 ? `${daysRemaining} days` : 'Past due'})
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Estimated Hours */}
+                        {opp.fitScore?.estimatedHours && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className="text-slate-400">Est. Effort:</span>
+                            <span className="text-white font-medium">{opp.fitScore.estimatedHours}h</span>
+                          </div>
+                        )}
+
+                        {/* Location */}
+                        {opp.funder?.state && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <MapPin className="w-4 h-4 text-amber-500" />
+                            <span className="text-slate-400">Location:</span>
+                            <span className="text-white font-medium">{opp.funder.state}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-4 pt-4 border-t border-slate-700">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/grants/${opp.id}`)
+                          }}
+                          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Add to Pipeline
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/opportunities/${opp.id}`)
+                          }}
+                          className="px-4 py-2 border border-slate-600 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-lg transition-colors"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             ) : (
               <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
                 <Search className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No opportunities analyzed yet</h3>
-                <p className="text-slate-400 max-w-md mx-auto">
-                  Paste a grant URL or upload an RFP above to see fit scores, reusable content analysis, and funder intelligence.
+                <h3 className="text-xl font-semibold text-white mb-2">No opportunities found</h3>
+                <p className="text-slate-400 max-w-md mx-auto mb-4">
+                  {activeFilterCount > 0
+                    ? 'Try adjusting your filters to see more results.'
+                    : 'Analyze your first RFP to discover opportunities tailored to your organization.'}
                 </p>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
     </div>
   )

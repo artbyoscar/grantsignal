@@ -102,7 +102,7 @@ export const onboardingRouter = router({
   updateStep: orgProcedure
     .input(
       z.object({
-        step: z.number().min(1).max(4),
+        step: z.number().min(1).max(6),
       })
     )
     .mutation(async ({ ctx, input }) => {

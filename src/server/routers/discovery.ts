@@ -281,6 +281,14 @@ export const discoveryRouter = router({
         sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
         minFitScore: z.number().min(0).max(100).optional(),
         includeDeadlinePassed: z.boolean().optional().default(false),
+        search: z.string().optional(),
+        funderTypes: z.array(z.enum(['PRIVATE_FOUNDATION', 'COMMUNITY_FOUNDATION', 'CORPORATE', 'FEDERAL', 'STATE'])).optional(),
+        amountMin: z.number().optional(),
+        amountMax: z.number().optional(),
+        deadlineFrom: z.date().optional(),
+        deadlineTo: z.date().optional(),
+        programAreas: z.array(z.string()).optional(),
+        states: z.array(z.string()).optional(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -306,6 +314,65 @@ export const discoveryRouter = router({
         ]
       }
 
+      // Filter by deadline range
+      if (input.deadlineFrom || input.deadlineTo) {
+        where.AND = where.AND || []
+        if (input.deadlineFrom) {
+          where.AND.push({ deadline: { gte: input.deadlineFrom } })
+        }
+        if (input.deadlineTo) {
+          where.AND.push({ deadline: { lte: input.deadlineTo } })
+        }
+      }
+
+      // Filter by amount range
+      if (input.amountMin !== undefined || input.amountMax !== undefined) {
+        where.AND = where.AND || []
+        if (input.amountMin !== undefined) {
+          where.AND.push({
+            OR: [
+              { amountMax: { gte: input.amountMin } },
+              { amountMin: { gte: input.amountMin } },
+            ],
+          })
+        }
+        if (input.amountMax !== undefined) {
+          where.AND.push({
+            OR: [
+              { amountMin: { lte: input.amountMax } },
+              { amountMax: { lte: input.amountMax } },
+            ],
+          })
+        }
+      }
+
+      // Filter by funder type
+      if (input.funderTypes && input.funderTypes.length > 0) {
+        where.funder = {
+          type: { in: input.funderTypes },
+        }
+      }
+
+      // Filter by geographic focus (states)
+      if (input.states && input.states.length > 0) {
+        where.funder = {
+          ...where.funder,
+          state: { in: input.states },
+        }
+      }
+
+      // Search filter
+      if (input.search) {
+        where.AND = where.AND || []
+        where.AND.push({
+          OR: [
+            { title: { contains: input.search, mode: 'insensitive' } },
+            { description: { contains: input.search, mode: 'insensitive' } },
+            { funder: { name: { contains: input.search, mode: 'insensitive' } } },
+          ],
+        })
+      }
+
       // Fetch opportunities with fit scores
       const opportunities = await ctx.db.opportunity.findMany({
         where,
@@ -323,9 +390,21 @@ export const discoveryRouter = router({
             : { createdAt: input.sortOrder },
       })
 
+      // Filter by program areas (client-side since it's JSON)
+      let filteredOpportunities = opportunities
+      if (input.programAreas && input.programAreas.length > 0) {
+        filteredOpportunities = opportunities.filter((opp) => {
+          if (!opp.funder?.programAreas) return false
+          const funderAreas = Array.isArray(opp.funder.programAreas)
+            ? opp.funder.programAreas
+            : []
+          return input.programAreas!.some((area) => funderAreas.includes(area))
+        })
+      }
+
       // If sorting by fit score, do it in memory
       if (input.sortBy === 'fitScore') {
-        opportunities.sort((a, b) => {
+        filteredOpportunities.sort((a, b) => {
           const scoreA = a.fitScores[0]?.overallScore ?? 0
           const scoreB = b.fitScores[0]?.overallScore ?? 0
           return input.sortOrder === 'asc' ? scoreA - scoreB : scoreB - scoreA
@@ -333,7 +412,7 @@ export const discoveryRouter = router({
       }
 
       // Transform to include fit score data
-      return opportunities.map((opp) => ({
+      return filteredOpportunities.map((opp) => ({
         ...opp,
         fitScore: opp.fitScores[0]
           ? {

@@ -52,7 +52,7 @@ export default function DocumentConnectionPage() {
   const handleContinue = async () => {
     try {
       await updateStep.mutateAsync({ step: 4 })
-      router.push('/onboarding/processing')
+      router.push('/onboarding/programs')
     } catch (error) {
       console.error('Failed to update step:', error)
     }
@@ -61,7 +61,7 @@ export default function DocumentConnectionPage() {
   const handleSkip = async () => {
     try {
       await updateStep.mutateAsync({ step: 4 })
-      router.push('/onboarding/processing')
+      router.push('/onboarding/programs')
     } catch (error) {
       console.error('Failed to skip:', error)
     }
@@ -98,10 +98,9 @@ export default function DocumentConnectionPage() {
         {/* Progress Indicator */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Step 3 of 4</span>
-            <span className="text-slate-400">75% Complete</span>
+            <span className="text-slate-400">Step 3 of 6</span>
           </div>
-          <Progress value={75} />
+          <Progress value={50} />
         </div>
 
         {/* Main Content */}

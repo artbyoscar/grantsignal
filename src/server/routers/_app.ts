@@ -14,6 +14,7 @@ import { notificationsRouter } from './notifications'
 import { webhooksRouter } from './webhooks'
 import { dashboardRouter } from './dashboard'
 import { calendarRouter } from './calendar'
+import { teamRouter } from './team'
 
 /**
  * Main tRPC router combining all sub-routers
@@ -34,6 +35,7 @@ export const appRouter = router({
   webhooks: webhooksRouter,
   dashboard: dashboardRouter,
   calendar: calendarRouter,
+  team: teamRouter,
 })
 
 export type AppRouter = typeof appRouter

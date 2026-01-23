@@ -9,6 +9,9 @@ const ONBOARDING_PATHS = [
   '/onboarding',
   '/onboarding/organization',
   '/onboarding/documents',
+  '/onboarding/programs',
+  '/onboarding/team',
+  '/onboarding/complete',
   '/onboarding/processing',
 ]
 
@@ -41,7 +44,13 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
           router.push('/onboarding/documents')
           break
         case 4:
-          router.push('/onboarding/processing')
+          router.push('/onboarding/programs')
+          break
+        case 5:
+          router.push('/onboarding/team')
+          break
+        case 6:
+          router.push('/onboarding/complete')
           break
         default:
           router.push('/onboarding')

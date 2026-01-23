@@ -20,10 +20,10 @@ export default function OnboardingWelcomePage() {
         {/* Progress Indicator */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Step 1 of 4</span>
-            <span className="text-slate-400">25% Complete</span>
+            <span className="text-slate-400">Step 1 of 6</span>
+            <span className="text-slate-400">Takes about 5 minutes</span>
           </div>
-          <Progress value={25} />
+          <Progress value={17} />
         </div>
 
         {/* Main Content */}
@@ -39,7 +39,7 @@ export default function OnboardingWelcomePage() {
               Welcome to GrantSignal, {user?.firstName || 'there'}!
             </h1>
             <p className="text-lg text-slate-300">
-              Let&apos;s get you set up to find and win more grants
+              Your organizational memory engine for grants
             </p>
           </div>
 
@@ -102,6 +102,13 @@ export default function OnboardingWelcomePage() {
             Get Started
             <ArrowRight className="w-5 h-5" />
           </Button>
+
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="text-sm text-slate-400 hover:text-slate-300 transition-colors"
+          >
+            Skip setup
+          </button>
         </div>
       </div>
     </div>

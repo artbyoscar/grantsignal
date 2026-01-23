@@ -105,10 +105,9 @@ export default function OrganizationSetupPage() {
         {/* Progress Indicator */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">Step 2 of 4</span>
-            <span className="text-slate-400">50% Complete</span>
+            <span className="text-slate-400">Step 2 of 6</span>
           </div>
-          <Progress value={50} />
+          <Progress value={33} />
         </div>
 
         {/* Main Content */}
