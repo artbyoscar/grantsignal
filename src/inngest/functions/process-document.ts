@@ -25,10 +25,41 @@ export const processDocument = inngest.createFunction(
     id: 'process-document',
     name: 'Process Document',
     retries: 3,
+    // Global error handler: if job fails after all retries, mark document as FAILED
+    onFailure: async ({ error, event }) => {
+      const { documentId, organizationId } = event.data.event.data
+
+      console.error(`[CRITICAL] Document processing failed for ${documentId}:`, error)
+
+      try {
+        await db.document.update({
+          where: {
+            id: documentId,
+            organizationId // Security: ensure org ownership
+          },
+          data: {
+            status: ProcessingStatus.FAILED,
+            parseWarnings: [
+              `Processing failed after all retries: ${error.message || 'Unknown error'}`,
+              `Error occurred at: ${new Date().toISOString()}`,
+              `Stack: ${error.stack?.slice(0, 500) || 'No stack trace'}`
+            ],
+            processedAt: new Date(),
+          },
+        })
+
+        console.log(`[RECOVERY] Document ${documentId} marked as FAILED`)
+      } catch (dbError) {
+        console.error(`[FATAL] Could not mark document ${documentId} as FAILED:`, dbError)
+        // Log to monitoring service in production
+      }
+    },
   },
   { event: 'document/uploaded' },
   async ({ event, step }) => {
     const { documentId, organizationId, s3Key, mimeType } = event.data
+
+    console.log(`[START] Processing document ${documentId} (org: ${organizationId}, s3Key: ${s3Key})`)
 
     // Step 1: Download document from S3
     const buffer = await step.run('download-from-s3', async () => {
@@ -334,13 +365,16 @@ export const processDocument = inngest.createFunction(
       }
     })
 
+    const finalStatus = parseResult.confidence >= 70
+      ? ProcessingStatus.COMPLETED
+      : ProcessingStatus.NEEDS_REVIEW
+
+    console.log(`[SUCCESS] Document ${documentId} processing completed with status: ${finalStatus}`)
+
     return {
       success: true,
       documentId,
-      status:
-        parseResult.confidence >= 70
-          ? ProcessingStatus.COMPLETED
-          : ProcessingStatus.NEEDS_REVIEW,
+      status: finalStatus,
       confidence: parseResult.confidence,
     }
   }

@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
 import { DocumentType, ProcessingStatus } from '@prisma/client'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { inngest } from '@/inngest/client'
-import { queryOrganizationMemory } from '../services/ai/rag'
+import { queryOrganizationMemory, deleteDocumentVectors } from '../services/ai/rag'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -152,6 +152,37 @@ export const documentsRouter = router({
         throw new Error('Document not found or access denied')
       }
 
+      // Verify file exists in S3 before triggering processing
+      try {
+        console.log(`[VERIFY] Checking S3 file existence for document ${doc.id}: ${doc.s3Key}`)
+
+        const headCommand = new HeadObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: doc.s3Key,
+        })
+
+        await s3Client.send(headCommand)
+        console.log(`[VERIFY] S3 file confirmed for document ${doc.id}`)
+      } catch (error) {
+        console.error(`[ERROR] S3 file not found for document ${doc.id}:`, error)
+
+        // Mark document as FAILED if file doesn't exist
+        await ctx.db.document.update({
+          where: { id: input.documentId },
+          data: {
+            status: ProcessingStatus.FAILED,
+            parseWarnings: [
+              'File not found in S3. Upload may have failed.',
+              `S3 Key: ${doc.s3Key}`,
+              `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            ],
+            processedAt: new Date(),
+          },
+        })
+
+        throw new Error('File upload verification failed. The file was not found in storage. Please try uploading again.')
+      }
+
       // Update status to PROCESSING
       await ctx.db.document.update({
         where: {
@@ -161,6 +192,8 @@ export const documentsRouter = router({
           status: ProcessingStatus.PROCESSING,
         },
       })
+
+      console.log(`[TRIGGER] Starting Inngest processing for document ${doc.id}`)
 
       // Trigger Inngest document processing job
       await inngest.send({
@@ -544,6 +577,7 @@ export const documentsRouter = router({
 
   /**
    * Delete a document
+   * Removes from S3, Pinecone, and database
    */
   deleteDocument: orgProcedure
     .input(
@@ -552,18 +586,139 @@ export const documentsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const document = await ctx.db.document.deleteMany({
+      // First, fetch the document to get s3Key and verify ownership
+      const doc = await ctx.db.document.findFirst({
         where: {
           id: input.documentId,
           organizationId: ctx.organizationId,
         },
       })
 
-      if (document.count === 0) {
+      if (!doc) {
         throw new Error('Document not found or access denied')
       }
 
+      // Delete from S3
+      try {
+        console.log(`Deleting document from S3: ${doc.s3Key}`)
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: doc.s3Key,
+        })
+        await s3Client.send(deleteCommand)
+        console.log(`Successfully deleted document from S3: ${doc.s3Key}`)
+      } catch (error) {
+        console.error('Error deleting document from S3:', error)
+        // Continue with deletion even if S3 deletion fails
+      }
+
+      // Delete vectors from Pinecone
+      try {
+        console.log(`Deleting document vectors from Pinecone: ${doc.id}`)
+        await deleteDocumentVectors(doc.id, ctx.organizationId)
+        console.log(`Successfully deleted document vectors from Pinecone: ${doc.id}`)
+      } catch (error) {
+        console.error('Error deleting document vectors from Pinecone:', error)
+        // Continue with deletion even if Pinecone deletion fails
+      }
+
+      // Delete from database
+      await ctx.db.document.delete({
+        where: {
+          id: input.documentId,
+        },
+      })
+
       return { success: true }
+    }),
+
+  /**
+   * Manually cleanup stuck documents (for debugging/recovery)
+   */
+  cleanupStuckDocuments: orgProcedure
+    .mutation(async ({ ctx }) => {
+      const now = new Date()
+      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000)
+      const oneHourAgo = new Date(now.getTime() - 1 * 60 * 60 * 1000)
+
+      // Find documents stuck in PENDING for >2 hours
+      const stuckPending = await ctx.db.document.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          status: ProcessingStatus.PENDING,
+          createdAt: {
+            lt: twoHoursAgo
+          }
+        },
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+        }
+      })
+
+      // Mark stuck PENDING documents as FAILED
+      if (stuckPending.length > 0) {
+        await ctx.db.document.updateMany({
+          where: {
+            organizationId: ctx.organizationId,
+            id: { in: stuckPending.map(d => d.id) }
+          },
+          data: {
+            status: ProcessingStatus.FAILED,
+            parseWarnings: [
+              'Document stuck in PENDING status for over 2 hours.',
+              'File upload may have failed or confirmUpload was never called.',
+              'Please try uploading the document again.',
+              `Marked as failed by manual cleanup at: ${now.toISOString()}`
+            ],
+            processedAt: now,
+          }
+        })
+      }
+
+      // Find documents stuck in PROCESSING for >1 hour
+      const stuckProcessing = await ctx.db.document.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          status: ProcessingStatus.PROCESSING,
+          updatedAt: {
+            lt: oneHourAgo
+          }
+        },
+        select: {
+          id: true,
+          name: true,
+          updatedAt: true,
+        }
+      })
+
+      // Mark stuck PROCESSING documents as FAILED
+      if (stuckProcessing.length > 0) {
+        await ctx.db.document.updateMany({
+          where: {
+            organizationId: ctx.organizationId,
+            id: { in: stuckProcessing.map(d => d.id) }
+          },
+          data: {
+            status: ProcessingStatus.FAILED,
+            parseWarnings: [
+              'Document stuck in PROCESSING status for over 1 hour.',
+              'Background job may have crashed or timed out.',
+              'Please try reprocessing the document or contact support.',
+              `Marked as failed by manual cleanup at: ${now.toISOString()}`
+            ],
+            processedAt: now,
+          }
+        })
+      }
+
+      return {
+        stuckPending: stuckPending.length,
+        stuckProcessing: stuckProcessing.length,
+        totalFixed: stuckPending.length + stuckProcessing.length,
+        documents: [...stuckPending, ...stuckProcessing],
+      }
     }),
 
   /**

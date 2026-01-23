@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect, DragEvent, ChangeEvent } from 'react'
-import { FileText, Upload, Search, FolderOpen, File, X, Loader2, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { FileText, Upload, Search, File, X, Loader2, AlertCircle, CheckCircle, Clock, XCircle, ExternalLink, Copy, Trash2 } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { DocumentType, ProcessingStatus } from '@/types/client-types'
 import { DocumentCard, DocumentCardSkeleton } from '@/components/documents/document-card'
+import { DocumentPreview } from '@/components/documents/document-preview'
 import { toast } from 'sonner'
 import { uploadToS3 } from '@/lib/upload'
 
@@ -40,9 +41,13 @@ export default function DocumentsPage() {
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
-  const [selectedDocument, setSelectedDocument] = useState<any>(null)
+  const [selectedDocumentForReview, setSelectedDocumentForReview] = useState<any>(null)
+  const [selectedDocumentForPreview, setSelectedDocumentForPreview] = useState<any>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [documentToDelete, setDocumentToDelete] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchMode, setSearchMode] = useState(false)
+  const [searchMode, setSearchMode] = useState<'semantic' | 'keyword'>('semantic')
+  const [isSearchActive, setIsSearchActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Fetch documents
@@ -84,7 +89,7 @@ export default function DocumentsPage() {
       minScore: 0.6,
     },
     {
-      enabled: searchMode && searchQuery.length >= 3,
+      enabled: isSearchActive && searchQuery.length >= 3,
     }
   )
 
@@ -94,6 +99,9 @@ export default function DocumentsPage() {
 
   // Approve document mutation
   const approveDocumentMutation = api.documents.approveDocument.useMutation()
+
+  // Delete document mutation
+  const deleteDocumentMutation = api.documents.deleteDocument.useMutation()
 
   // Track previous document statuses to detect when processing completes
   const prevDocumentsRef = useRef<typeof documents>(undefined)
@@ -295,22 +303,54 @@ export default function DocumentsPage() {
 
   // Handle reviewing a document
   const handleReviewDocument = (document: any) => {
-    setSelectedDocument(document)
+    setSelectedDocumentForReview(document)
     setReviewModalOpen(true)
+  }
+
+  // Handle selecting document for preview
+  const handleSelectDocument = (document: any) => {
+    setSelectedDocumentForPreview(document)
   }
 
   // Handle approving a document
   const handleApproveDocument = async () => {
-    if (!selectedDocument) return
+    if (!selectedDocumentForReview) return
 
     try {
-      await approveDocumentMutation.mutateAsync({ documentId: selectedDocument.id })
+      await approveDocumentMutation.mutateAsync({ documentId: selectedDocumentForReview.id })
       toast.success('Document approved and marked as completed')
       setReviewModalOpen(false)
-      setSelectedDocument(null)
+      setSelectedDocumentForReview(null)
       refetch()
     } catch (error) {
       toast.error('Failed to approve document')
+    }
+  }
+
+  // Handle requesting document deletion
+  const handleRequestDelete = (document: any) => {
+    setDocumentToDelete(document)
+    setDeleteConfirmOpen(true)
+  }
+
+  // Handle confirming document deletion
+  const handleConfirmDelete = async () => {
+    if (!documentToDelete) return
+
+    try {
+      await deleteDocumentMutation.mutateAsync({ documentId: documentToDelete.id })
+      toast.success('Document deleted', {
+        description: `${documentToDelete.name} has been removed`,
+        icon: <CheckCircle className="w-5 h-5" />,
+      })
+      setDeleteConfirmOpen(false)
+      setDocumentToDelete(null)
+      setSelectedDocumentForPreview(null)
+      refetch()
+    } catch (error) {
+      toast.error('Failed to delete document', {
+        description: error instanceof Error ? error.message : 'An error occurred',
+      })
     }
   }
 
@@ -318,13 +358,13 @@ export default function DocumentsPage() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setSearchQuery(value)
-    setSearchMode(value.length >= 3)
+    setIsSearchActive(value.length >= 3)
   }
 
   // Clear search
   const clearSearch = () => {
     setSearchQuery('')
-    setSearchMode(false)
+    setIsSearchActive(false)
   }
 
   // Highlight search terms in text
@@ -338,7 +378,7 @@ export default function DocumentsPage() {
   }
 
   // Display documents or search results
-  const displayDocuments = searchMode && searchResults ? searchResults.results.map(r => r.document) : documents
+  const displayDocuments = isSearchActive && searchResults ? searchResults.results.map(r => r.document) : documents
 
   return (
     <div className="space-y-6">
@@ -355,57 +395,57 @@ export default function DocumentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Documents</h1>
-          <p className="text-slate-400 mt-1">Your organizational memory.</p>
+          <h1 className="text-[22px] font-semibold text-white">Documents</h1>
+          <p className="text-[13px] text-slate-400 mt-0.5">Your organizational memory.</p>
         </div>
         <button
           onClick={openFilePicker}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2"
         >
-          <Upload className="w-4 h-4" />
+          <Upload className="w-3.5 h-3.5" />
           Upload Documents
         </button>
       </div>
 
       {/* Document Health Section */}
       {health && health.total > 0 && (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-          <h3 className="text-sm font-medium text-slate-400 mb-4">Document Health</h3>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-green-500/10 rounded-lg border border-green-500/20">
-                <CheckCircle className="w-5 h-5 text-green-400" />
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+          <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-3">Document Health</h3>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-500/10 rounded border border-green-500/20">
+                <CheckCircle className="w-4 h-4 text-green-400" />
               </div>
               <div>
-                <div className="text-2xl font-semibold text-white">{health.completed}</div>
-                <div className="text-xs text-slate-400">Completed</div>
+                <div className="text-[18px] font-semibold text-white">{health.completed}</div>
+                <div className="text-[10px] text-slate-400">Completed</div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                <Clock className="w-5 h-5 text-blue-400" />
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                <Clock className="w-4 h-4 text-blue-400" />
               </div>
               <div>
-                <div className="text-2xl font-semibold text-white">{health.processing}</div>
-                <div className="text-xs text-slate-400">Processing</div>
+                <div className="text-[18px] font-semibold text-white">{health.processing}</div>
+                <div className="text-[10px] text-slate-400">Processing</div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                <AlertCircle className="w-5 h-5 text-amber-400" />
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-amber-500/10 rounded border border-amber-500/20">
+                <AlertCircle className="w-4 h-4 text-amber-400" />
               </div>
               <div>
-                <div className="text-2xl font-semibold text-white">{health.needsReview}</div>
-                <div className="text-xs text-slate-400">Needs Review</div>
+                <div className="text-[18px] font-semibold text-white">{health.needsReview}</div>
+                <div className="text-[10px] text-slate-400">Needs Review</div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-red-500/10 rounded-lg border border-red-500/20">
-                <XCircle className="w-5 h-5 text-red-400" />
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-red-500/10 rounded border border-red-500/20">
+                <XCircle className="w-4 h-4 text-red-400" />
               </div>
               <div>
-                <div className="text-2xl font-semibold text-white">{health.failed}</div>
-                <div className="text-xs text-slate-400">Failed</div>
+                <div className="text-[18px] font-semibold text-white">{health.failed}</div>
+                <div className="text-[10px] text-slate-400">Failed</div>
               </div>
             </div>
           </div>
@@ -414,14 +454,14 @@ export default function DocumentsPage() {
 
       {/* Alert Banner for Documents Needing Review */}
       {health && health.needsReview > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-medium text-amber-300 mb-1">
+              <h4 className="text-[13px] font-medium text-amber-300 mb-0.5">
                 {health.needsReview} {health.needsReview === 1 ? 'document needs' : 'documents need'} review
               </h4>
-              <p className="text-sm text-amber-200/80">
+              <p className="text-[12px] text-amber-200/80">
                 Documents needing review have low extraction confidence. You may need to manually verify the content.
               </p>
             </div>
@@ -429,32 +469,55 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      {/* Search and Filters */}
-      <div className="flex gap-4">
+      {/* Search Bar with Semantic/Keyword Toggle */}
+      <div className="flex gap-3 items-center">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
             type="text"
             placeholder="Search documents by content, name, or funder..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-10 py-2.5 text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-10 py-2 text-[13px] text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
           {searchQuery && (
             <button
               onClick={clearSearch}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-700 rounded transition-colors"
             >
-              <X className="w-4 h-4 text-slate-400" />
+              <X className="w-3.5 h-3.5 text-slate-400" />
             </button>
           )}
+        </div>
+        {/* Semantic/Keyword Toggle */}
+        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg p-0.5">
+          <button
+            onClick={() => setSearchMode('semantic')}
+            className={`px-3 py-1.5 text-[11px] font-medium rounded transition-colors ${
+              searchMode === 'semantic'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Semantic
+          </button>
+          <button
+            onClick={() => setSearchMode('keyword')}
+            className={`px-3 py-1.5 text-[11px] font-medium rounded transition-colors ${
+              searchMode === 'keyword'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Keyword
+          </button>
         </div>
       </div>
 
       {/* Search Status */}
-      {searchMode && (
+      {isSearchActive && (
         <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-sm text-blue-300">
+          <div className="flex items-center gap-2 text-[12px] text-blue-300">
             {isSearching ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -473,12 +536,13 @@ export default function DocumentsPage() {
         </div>
       )}
 
-      <div className="flex gap-6">
-        {/* Sidebar - Document Types */}
-        <div className="w-56 flex-shrink-0">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-slate-400 mb-3">Document Types</h3>
-            <nav className="space-y-1">
+      {/* Three-Panel Layout */}
+      <div className="flex gap-4">
+        {/* LEFT PANEL - Folder Tree (220px) */}
+        <div className="w-[220px] flex-shrink-0">
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+            <h3 className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-3">Document Types</h3>
+            <nav className="space-y-0.5">
               {documentCounts.map((type) => {
                 const Icon = type.icon
                 const isActive = selectedType === type.value
@@ -486,17 +550,17 @@ export default function DocumentsPage() {
                   <button
                     key={type.name}
                     onClick={() => setSelectedType(type.value)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 text-[13px] rounded transition-colors ${
                       isActive
                         ? 'bg-blue-600 text-white'
                         : 'text-slate-300 hover:text-white hover:bg-slate-700'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-3.5 h-3.5" />
                       <span>{type.name}</span>
                     </div>
-                    <span className={`text-xs ${isActive ? 'text-blue-200' : 'text-slate-500'}`}>
+                    <span className={`min-w-[20px] h-[18px] flex items-center justify-center px-1.5 rounded-full text-[10px] font-semibold ${isActive ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300'}`}>
                       {type.count}
                     </span>
                   </button>
@@ -506,8 +570,8 @@ export default function DocumentsPage() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1">
+        {/* CENTER PANEL - Card Grid (flexible) */}
+        <div className="flex-1 min-w-0">
           {/* Upload Drop Zone */}
           <div
             onDragEnter={handleDragEnter}
@@ -515,20 +579,17 @@ export default function DocumentsPage() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={openFilePicker}
-            className={`border-2 border-dashed rounded-lg p-12 text-center transition-all cursor-pointer mb-6 ${
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer mb-4 ${
               isDragging
                 ? 'border-blue-500 bg-blue-500/10'
-                : 'border-slate-700 hover:border-slate-600'
+                : 'border-slate-700 hover:border-slate-600 bg-slate-900/30'
             }`}
           >
-            <FolderOpen className={`w-12 h-12 mx-auto mb-4 ${isDragging ? 'text-blue-400' : 'text-slate-600'}`} />
-            <h3 className="text-lg font-medium text-white mb-2">
+            <Upload className={`w-10 h-10 mx-auto mb-3 ${isDragging ? 'text-blue-400' : 'text-slate-600'}`} />
+            <h3 className="text-[14px] font-medium text-white mb-1">
               {isDragging ? 'Drop files here' : 'Drop files here to upload'}
             </h3>
-            <p className="text-slate-400 text-sm mb-4">
-              Upload proposals, reports, budgets, and other grant documents
-            </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-[11px] text-slate-500">
               Supports PDF, DOCX, DOC, TXT up to 50MB each
             </p>
           </div>
@@ -656,7 +717,7 @@ export default function DocumentsPage() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <DocumentCardSkeleton key={i} />
               ))}
@@ -665,32 +726,32 @@ export default function DocumentsPage() {
 
           {/* Empty State */}
           {!isLoading && !isSearching && displayDocuments && displayDocuments.length === 0 && (
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-12 text-center">
-              <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-              {searchMode ? (
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 text-center">
+              <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              {isSearchActive ? (
                 <>
-                  <h3 className="text-xl font-semibold text-white mb-2">No results found</h3>
-                  <p className="text-slate-400 max-w-md mx-auto mb-6">
+                  <h3 className="text-[16px] font-semibold text-white mb-2">No results found</h3>
+                  <p className="text-[13px] text-slate-400 max-w-md mx-auto mb-4">
                     Try adjusting your search query or check if documents have been processed.
                   </p>
                   <button
                     onClick={clearSearch}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-lg transition-colors inline-flex items-center gap-2"
                   >
                     Clear Search
                   </button>
                 </>
               ) : (
                 <>
-                  <h3 className="text-xl font-semibold text-white mb-2">No documents yet</h3>
-                  <p className="text-slate-400 max-w-md mx-auto mb-6">
+                  <h3 className="text-[16px] font-semibold text-white mb-2">No documents yet</h3>
+                  <p className="text-[13px] text-slate-400 max-w-md mx-auto mb-4">
                     Upload your first grant proposal to build your organizational memory.
                   </p>
                   <button
                     onClick={openFilePicker}
-                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-lg transition-colors inline-flex items-center gap-2"
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload className="w-3.5 h-3.5" />
                     Upload Your First Document
                   </button>
                 </>
@@ -699,37 +760,37 @@ export default function DocumentsPage() {
           )}
 
           {/* Search Results with Snippets */}
-          {searchMode && searchResults && searchResults.results.length > 0 && (
-            <div className="space-y-4">
+          {isSearchActive && searchResults && searchResults.results.length > 0 && (
+            <div className="space-y-3">
               {searchResults.results.map((result) => (
                 <div
                   key={result.document.id}
-                  className="bg-slate-800 border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors cursor-pointer"
+                  className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:border-slate-600 transition-colors cursor-pointer"
                   onClick={() => {
                     if (result.document.status === ProcessingStatus.NEEDS_REVIEW) {
                       handleReviewDocument(result.document)
                     } else {
-                      toast.info('Document preview coming soon')
+                      handleSelectDocument(result.document)
                     }
                   }}
                 >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14px] font-semibold text-white mb-1 truncate">
                         {result.document.name}
                       </h3>
                       {result.document.grant?.funder && (
-                        <p className="text-sm text-slate-400">
+                        <p className="text-[12px] text-slate-400">
                           {result.document.grant.funder.name}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="px-2.5 py-1 bg-blue-500/20 border border-blue-500/30 rounded text-xs font-medium text-blue-300">
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <div className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded text-[10px] font-semibold text-blue-300">
                         {result.relevanceScore}% match
                       </div>
                       {result.document.status === ProcessingStatus.NEEDS_REVIEW && (
-                        <div className="px-2.5 py-1 bg-amber-500/20 border border-amber-500/30 rounded text-xs font-medium text-amber-300">
+                        <div className="px-2 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded text-[10px] font-semibold text-amber-300">
                           Needs Review
                         </div>
                       )}
@@ -740,11 +801,11 @@ export default function DocumentsPage() {
                   {result.matchingChunks && result.matchingChunks.length > 0 && (
                     <div className="space-y-2 mt-3">
                       {result.matchingChunks.slice(0, 2).map((chunk, idx) => (
-                        <div key={idx} className="bg-slate-900 border border-slate-700 rounded p-3">
-                          <p className="text-sm text-slate-300 line-clamp-3">
+                        <div key={idx} className="bg-slate-900 border border-slate-700 rounded p-2.5">
+                          <p className="text-[12px] text-slate-300 line-clamp-3">
                             {highlightText(chunk.text.slice(0, 300) + (chunk.text.length > 300 ? '...' : ''), searchQuery)}
                           </p>
-                          <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+                          <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-500">
                             <span>{Math.round(chunk.score * 100)}% relevance</span>
                           </div>
                         </div>
@@ -757,8 +818,8 @@ export default function DocumentsPage() {
           )}
 
           {/* Document Grid (Normal View) */}
-          {!isLoading && !searchMode && displayDocuments && displayDocuments.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {!isLoading && !isSearchActive && displayDocuments && displayDocuments.length > 0 && (
+            <div className="grid grid-cols-3 gap-4">
               {displayDocuments.map((document) => (
                 <DocumentCard
                   key={document.id}
@@ -767,19 +828,70 @@ export default function DocumentsPage() {
                     if (document.status === ProcessingStatus.NEEDS_REVIEW) {
                       handleReviewDocument(document)
                     } else {
-                      toast.info('Document preview coming soon')
+                      handleSelectDocument(document)
                     }
                   }}
                   onReview={document.status === ProcessingStatus.NEEDS_REVIEW ? () => handleReviewDocument(document) : undefined}
+                  onDelete={() => handleRequestDelete(document)}
                 />
               ))}
             </div>
           )}
         </div>
+
+        {/* RIGHT PANEL - Document Preview (300px, conditional) */}
+        {selectedDocumentForPreview && (
+          <div className="w-[300px] flex-shrink-0">
+            <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden sticky top-6">
+              {/* Preview Header */}
+              <div className="flex items-center justify-between p-3 border-b border-slate-700">
+                <h3 className="text-[12px] font-semibold text-slate-300 truncate">
+                  {selectedDocumentForPreview.name}
+                </h3>
+                <button
+                  onClick={() => setSelectedDocumentForPreview(null)}
+                  className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              </div>
+
+              {/* Preview Content */}
+              <div className="h-[600px] overflow-y-auto">
+                <DocumentPreview document={selectedDocumentForPreview} />
+              </div>
+
+              {/* Preview Actions */}
+              <div className="p-3 border-t border-slate-700 space-y-2">
+                <button
+                  onClick={() => {
+                    if (selectedDocumentForPreview.extractedText) {
+                      navigator.clipboard.writeText(selectedDocumentForPreview.extractedText)
+                      toast.success('Text copied to clipboard')
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white text-[13px] font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy Selection
+                </button>
+                <a
+                  href={`/api/documents/${selectedDocumentForPreview.id}/view`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Open in New Tab
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Review Modal */}
-      {reviewModalOpen && selectedDocument && (
+      {reviewModalOpen && selectedDocumentForReview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
@@ -793,7 +905,7 @@ export default function DocumentsPage() {
             <div className="flex items-center justify-between p-6 border-b border-slate-700">
               <div>
                 <h2 className="text-xl font-semibold text-white">Review Document</h2>
-                <p className="text-sm text-slate-400 mt-1">{selectedDocument.name}</p>
+                <p className="text-sm text-slate-400 mt-1">{selectedDocumentForReview.name}</p>
               </div>
               <button
                 onClick={() => setReviewModalOpen(false)}
@@ -812,18 +924,18 @@ export default function DocumentsPage() {
                   <div>
                     <h3 className="text-sm font-medium text-amber-300">Low Confidence Score</h3>
                     <p className="text-sm text-amber-200/80 mt-1">
-                      Extraction confidence: {selectedDocument.confidenceScore || 0}%
+                      Extraction confidence: {selectedDocumentForReview.confidenceScore || 0}%
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Warnings */}
-              {selectedDocument.parseWarnings && Array.isArray(selectedDocument.parseWarnings) && selectedDocument.parseWarnings.length > 0 && (
+              {selectedDocumentForReview.parseWarnings && Array.isArray(selectedDocumentForReview.parseWarnings) && selectedDocumentForReview.parseWarnings.length > 0 && (
                 <div>
                   <h3 className="text-sm font-medium text-slate-300 mb-2">Warnings</h3>
                   <ul className="space-y-2">
-                    {selectedDocument.parseWarnings.map((warning: string, index: number) => (
+                    {selectedDocumentForReview.parseWarnings.map((warning: string, index: number) => (
                       <li key={index} className="text-sm text-slate-400 flex items-start gap-2">
                         <span className="text-amber-400 mt-0.5">•</span>
                         <span>{warning}</span>
@@ -837,10 +949,10 @@ export default function DocumentsPage() {
               <div>
                 <h3 className="text-sm font-medium text-slate-300 mb-2">Extracted Text Preview</h3>
                 <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 max-h-64 overflow-y-auto">
-                  {selectedDocument.extractedText ? (
+                  {selectedDocumentForReview.extractedText ? (
                     <pre className="text-sm text-slate-300 whitespace-pre-wrap font-mono">
-                      {selectedDocument.extractedText.slice(0, 2000)}
-                      {selectedDocument.extractedText.length > 2000 && '\n\n... (truncated)'}
+                      {selectedDocumentForReview.extractedText.slice(0, 2000)}
+                      {selectedDocumentForReview.extractedText.length > 2000 && '\n\n... (truncated)'}
                     </pre>
                   ) : (
                     <p className="text-sm text-slate-500">No extracted text available</p>
@@ -849,27 +961,27 @@ export default function DocumentsPage() {
               </div>
 
               {/* Metadata */}
-              {selectedDocument.metadata && (
+              {selectedDocumentForReview.metadata && (
                 <div>
                   <h3 className="text-sm font-medium text-slate-300 mb-2">Document Metadata</h3>
                   <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                      {selectedDocument.metadata.wordCount && (
+                      {selectedDocumentForReview.metadata.wordCount && (
                         <>
                           <dt className="text-slate-500">Word Count:</dt>
-                          <dd className="text-slate-300">{selectedDocument.metadata.wordCount}</dd>
+                          <dd className="text-slate-300">{selectedDocumentForReview.metadata.wordCount}</dd>
                         </>
                       )}
-                      {selectedDocument.metadata.pageCount && (
+                      {selectedDocumentForReview.metadata.pageCount && (
                         <>
                           <dt className="text-slate-500">Pages:</dt>
-                          <dd className="text-slate-300">{selectedDocument.metadata.pageCount}</dd>
+                          <dd className="text-slate-300">{selectedDocumentForReview.metadata.pageCount}</dd>
                         </>
                       )}
-                      {selectedDocument.metadata.detectedType && (
+                      {selectedDocumentForReview.metadata.detectedType && (
                         <>
                           <dt className="text-slate-500">Detected Type:</dt>
-                          <dd className="text-slate-300">{selectedDocument.metadata.detectedType}</dd>
+                          <dd className="text-slate-300">{selectedDocumentForReview.metadata.detectedType}</dd>
                         </>
                       )}
                     </dl>
@@ -906,6 +1018,76 @@ export default function DocumentsPage() {
                   <>
                     <CheckCircle className="w-4 h-4" />
                     Approve
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmOpen && documentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setDeleteConfirmOpen(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md bg-slate-800 border border-slate-700 rounded-lg shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-500/10 rounded-lg border border-red-500/20">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <h2 className="text-xl font-semibold text-white">Delete Document</h2>
+              </div>
+              <button
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-300">
+                Are you sure you want to delete <span className="font-medium text-white">{documentToDelete.name}</span>?
+              </p>
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                <p className="text-sm text-red-300">
+                  This action cannot be undone. The document will be permanently removed from storage, including all vector embeddings.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-700 bg-slate-800/50">
+              <button
+                onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deleteDocumentMutation.isPending}
+                className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleteDocumentMutation.isPending}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                {deleteDocumentMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Delete Document
                   </>
                 )}
               </button>

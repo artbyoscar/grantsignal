@@ -5,6 +5,7 @@ import { parseRfp } from '@/inngest/functions/parse-rfp'
 import { analyzeVoice } from '@/inngest/functions/analyze-voice'
 import { syncFunder990 } from '@/inngest/functions/sync-funder-990'
 import { detectConflictsScheduled } from '@/inngest/functions/detect-conflicts'
+import { cleanupStuckDocuments } from '@/inngest/functions/cleanup-stuck-documents'
 import { webhookDelivery } from '@/inngest/functions/webhook-delivery'
 import { sendDeadlineReminders } from '@/inngest/send-deadline-reminders'
 import { sendWeeklyDigest } from '@/inngest/send-weekly-digest'
@@ -23,6 +24,7 @@ export const { GET, POST, PUT } = serve({
     analyzeVoice,
     syncFunder990,
     detectConflictsScheduled,
+    cleanupStuckDocuments,
     webhookDelivery,
     sendDeadlineReminders,
     sendWeeklyDigest,
