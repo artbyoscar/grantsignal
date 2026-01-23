@@ -13,6 +13,7 @@ import { reportsRouter } from './reports'
 import { fundersRouter } from './funders'
 import { voiceRouter } from './voice'
 import { teamRouter } from './team'
+import { calendarRouter } from './calendar'
 
 /**
  * Main tRPC router combining all sub-routers
@@ -32,6 +33,7 @@ export const appRouter = router({
   funders: fundersRouter,
   voice: voiceRouter,
   team: teamRouter,
+  calendar: calendarRouter,
 })
 
 export type AppRouter = typeof appRouter
