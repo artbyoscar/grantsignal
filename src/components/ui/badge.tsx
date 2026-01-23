@@ -6,7 +6,7 @@ import { AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full border h-[18px] px-1.5 py-0.5 text-[10px] font-semibold w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center rounded-full border h-5 px-2 py-0.5 text-[11px] font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
   {
     variants: {
       variant: {
@@ -83,7 +83,7 @@ function DeadlineBadge({ deadline, className, children, ...props }: DeadlineBadg
     <span
       data-slot="deadline-badge"
       className={cn(
-        "inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-all",
+        "inline-flex items-center justify-center rounded-full border h-5 px-2 py-0.5 text-[11px] font-medium w-fit whitespace-nowrap shrink-0 gap-1 transition-all",
         urgencyStyles,
         className
       )}
@@ -115,7 +115,7 @@ function PillBadge({ status = "default", className, children, ...props }: PillBa
     <span
       data-slot="pill-badge"
       className={cn(
-        "inline-flex items-center justify-center rounded-full px-2 py-1 text-xs font-medium w-fit whitespace-nowrap transition-all",
+        "inline-flex items-center justify-center rounded-full h-5 px-2 py-0.5 text-[11px] font-medium w-fit whitespace-nowrap transition-all",
         statusStyles[status],
         className
       )}

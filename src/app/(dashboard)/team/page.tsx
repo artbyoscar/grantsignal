@@ -1,317 +1,258 @@
 'use client'
 
 import { useState } from 'react'
-import { Users, UserPlus, Mail, Shield, MoreVertical, Trash2, RefreshCw } from 'lucide-react'
+import { UserPlus, MoreVertical, Clock, Award } from 'lucide-react'
 import { api } from '@/trpc/react'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
 import { InviteMemberModal } from '@/components/team/invite-member-modal'
-import { toast } from 'sonner'
+import { EditRoleModal } from '@/components/team/edit-role-modal'
+import { RemoveMemberDialog } from '@/components/team/remove-member-dialog'
+import { formatDistanceToNow } from 'date-fns'
 import { UserRole } from '@/types/client-types'
 
 export default function TeamPage() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false)
-  const utils = api.useUtils()
+  const [editRoleModalOpen, setEditRoleModalOpen] = useState(false)
+  const [removeMemberDialogOpen, setRemoveMemberDialogOpen] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<{
+    id: string
+    displayName: string
+    email: string
+    role: UserRole
+  } | null>(null)
 
-  // Fetch team members
-  const { data: members, isLoading: membersLoading } = api.team.listMembers.useQuery()
-  const { data: invitations, isLoading: invitationsLoading } = api.team.listInvitations.useQuery()
-
-  // Mutations
-  const removeMemberMutation = api.team.removeMember.useMutation({
-    onSuccess: () => {
-      toast.success('Member removed successfully')
-      utils.team.listMembers.invalidate()
-    },
-    onError: (error) => {
-      toast.error(error.message)
-    },
-  })
-
-  const revokeInviteMutation = api.team.revokeInvite.useMutation({
-    onSuccess: () => {
-      toast.success('Invitation revoked')
-      utils.team.listInvitations.invalidate()
-    },
-    onError: (error) => {
-      toast.error(error.message)
-    },
-  })
-
-  const resendInviteMutation = api.team.resendInvite.useMutation({
-    onSuccess: () => {
-      toast.success('Invitation resent')
-    },
-    onError: (error) => {
-      toast.error(error.message)
-    },
-  })
+  const { data: members, isLoading } = api.team.listMembers.useQuery()
+  const { data: grantCounts } = api.team.getMemberGrantCounts.useQuery()
+  const { data: invitations } = api.team.listInvitations.useQuery()
 
   const getRoleBadgeColor = (role: UserRole) => {
     switch (role) {
       case 'OWNER':
-        return 'bg-purple-100 text-purple-800 border-purple-200'
+        return 'bg-purple-500/10 text-purple-400 border-purple-500/30'
       case 'ADMIN':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
+        return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
       case 'MEMBER':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-green-500/10 text-green-400 border-green-500/30'
       case 'VIEWER':
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-slate-500/10 text-slate-400 border-slate-500/30'
     }
   }
 
+  const getInitials = (firstName: string, lastName: string, email: string) => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase()
+    }
+    if (firstName) {
+      return firstName.substring(0, 2).toUpperCase()
+    }
+    if (email) {
+      return email.substring(0, 2).toUpperCase()
+    }
+    return 'U'
+  }
+
+  const handleEditRole = (member: any) => {
+    setSelectedMember({
+      id: member.id,
+      displayName: `${member.firstName} ${member.lastName}`.trim() || member.email,
+      email: member.email,
+      role: member.role,
+    })
+    setEditRoleModalOpen(true)
+  }
+
+  const handleRemoveMember = (member: any) => {
+    setSelectedMember({
+      id: member.id,
+      displayName: `${member.firstName} ${member.lastName}`.trim() || member.email,
+      email: member.email,
+      role: member.role,
+    })
+    setRemoveMemberDialogOpen(true)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-slate-400">Loading team members...</div>
+      </div>
+    )
+  }
+
+  const totalMembers = (members?.length || 0) + (invitations?.length || 0)
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="container mx-auto py-8 px-4 max-w-7xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Team</h1>
-          <p className="text-slate-600 mt-1">Manage your organization's team members and permissions</p>
+          <h1 className="text-3xl font-bold text-slate-100">Team</h1>
+          <p className="text-slate-400 mt-1">
+            {totalMembers} {totalMembers === 1 ? 'member' : 'members'}
+            {invitations && invitations.length > 0 && (
+              <span className="text-slate-500">
+                {' '}
+                ({invitations.length} pending invite{invitations.length === 1 ? '' : 's'})
+              </span>
+            )}
+          </p>
         </div>
         <Button onClick={() => setInviteModalOpen(true)} className="gap-2">
           <UserPlus className="w-4 h-4" />
-          Invite Member
+          Invite Team Member
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Total Members</p>
-              <p className="text-2xl font-bold text-slate-900">{members?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-              <Mail className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Pending Invites</p>
-              <p className="text-2xl font-bold text-slate-900">{invitations?.length || 0}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-600">Admins</p>
-              <p className="text-2xl font-bold text-slate-900">
-                {members?.filter((m) => m.role === 'OWNER' || m.role === 'ADMIN').length || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Active Members Grid */}
+      {members && members.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+          {members.map((member) => {
+            const fullName = `${member.firstName} ${member.lastName}`.trim()
+            const displayName = fullName || member.email
+            const grantCount = grantCounts?.[member.id] || 0
 
-      {/* Members Table */}
-      <div className="bg-white rounded-lg border border-slate-200">
-        <div className="p-6 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">Team Members</h2>
+            return (
+              <div
+                key={member.id}
+                className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-600 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <Avatar className="w-14 h-14">
+                    <AvatarImage src={member.imageUrl} alt={displayName} />
+                    <AvatarFallback className="bg-slate-700 text-slate-200 text-lg">
+                      {getInitials(member.firstName, member.lastName, member.email)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditRole(member)}>
+                        Edit Role
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleRemoveMember(member)}
+                        className="text-red-400 focus:text-red-400"
+                      >
+                        Remove Member
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-100 mb-1">{displayName}</h3>
+                  <p className="text-sm text-slate-400 truncate">{member.email}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <Badge className={getRoleBadgeColor(member.role)} variant="outline">
+                      {member.role}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Award className="w-4 h-4" />
+                    <span>
+                      {grantCount} {grantCount === 1 ? 'grant' : 'grants'} assigned
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Clock className="w-4 h-4" />
+                    <span>Active</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Member
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Joined
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {membersLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
-                    Loading members...
-                  </td>
-                </tr>
-              ) : members?.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
-                    No team members found
-                  </td>
-                </tr>
-              ) : (
-                members?.map((member) => (
-                  <tr key={member.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        {member.imageUrl ? (
-                          <img
-                            src={member.imageUrl}
-                            alt={member.displayName || member.firstName}
-                            className="w-10 h-10 rounded-full"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">
-                            <span className="text-sm font-medium text-slate-600">
-                              {(member.displayName ?? member.firstName ?? member.email ?? 'U').charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">
-                            {member.displayName || `${member.firstName} ${member.lastName}`.trim() || 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-slate-600">{member.email}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="outline" className={getRoleBadgeColor(member.role)}>
-                        {member.role}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-slate-600">
-                        {new Date(member.createdAt).toLocaleDateString()}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              if (
-                                confirm(
-                                  `Are you sure you want to remove ${member.displayName || member.email}?`
-                                )
-                              ) {
-                                removeMemberMutation.mutate({ memberId: member.id })
-                              }
-                            }}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove Member
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
 
       {/* Pending Invitations */}
       {invitations && invitations.length > 0 && (
-        <div className="bg-white rounded-lg border border-slate-200">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-semibold text-slate-900">Pending Invitations</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Sent
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Expires
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {invitations.map((invitation) => (
-                  <tr key={invitation.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-slate-900">{invitation.email}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant="outline" className={getRoleBadgeColor(invitation.role)}>
-                        {invitation.role}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-slate-600">
-                        {new Date(invitation.createdAt).toLocaleDateString()}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-slate-600">
-                        {new Date(invitation.expiresAt).toLocaleDateString()}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => resendInviteMutation.mutate({ invitationId: invitation.id })}
-                        >
-                          <RefreshCw className="w-4 h-4 mr-1" />
-                          Resend
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm(`Revoke invitation to ${invitation.email}?`)) {
-                              revokeInviteMutation.mutate({ invitationId: invitation.id })
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold text-slate-100 mb-4">Pending Invitations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {invitations.map((invite) => (
+              <div
+                key={invite.id}
+                className="bg-slate-800/50 border border-slate-700 border-dashed rounded-lg p-6"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <Avatar className="w-14 h-14">
+                    <AvatarFallback className="bg-slate-700/50 text-slate-400 text-lg">
+                      {invite.email.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-300 mb-1 truncate">{invite.email}</h3>
+                  <p className="text-sm text-slate-500">Invitation pending</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <Badge className={getRoleBadgeColor(invite.role)} variant="outline">
+                      {invite.role}
+                    </Badge>
+                  </div>
+
+                  <div className="text-sm text-slate-500">
+                    Invited {formatDistanceToNow(new Date(invite.createdAt), { addSuffix: true })}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Invite Modal */}
+      {/* Empty State */}
+      {(!members || members.length === 0) && (!invitations || invitations.length === 0) && (
+        <div className="text-center py-12">
+          <UserPlus className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-slate-300 mb-2">No team members yet</h3>
+          <p className="text-slate-500 mb-6">
+            Start building your team by inviting members to collaborate on grants.
+          </p>
+          <Button onClick={() => setInviteModalOpen(true)} className="gap-2">
+            <UserPlus className="w-4 h-4" />
+            Invite Your First Team Member
+          </Button>
+        </div>
+      )}
+
+      {/* Modals */}
       <InviteMemberModal open={inviteModalOpen} onOpenChange={setInviteModalOpen} />
+
+      {selectedMember && (
+        <>
+          <EditRoleModal
+            open={editRoleModalOpen}
+            onOpenChange={setEditRoleModalOpen}
+            member={selectedMember}
+          />
+          <RemoveMemberDialog
+            open={removeMemberDialogOpen}
+            onOpenChange={setRemoveMemberDialogOpen}
+            member={selectedMember}
+          />
+        </>
+      )}
     </div>
   )
 }

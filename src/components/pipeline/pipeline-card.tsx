@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { GrantEditModal } from './grant-edit-modal'
+import { FunderLogo } from './funder-logo'
 
 type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
 
@@ -39,30 +40,40 @@ function formatCurrency(amount: number | null | undefined): string {
   }).format(amount)
 }
 
-// Calculate days remaining and get color
-function getDeadlineInfo(deadline: Date | null | undefined): { text: string; color: string } | null {
+// Calculate days remaining and get color with badge styling
+function getDeadlineInfo(deadline: Date | null | undefined): { text: string; bgColor: string; textColor: string } | null {
   if (!deadline) return null
 
   const now = new Date()
   const deadlineDate = new Date(deadline)
   const daysRemaining = Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-  let color = 'text-slate-400'
+  let bgColor = 'bg-slate-700/50'
+  let textColor = 'text-slate-400'
+
   if (daysRemaining < 0) {
-    color = 'text-red-400'
+    // Overdue
+    bgColor = 'bg-red-500/20'
+    textColor = 'text-red-400'
   } else if (daysRemaining < 7) {
-    color = 'text-red-400'
-  } else if (daysRemaining <= 14) {
-    color = 'text-amber-400'
+    // Less than 7 days - RED
+    bgColor = 'bg-red-500/20'
+    textColor = 'text-red-400'
+  } else if (daysRemaining <= 30) {
+    // 7-30 days - YELLOW
+    bgColor = 'bg-amber-500/20'
+    textColor = 'text-amber-400'
   } else {
-    color = 'text-green-400'
+    // 30+ days - GREEN
+    bgColor = 'bg-green-500/20'
+    textColor = 'text-green-400'
   }
 
   const text = daysRemaining < 0
-    ? `${Math.abs(daysRemaining)} days overdue`
-    : `${daysRemaining} days left`
+    ? `${Math.abs(daysRemaining)} Days Overdue`
+    : `${daysRemaining} Days Left`
 
-  return { text, color }
+  return { text, bgColor, textColor }
 }
 
 // Get fit score badge color
@@ -158,7 +169,7 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
         // Visual states
         isDragging
           ? 'opacity-60 scale-[1.02] shadow-2xl shadow-blue-500/30 border-blue-400/50 bg-slate-800/40'
-          : 'hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 hover:border-slate-600'
+          : 'hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-500/15 hover:border-slate-600 hover:bg-slate-700/50'
       )}
     >
       {/* Priority Flag - Top Left */}
@@ -181,15 +192,11 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
       {/* Funder logo and name */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={grant.funder?.name || 'Funder'}
-              className="w-8 h-8 rounded flex-shrink-0 object-cover bg-slate-700"
-            />
-          ) : (
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
-          )}
+          <FunderLogo
+            name={grant.funder?.name || 'Unknown Funder'}
+            logoUrl={logoUrl || undefined}
+            size="md"
+          />
           <h4 className="text-xs font-semibold text-slate-200 truncate">
             {grant.funder?.name || 'Unknown Funder'}
           </h4>
@@ -241,7 +248,7 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
       {/* Deadline Badge */}
       {deadlineInfo && (
         <div className="mb-2">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${deadlineInfo.color} bg-slate-700/50`}>
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold ${deadlineInfo.textColor} ${deadlineInfo.bgColor}`}>
             {deadlineInfo.text}
           </span>
         </div>
@@ -249,13 +256,11 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
 
       {/* Progress Bar - Only show for Writing stage */}
       {isWritingStage && progress !== undefined && (
-        <div className="mb-2">
-          <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden mb-2">
+          <div
+            className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          />
         </div>
       )}
 
@@ -270,6 +275,30 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
           </Avatar>
         </div>
       )}
+
+      {/* Hover Action Buttons - Appear on hover */}
+      <div className="absolute inset-x-0 bottom-0 flex gap-1 p-2 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleEdit()
+          }}
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded transition-colors"
+        >
+          <Edit className="w-3 h-3" />
+          Edit
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleOpenWriter()
+          }}
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded transition-colors"
+        >
+          <FileText className="w-3 h-3" />
+          Writer
+        </button>
+      </div>
 
       {/* Edit Modal */}
       <GrantEditModal
@@ -322,15 +351,11 @@ export function GrantCard({ grant, color, progress, isFlagged = false, logoUrl }
       {/* Funder logo and name */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={grant.funder?.name || 'Funder'}
-              className="w-8 h-8 rounded flex-shrink-0 object-cover bg-slate-700"
-            />
-          ) : (
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
-          )}
+          <FunderLogo
+            name={grant.funder?.name || 'Unknown Funder'}
+            logoUrl={logoUrl || undefined}
+            size="md"
+          />
           <h4 className="text-xs font-semibold text-slate-200 truncate">
             {grant.funder?.name || 'Unknown Funder'}
           </h4>
@@ -355,7 +380,7 @@ export function GrantCard({ grant, color, progress, isFlagged = false, logoUrl }
       {/* Deadline Badge */}
       {deadlineInfo && (
         <div className="mb-2">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${deadlineInfo.color} bg-slate-700/50`}>
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold ${deadlineInfo.textColor} ${deadlineInfo.bgColor}`}>
             {deadlineInfo.text}
           </span>
         </div>
@@ -363,13 +388,11 @@ export function GrantCard({ grant, color, progress, isFlagged = false, logoUrl }
 
       {/* Progress Bar - Only show for Writing stage */}
       {isWritingStage && progress !== undefined && (
-        <div className="mb-2">
-          <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden mb-2">
+          <div
+            className="h-full bg-gradient-to-r from-blue-600 to-blue-500 rounded-full transition-all duration-300"
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          />
         </div>
       )}
 
@@ -466,7 +489,7 @@ export function PipelineCard({
     <div
       onClick={handleClick}
       className={cn(
-        'bg-slate-800 border border-slate-700 rounded-xl p-4 transition-all',
+        'w-[260px] bg-slate-800 border border-slate-700 rounded-xl p-2.5 transition-all',
         // Cursor states
         isDragging ? 'cursor-grabbing' : 'cursor-pointer',
         // Hover states - only when not dragging

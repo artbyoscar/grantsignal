@@ -67,6 +67,34 @@ export const teamRouter = router({
   }),
 
   /**
+   * Get grant counts for each team member
+   */
+  getMemberGrantCounts: orgProcedure.query(async ({ ctx }) => {
+    const grants = await ctx.db.grant.groupBy({
+      by: ['assignedToId'],
+      where: {
+        organizationId: ctx.organizationId,
+        assignedToId: {
+          not: null,
+        },
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    // Convert to map for easy lookup
+    const countsMap = new Map<string, number>();
+    grants.forEach((g) => {
+      if (g.assignedToId) {
+        countsMap.set(g.assignedToId, g._count.id);
+      }
+    });
+
+    return Object.fromEntries(countsMap);
+  }),
+
+  /**
    * Get pending invitations for the organization
    */
   listInvitations: orgProcedure

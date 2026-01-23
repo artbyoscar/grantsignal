@@ -54,15 +54,15 @@ function getInitials(name: string): string {
 const SIZE_CLASSES = {
   sm: {
     container: 'w-6 h-6',
-    text: 'text-xs',
+    text: 'text-[9px]',
   },
   md: {
     container: 'w-8 h-8',
-    text: 'text-sm',
+    text: 'text-[11px]',
   },
   lg: {
     container: 'w-12 h-12',
-    text: 'text-lg',
+    text: 'text-base',
   },
 } as const;
 
@@ -90,7 +90,7 @@ export function FunderLogo({ name, logoUrl, size = 'md' }: FunderLogoProps) {
     <div
       className={cn(
         sizeClasses.container,
-        'rounded-full flex items-center justify-center font-semibold',
+        'rounded flex items-center justify-center font-bold',
         colors.bg,
         colors.text
       )}

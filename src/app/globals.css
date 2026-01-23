@@ -139,12 +139,35 @@
 
   /* Bloomberg Terminal Design Tokens */
   --font-size-base: 13px;
-  --card-padding: 12px;
-  --button-height: 32px;
-  --input-height: 32px;
   --spacing-unit: 4px;
+
+  /* Component Heights */
+  --button-height: 32px;
+  --button-height-sm: 28px;
+  --button-height-lg: 36px;
+  --input-height: 32px;
+  --nav-item-height: 36px;
+  --table-header-height: 36px;
+  --table-row-height: 44px;
+  --stat-card-height: 80px;
+  --badge-height: 20px;
+
+  /* Padding & Spacing */
+  --card-padding: 12px;
+  --button-padding-x: 12px;
+  --button-padding-y: 6px;
+  --input-padding-x: 10px;
+  --input-padding-y: 6px;
+  --table-cell-padding-x: 12px;
+  --table-cell-padding-y: 8px;
+  --badge-padding-x: 8px;
+  --badge-padding-y: 2px;
+  --pipeline-card-padding: 10px;
+
+  /* Layout */
   --sidebar-width: 200px;
   --sidebar-collapsed: 56px;
+  --pipeline-card-width: 260px;
 }
 
 .dark {
@@ -294,11 +317,11 @@
   }
 
   .btn-sm {
-    @apply h-7 px-2 py-1 text-xs;
+    @apply h-7 px-2.5 py-1 text-[12px];
   }
 
   .btn-lg {
-    @apply h-9 px-4 py-2 text-sm;
+    @apply h-9 px-4 py-2 text-[14px];
   }
 
   /* Input density */
@@ -317,11 +340,11 @@
 
   /* Badge density */
   .badge {
-    @apply h-[18px] px-1.5 py-0.5 text-[10px] font-semibold;
+    @apply h-5 px-2 py-0.5 text-[11px] font-medium;
   }
 
   .badge-pill {
-    @apply h-5 px-2 py-0.5 text-[10px] font-semibold rounded-full;
+    @apply h-5 px-2 py-0.5 text-[11px] font-medium rounded-full;
   }
 
   /* Form field density */
