@@ -6,6 +6,23 @@ import { STAGE_COLORS } from '@/components/dashboard/pipeline-summary'
 export const dashboardRouter = router({
   /**
    * Get dashboard statistics including active grants, pending decisions, YTD awarded, and win rate
+   *
+   * Metric Definitions:
+   * - Active Grants: Count of all grants EXCEPT those in terminal states (DECLINED, COMPLETED)
+   *   Includes: PROSPECT, RESEARCHING, WRITING, REVIEW, SUBMITTED, PENDING, AWARDED, ACTIVE, CLOSEOUT
+   *
+   * - Total Pipeline Value: Sum of amountRequested for all active grants
+   *   (Calculated client-side from the grants.list query in Dashboard components)
+   *
+   * - Pending Decisions: Count of grants with status SUBMITTED or PENDING
+   *   Represents grants awaiting funder response
+   *
+   * - YTD Awarded: Sum of amountAwarded for grants with status=AWARDED and awardedAt >= Jan 1 current year
+   *   Only includes grants actually awarded this calendar year
+   *
+   * - Win Rate: (Awarded Count / Total Decisions) * 100 for current year
+   *   Total Decisions = Awarded Count + Declined Count (both YTD)
+   *   Returns 0% if no decisions have been made yet
    */
   getStats: orgProcedure.query(async ({ ctx }) => {
     const now = new Date()
@@ -16,7 +33,9 @@ export const dashboardRouter = router({
     console.log('[Dashboard Stats] Calculating for org:', ctx.organizationId)
     console.log('[Dashboard Stats] Year:', now.getFullYear(), 'Start of year:', startOfYear)
 
-    // Get active grants (all statuses except DECLINED and COMPLETED)
+    // METRIC 1: Active Grants
+    // Count all grants in the pipeline (excludes DECLINED and COMPLETED terminal states)
+    // This count should match the Pipeline page when no filters are applied
     const activeGrantsCount = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
@@ -27,7 +46,8 @@ export const dashboardRouter = router({
     })
     console.log('[Dashboard Stats] Active grants count:', activeGrantsCount)
 
-    // Get pending decisions count (SUBMITTED or PENDING status)
+    // METRIC 2: Pending Decisions
+    // Count grants awaiting funder response (SUBMITTED or PENDING status)
     const pendingDecisionsCount = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
@@ -52,7 +72,8 @@ export const dashboardRouter = router({
       },
     })
 
-    // Get YTD awarded amount
+    // METRIC 3: YTD Awarded
+    // Sum of amountAwarded for grants awarded this calendar year
     const ytdAwardedGrants = await ctx.db.grant.findMany({
       where: {
         organizationId: ctx.organizationId,
@@ -102,7 +123,9 @@ export const dashboardRouter = router({
         ? ((ytdAwardedAmount - lastYearAwardedAmount) / lastYearAwardedAmount) * 100
         : 0
 
-    // Calculate win rate (only for grants decided this year)
+    // METRIC 4: Win Rate
+    // Percentage of awarded grants vs total decisions (awarded + declined) for current year
+    // Formula: (Awarded Count / Total Decisions) * 100
     const awardedCount = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
@@ -237,14 +260,19 @@ export const dashboardRouter = router({
 
   /**
    * Get pipeline stages with counts and amounts
+   *
+   * Returns grants grouped by status, excluding terminal states (DECLINED, COMPLETED).
+   * This should match the totals shown on the Pipeline page when no filters are applied.
+   *
+   * Total Pipeline Value = Sum of all amountRequested across all active grants
    */
   getPipelineStages: orgProcedure.query(async ({ ctx }) => {
-    // Group grants by status
+    // Group grants by status (excludes DECLINED and COMPLETED to match Dashboard metrics)
     const grants = await ctx.db.grant.findMany({
       where: {
         organizationId: ctx.organizationId,
         status: {
-          // Exclude terminal states for pipeline view
+          // Exclude terminal states - matches grants.list default behavior
           notIn: [GrantStatus.DECLINED, GrantStatus.COMPLETED],
         },
       },

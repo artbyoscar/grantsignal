@@ -42,13 +42,13 @@ export default function WriterIndexPage() {
                   {grant.status}
                 </span>
               </div>
-              <h3 className="font-semibold text-slate-100 mb-1">{grant.title || 'Untitled Grant'}</h3>
+              <h3 className="font-semibold text-slate-100 mb-1">{grant.opportunity?.title || 'Untitled Grant'}</h3>
               <p className="text-slate-400 text-sm mb-3">{grant.funder?.name || 'Unknown Funder'}</p>
               <div className="flex items-center gap-4 text-sm text-slate-500">
-                {grant.amount && (
+                {grant.amountRequested != null && (
                   <span className="flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
-                    ${(grant.amount / 1000).toFixed(0)}K
+                    ${(Number(grant.amountRequested) / 1000).toFixed(0)}K
                   </span>
                 )}
                 {grant.deadline && (

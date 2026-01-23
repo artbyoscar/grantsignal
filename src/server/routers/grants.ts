@@ -6,6 +6,11 @@ import { emitGrantStatusChanged } from '@/server/services/webhooks/emitter'
 export const grantsRouter = router({
   /**
    * List all grants with filters and cursor-based pagination
+   *
+   * By default, excludes terminal states (DECLINED, COMPLETED) to show only active pipeline grants.
+   * This ensures consistency with Dashboard metrics.
+   *
+   * To include terminal states, explicitly pass them in the statuses filter.
    */
   list: orgProcedure
     .input(
@@ -19,6 +24,7 @@ export const grantsRouter = router({
         deadlineTo: z.date().optional(),
         cursor: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
+        includeTerminalStates: z.boolean().default(false), // Allow opt-in for DECLINED/COMPLETED
       })
     )
     .query(async ({ ctx, input }) => {
@@ -26,13 +32,31 @@ export const grantsRouter = router({
         console.log('[grants.list] Starting query with organizationId:', ctx.organizationId);
         console.log('[grants.list] Input:', input);
 
-        const { cursor, limit, status, statuses, programId, funderType, assignedToId, deadlineFrom, deadlineTo } = input
+        const { cursor, limit, status, statuses, programId, funderType, assignedToId, deadlineFrom, deadlineTo, includeTerminalStates } = input
+
+        // Build status filter
+        // Priority: explicit status > explicit statuses array > default (exclude terminal states)
+        let statusFilter = {}
+        if (status) {
+          // Single status explicitly requested
+          statusFilter = { status }
+        } else if (statuses && statuses.length > 0) {
+          // Multiple statuses explicitly requested
+          statusFilter = { status: { in: statuses } }
+        } else if (!includeTerminalStates) {
+          // Default: exclude terminal states (DECLINED, COMPLETED) to show active pipeline
+          // This matches Dashboard behavior for consistent metrics
+          statusFilter = {
+            status: {
+              notIn: [GrantStatus.DECLINED, GrantStatus.COMPLETED],
+            },
+          }
+        }
 
         const grants = await ctx.db.grant.findMany({
           where: {
             organizationId: ctx.organizationId,
-            ...(status && { status }),
-            ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
+            ...statusFilter,
             ...(programId && { programId }),
             ...(assignedToId === 'unassigned'
               ? { assignedToId: null }

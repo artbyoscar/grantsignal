@@ -52,4 +52,77 @@ export const programsRouter = router({
 
       return program
     }),
+
+  /**
+   * Update a program
+   */
+  update: orgProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1, 'Program name is required').optional(),
+        description: z.string().optional(),
+        budget: z.number().positive().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input
+
+      // Verify program belongs to organization
+      const program = await ctx.db.program.findFirst({
+        where: {
+          id,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      if (!program) {
+        throw new Error('Program not found')
+      }
+
+      const updated = await ctx.db.program.update({
+        where: { id },
+        data,
+        include: {
+          _count: {
+            select: {
+              grants: true,
+            },
+          },
+        },
+      })
+
+      return updated
+    }),
+
+  /**
+   * Delete (soft delete) a program
+   */
+  delete: orgProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify program belongs to organization
+      const program = await ctx.db.program.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.organizationId,
+        },
+      })
+
+      if (!program) {
+        throw new Error('Program not found')
+      }
+
+      // Soft delete
+      await ctx.db.program.update({
+        where: { id: input.id },
+        data: { isActive: false },
+      })
+
+      return { success: true }
+    }),
 })

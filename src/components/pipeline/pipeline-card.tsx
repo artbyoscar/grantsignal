@@ -2,11 +2,18 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreHorizontal, Flag } from 'lucide-react'
+import { MoreHorizontal, Flag, Edit, FileText } from 'lucide-react'
 import { useDraggable } from '@dnd-kit/core'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { GrantStatus, type Grant } from '@/types/client-types'
 import { cn } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { GrantEditModal } from './grant-edit-modal'
 
 type ColorType = 'slate' | 'purple' | 'blue' | 'amber' | 'cyan' | 'orange' | 'green' | 'red'
 
@@ -88,6 +95,7 @@ interface DraggableGrantCardProps {
 export function DraggableGrantCard({ grant, color, progress, isFlagged = false, logoUrl }: DraggableGrantCardProps) {
   const router = useRouter()
   const [pointerDown, setPointerDown] = useState<{ time: number; x: number; y: number } | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: grant.id,
@@ -124,6 +132,14 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
     }
 
     setPointerDown(null)
+  }
+
+  const handleOpenWriter = () => {
+    router.push(`/writer/${grant.id}`)
+  }
+
+  const handleEdit = () => {
+    setIsEditModalOpen(true)
   }
 
   return (
@@ -178,12 +194,36 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
             {grant.funder?.name || 'Unknown Funder'}
           </h4>
         </div>
-        <button
-          onClick={(e) => e.stopPropagation()}
-          className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
-        >
-          <MoreHorizontal className="w-3 h-3 text-slate-400" />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            onClick={(e) => e.stopPropagation()}
+            className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
+          >
+            <MoreHorizontal className="w-3 h-3 text-slate-400" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-slate-800 border-slate-700" align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEdit()
+              }}
+              className="text-slate-300 cursor-pointer focus:bg-slate-700 focus:text-slate-100"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenWriter()
+              }}
+              className="text-slate-300 cursor-pointer focus:bg-slate-700 focus:text-slate-100"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Open Writer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Grant Title */}
@@ -231,6 +271,12 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
         </div>
       )}
 
+      {/* Edit Modal */}
+      <GrantEditModal
+        grant={grant}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+      />
     </div>
   )
 }

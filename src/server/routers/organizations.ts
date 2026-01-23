@@ -23,6 +23,17 @@ export const organizationsRouter = router({
         name: z.string().min(1).optional(),
         ein: z.string().optional(),
         mission: z.string().optional(),
+        theoryOfChange: z.string().optional(),
+        website: z.string().url().optional().or(z.literal('')),
+        address: z.object({
+          street: z.string().optional(),
+          city: z.string().optional(),
+          state: z.string().optional(),
+          zip: z.string().optional(),
+        }).optional(),
+        phone: z.string().optional(),
+        fiscalYearStart: z.number().min(1).max(12).optional(),
+        logoUrl: z.string().url().optional().or(z.literal('')),
       })
     )
     .mutation(async ({ ctx, input }) => {

@@ -156,6 +156,12 @@ model Organization {
   name             String
   ein              String?            @unique
   mission          String?            @db.Text
+  theoryOfChange   String?            @db.Text
+  website          String?
+  address          Json?              // { street, city, state, zip }
+  phone            String?
+  fiscalYearStart  Int?               // Month number (1-12)
+  logoUrl          String?
   voiceProfile     Json?
   voiceUpdatedAt   DateTime?
 
