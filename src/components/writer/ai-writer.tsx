@@ -24,10 +24,20 @@ export function AIWriter() {
   const mockMemoryResults: any[] = [];
 
   const mockFunderInfo = {
+    funderId: 'mock-id',
     funderName: 'Sample Funder',
-    focus: ['Education'],
+    funderType: 'PRIVATE_FOUNDATION',
+    focusAreas: ['Education'],
     avgGrantSize: 50000,
-    keyPriorities: ['Impact', 'Innovation'],
+    grantSizeRange: {
+      min: 25000,
+      max: 100000,
+      median: 50000,
+    },
+    totalGiving: 1000000,
+    geographicFocus: ['National'],
+    applicationProcess: 'Online application',
+    isLoading: false,
   };
 
   return (

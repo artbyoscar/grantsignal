@@ -362,6 +362,23 @@ export const complianceRouter = router({
           criticalConflicts
         })
       };
+    }),
+
+  // Get audit trail
+  getAuditTrail: orgProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(50).default(20),
+      actionType: z.enum(['CONFLICT_DETECTED', 'CONFLICT_RESOLVED', 'CONFLICT_IGNORED', 'COMMITMENT_UPDATED', 'SCAN_COMPLETED']).optional()
+    }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.complianceAudit.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          actionType: input.actionType
+        },
+        orderBy: { createdAt: 'desc' },
+        take: input.limit
+      });
     })
 });
 

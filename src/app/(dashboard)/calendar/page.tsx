@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/trpc/client';
-import { ChevronLeft, ChevronRight, Plus, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar as CalendarIcon, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Utility functions for date manipulation
@@ -69,16 +69,64 @@ function isSameMonth(date1: Date, date2: Date): boolean {
   );
 }
 
+type EventType = 'grant_deadline' | 'report_due' | 'milestone' | 'submission' | 'award';
+
 type Event = {
   id: string;
   title: string;
   date: Date;
-  type: 'deadline' | 'meeting' | 'phase';
+  type: EventType;
+  grantId?: string;
+  funderId?: string | null;
+  funderName?: string | null;
   opportunityId?: string;
-  opportunityTitle?: string;
+  opportunityTitle?: string | null;
 };
 
-function MonthView({ date, events }: { date: Date; events: Event[] }) {
+// Event type color configuration
+const eventColors = {
+  grant_deadline: {
+    bg: 'bg-blue-600/20',
+    text: 'text-blue-300',
+    border: 'border-blue-600/30',
+    solid: 'bg-blue-600',
+  },
+  report_due: {
+    bg: 'bg-purple-600/20',
+    text: 'text-purple-300',
+    border: 'border-purple-600/30',
+    solid: 'bg-purple-600',
+  },
+  milestone: {
+    bg: 'bg-cyan-600/20',
+    text: 'text-cyan-300',
+    border: 'border-cyan-600/30',
+    solid: 'bg-cyan-600',
+  },
+  submission: {
+    bg: 'bg-green-600/20',
+    text: 'text-green-300',
+    border: 'border-green-600/30',
+    solid: 'bg-green-600',
+  },
+  award: {
+    bg: 'bg-emerald-600/20',
+    text: 'text-emerald-300',
+    border: 'border-emerald-600/30',
+    solid: 'bg-emerald-600',
+  },
+};
+
+// Event type labels
+const eventTypeLabels: Record<EventType, string> = {
+  grant_deadline: 'Deadline',
+  report_due: 'Report Due',
+  milestone: 'Milestone',
+  submission: 'Submission',
+  award: 'Award',
+};
+
+function MonthView({ date, events, onEventClick }: { date: Date; events: Event[]; onEventClick: (event: Event) => void }) {
   const days = getDaysInMonth(date);
   const today = new Date();
 
@@ -124,19 +172,23 @@ function MonthView({ date, events }: { date: Date; events: Event[] }) {
               </div>
 
               <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <div
-                    key={event.id}
-                    className={cn(
-                      'text-xs px-1.5 py-0.5 rounded truncate',
-                      event.type === 'deadline' && 'bg-red-600/20 text-red-300 border border-red-600/30',
-                      event.type === 'meeting' && 'bg-blue-600/20 text-blue-300 border border-blue-600/30',
-                      event.type === 'phase' && 'bg-green-600/20 text-green-300 border border-green-600/30'
-                    )}
-                  >
-                    {event.title}
-                  </div>
-                ))}
+                {dayEvents.slice(0, 3).map((event) => {
+                  const colors = eventColors[event.type];
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => onEventClick(event)}
+                      className={cn(
+                        'w-full text-left text-xs px-1.5 py-0.5 rounded truncate border transition-opacity hover:opacity-80',
+                        colors.bg,
+                        colors.text,
+                        colors.border
+                      )}
+                    >
+                      {event.title}
+                    </button>
+                  );
+                })}
                 {dayEvents.length > 3 && (
                   <div className="text-xs text-slate-400 px-1.5">
                     +{dayEvents.length - 3} more
@@ -151,7 +203,7 @@ function MonthView({ date, events }: { date: Date; events: Event[] }) {
   );
 }
 
-function WeekView({ date, events }: { date: Date; events: Event[] }) {
+function WeekView({ date, events, onEventClick }: { date: Date; events: Event[]; onEventClick: (event: Event) => void }) {
   const start = startOfWeek(date);
   const days = Array.from({ length: 7 }, (_, i) => {
     const day = new Date(start);
@@ -160,94 +212,54 @@ function WeekView({ date, events }: { date: Date; events: Event[] }) {
   });
   const today = new Date();
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-
   const getEventsForDay = (day: Date) => {
     return events.filter(event => isSameDay(new Date(event.date), day));
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Day headers */}
-      <div className="grid grid-cols-8 gap-px mb-px">
-        <div className="bg-slate-800 p-2"></div>
-        {days.map((day, i) => {
-          const isToday = isSameDay(day, today);
-          return (
-            <div
-              key={i}
-              className={cn(
-                'text-center p-2 bg-slate-800',
-                isToday && 'bg-blue-600/20'
-              )}
-            >
-              <div className="text-xs text-slate-400">
-                {day.toLocaleDateString('en-US', { weekday: 'short' })}
-              </div>
-              <div
-                className={cn(
-                  'text-lg font-semibold',
-                  isToday
-                    ? 'bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto'
-                    : 'text-slate-200'
-                )}
-              >
-                {day.getDate()}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Time grid */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-8 gap-px">
-          {hours.map((hour) => (
-            <>
-              <div key={`time-${hour}`} className="bg-slate-800 p-2 text-xs text-slate-400 text-right pr-4">
-                {hour.toString().padStart(2, '0')}:00
-              </div>
-              {days.map((day, i) => (
-                <div
-                  key={`${hour}-${i}`}
-                  className="bg-slate-800 border-t border-slate-700 p-1 min-h-[60px] relative"
-                >
-                  {/* Events would be positioned here based on time */}
-                </div>
-              ))}
-            </>
-          ))}
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full space-y-4">
       {/* All-day events */}
-      <div className="mt-4 space-y-2">
+      <div className="space-y-2">
         {days.map((day, i) => {
           const dayEvents = getEventsForDay(day);
           if (dayEvents.length === 0) return null;
 
+          const isToday = isSameDay(day, today);
+
           return (
             <div key={i}>
-              <div className="text-sm font-medium text-slate-300 mb-1">
+              <div className={cn(
+                "text-sm font-medium mb-1 px-2 py-1 rounded",
+                isToday && "bg-blue-600/20 text-blue-300"
+              )}>
                 {day.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </div>
               <div className="space-y-1 ml-4">
-                {dayEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className={cn(
-                      'text-sm px-3 py-1.5 rounded',
-                      event.type === 'deadline' && 'bg-red-600/20 text-red-300 border border-red-600/30',
-                      event.type === 'meeting' && 'bg-blue-600/20 text-blue-300 border border-blue-600/30',
-                      event.type === 'phase' && 'bg-green-600/20 text-green-300 border border-green-600/30'
-                    )}
-                  >
-                    {event.title}
-                    {event.opportunityTitle && (
-                      <div className="text-xs opacity-70 mt-0.5">{event.opportunityTitle}</div>
-                    )}
-                  </div>
-                ))}
+                {dayEvents.map((event) => {
+                  const colors = eventColors[event.type];
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => onEventClick(event)}
+                      className={cn(
+                        'w-full text-left text-sm px-3 py-1.5 rounded border transition-opacity hover:opacity-80',
+                        colors.bg,
+                        colors.text,
+                        colors.border
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{event.title}</span>
+                        <span className={cn('text-xs px-2 py-0.5 rounded-full', colors.solid, 'text-white')}>
+                          {eventTypeLabels[event.type]}
+                        </span>
+                      </div>
+                      {event.opportunityTitle && (
+                        <div className="text-xs opacity-70 mt-0.5">{event.opportunityTitle}</div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           );
@@ -257,7 +269,7 @@ function WeekView({ date, events }: { date: Date; events: Event[] }) {
   );
 }
 
-function AgendaView({ events }: { events: Event[] }) {
+function AgendaView({ events, onEventClick }: { events: Event[]; onEventClick: (event: Event) => void }) {
   const sortedEvents = [...events].sort((a, b) =>
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
@@ -291,39 +303,38 @@ function AgendaView({ events }: { events: Event[] }) {
               {date}
             </h3>
             <div className="space-y-2">
-              {dayEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className={cn(
-                    'p-4 rounded-lg border',
-                    event.type === 'deadline' && 'bg-red-600/10 border-red-600/30',
-                    event.type === 'meeting' && 'bg-blue-600/10 border-blue-600/30',
-                    event.type === 'phase' && 'bg-green-600/10 border-green-600/30'
-                  )}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={cn(
-                            'text-xs px-2 py-0.5 rounded-full',
-                            event.type === 'deadline' && 'bg-red-600/20 text-red-300',
-                            event.type === 'meeting' && 'bg-blue-600/20 text-blue-300',
-                            event.type === 'phase' && 'bg-green-600/20 text-green-300'
-                          )}
-                        >
-                          {event.type}
-                        </span>
+              {dayEvents.map((event) => {
+                const colors = eventColors[event.type];
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => onEventClick(event)}
+                    className={cn(
+                      'w-full text-left p-4 rounded-lg border transition-opacity hover:opacity-80',
+                      colors.bg,
+                      colors.border
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={cn('text-xs px-2 py-0.5 rounded-full', colors.solid, 'text-white')}>
+                            {eventTypeLabels[event.type]}
+                          </span>
+                        </div>
+                        <h4 className={cn('font-medium', colors.text)}>{event.title}</h4>
+                        {event.opportunityTitle && (
+                          <p className="text-sm text-slate-400 mt-1">{event.opportunityTitle}</p>
+                        )}
+                        {event.funderName && (
+                          <p className="text-xs text-slate-500 mt-1">Funder: {event.funderName}</p>
+                        )}
                       </div>
-                      <h4 className="font-medium text-slate-100">{event.title}</h4>
-                      {event.opportunityTitle && (
-                        <p className="text-sm text-slate-400 mt-1">{event.opportunityTitle}</p>
-                      )}
+                      <Clock className="w-4 h-4 text-slate-500" />
                     </div>
-                    <Clock className="w-4 h-4 text-slate-500" />
-                  </div>
-                </div>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ))
@@ -332,7 +343,7 @@ function AgendaView({ events }: { events: Event[] }) {
   );
 }
 
-function DeadlinesList() {
+function DeadlinesList({ onEventClick }: { onEventClick: (event: Event) => void }) {
   const today = new Date();
   const twoWeeksLater = new Date(today);
   twoWeeksLater.setDate(today.getDate() + 14);
@@ -340,7 +351,6 @@ function DeadlinesList() {
   const { data: deadlines, isLoading } = api.calendar.getEvents.useQuery({
     start: today,
     end: twoWeeksLater,
-    type: 'deadline',
   });
 
   if (isLoading) {
@@ -353,9 +363,9 @@ function DeadlinesList() {
     );
   }
 
-  const sortedDeadlines = (deadlines || []).sort((a, b) =>
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  const sortedDeadlines = (deadlines || [])
+    .filter(d => d.type === 'grant_deadline' || d.type === 'report_due')
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (sortedDeadlines.length === 0) {
     return (
@@ -374,15 +384,17 @@ function DeadlinesList() {
         );
         const isUrgent = daysUntil <= 3;
         const isWarning = daysUntil > 3 && daysUntil <= 7;
+        const colors = eventColors[deadline.type];
 
         return (
-          <div
+          <button
             key={deadline.id}
+            onClick={() => onEventClick(deadline)}
             className={cn(
-              'p-3 rounded-lg border',
+              'w-full text-left p-3 rounded-lg border transition-opacity hover:opacity-80',
               isUrgent && 'bg-red-600/10 border-red-600/30',
               isWarning && 'bg-yellow-600/10 border-yellow-600/30',
-              !isUrgent && !isWarning && 'bg-slate-800 border-slate-700'
+              !isUrgent && !isWarning && cn(colors.bg, colors.border)
             )}
           >
             <div className="flex items-start justify-between mb-2">
@@ -398,6 +410,11 @@ function DeadlinesList() {
                 {daysUntil}d
               </span>
             </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={cn('text-xs px-2 py-0.5 rounded-full', colors.solid, 'text-white')}>
+                {eventTypeLabels[deadline.type]}
+              </span>
+            </div>
             {deadline.opportunityTitle && (
               <p className="text-xs text-slate-400 mb-2">{deadline.opportunityTitle}</p>
             )}
@@ -408,7 +425,7 @@ function DeadlinesList() {
                 year: 'numeric'
               })}
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -418,11 +435,27 @@ function DeadlinesList() {
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'agenda'>('month');
+  const [filterType, setFilterType] = useState<EventType | 'all'>('all');
+  const [filterGrantId, setFilterGrantId] = useState<string | undefined>();
+  const [filterFunderId, setFilterFunderId] = useState<string | undefined>();
 
   const { data: events } = api.calendar.getEvents.useQuery({
-    start: view === 'month' ? startOfMonth(currentDate) : startOfWeek(currentDate),
-    end: view === 'month' ? endOfMonth(currentDate) : endOfWeek(currentDate),
+    start: view === 'month' ? startOfMonth(currentDate) : view === 'week' ? startOfWeek(currentDate) : new Date(),
+    end: view === 'month' ? endOfMonth(currentDate) : view === 'week' ? endOfWeek(currentDate) : (() => {
+      const end = new Date();
+      end.setMonth(end.getMonth() + 3);
+      return end;
+    })(),
+    ...(filterType !== 'all' && { type: filterType }),
+    ...(filterGrantId && { grantId: filterGrantId }),
+    ...(filterFunderId && { funderId: filterFunderId }),
   });
+
+  const { data: grantsData } = api.grants.list.useQuery({ includeTerminalStates: true });
+  const { data: fundersData } = api.funders.list.useQuery({});
+
+  const grants = grantsData?.grants || [];
+  const funders = fundersData?.funders || [];
 
   const navigateMonth = (direction: number) => {
     setCurrentDate(prev => {
@@ -436,11 +469,17 @@ export default function CalendarPage() {
     });
   };
 
+  const handleEventClick = (event: Event) => {
+    if (event.grantId) {
+      window.location.href = `/grants/${event.grantId}`;
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-700">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between p-4 border-b border-slate-700 gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
           {/* View toggles */}
           <div className="flex bg-slate-800 rounded-lg p-1">
             {['Month', 'Week', 'Agenda'].map((v) => (
@@ -460,48 +499,105 @@ export default function CalendarPage() {
           </div>
 
           {/* Navigation */}
-          <button
-            onClick={() => navigateMonth(-1)}
-            className="p-2 hover:bg-slate-700 rounded transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h2 className="text-xl font-semibold text-slate-100 min-w-[200px] text-center">
-            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </h2>
-          <button
-            onClick={() => navigateMonth(1)}
-            className="p-2 hover:bg-slate-700 rounded transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="p-2 hover:bg-slate-700 rounded transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-100 min-w-[150px] sm:min-w-[200px] text-center">
+              {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h2>
+            <button
+              onClick={() => navigateMonth(1)}
+              className="p-2 hover:bg-slate-700 rounded transition-colors"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
 
-          <button
-            onClick={() => setCurrentDate(new Date())}
-            className="px-3 py-1.5 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
-          >
-            Today
-          </button>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="px-3 py-1.5 text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded transition-colors"
+            >
+              Today
+            </button>
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-2 flex-wrap">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as any)}
+              className="px-3 py-1.5 text-sm bg-slate-800 border border-slate-700 rounded text-slate-300 hover:border-slate-600"
+            >
+              <option value="all">All Types</option>
+              <option value="grant_deadline">Grant Deadlines</option>
+              <option value="report_due">Reports Due</option>
+              <option value="milestone">Milestones</option>
+              <option value="submission">Submissions</option>
+              <option value="award">Awards</option>
+            </select>
+
+            {grants && grants.length > 0 && (
+              <select
+                value={filterGrantId || ''}
+                onChange={(e) => setFilterGrantId(e.target.value || undefined)}
+                className="px-3 py-1.5 text-sm bg-slate-800 border border-slate-700 rounded text-slate-300 hover:border-slate-600"
+              >
+                <option value="">All Grants</option>
+                {grants.map((grant) => (
+                  <option key={grant.id} value={grant.id}>
+                    {grant.opportunity?.title || grant.funder?.name || 'Untitled Grant'}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {funders && funders.length > 0 && (
+              <select
+                value={filterFunderId || ''}
+                onChange={(e) => setFilterFunderId(e.target.value || undefined)}
+                className="px-3 py-1.5 text-sm bg-slate-800 border border-slate-700 rounded text-slate-300 hover:border-slate-600"
+              >
+                <option value="">All Funders</option>
+                {funders.map((funder) => (
+                  <option key={funder.id} value={funder.id}>
+                    {funder.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors">
-          <Plus className="w-4 h-4" />
-          Add Event
-        </button>
+        {/* Legend */}
+        <div className="hidden lg:flex items-center gap-3 text-xs">
+          <span className="text-slate-400">Legend:</span>
+          {Object.entries(eventTypeLabels).map(([type, label]) => {
+            const colors = eventColors[type as EventType];
+            return (
+              <div key={type} className="flex items-center gap-1.5">
+                <div className={cn('w-3 h-3 rounded', colors.solid)} />
+                <span className="text-slate-300">{label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Calendar Grid */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         <div className="flex-1 p-4 overflow-auto">
-          {view === 'month' && <MonthView date={currentDate} events={events || []} />}
-          {view === 'week' && <WeekView date={currentDate} events={events || []} />}
-          {view === 'agenda' && <AgendaView events={events || []} />}
+          {view === 'month' && <MonthView date={currentDate} events={events || []} onEventClick={handleEventClick} />}
+          {view === 'week' && <WeekView date={currentDate} events={events || []} onEventClick={handleEventClick} />}
+          {view === 'agenda' && <AgendaView events={events || []} onEventClick={handleEventClick} />}
         </div>
 
         {/* Sidebar - Upcoming Deadlines */}
-        <div className="w-80 border-l border-slate-700 p-4 overflow-y-auto">
+        <div className="lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-700 p-4 overflow-y-auto">
           <h3 className="font-semibold text-slate-100 mb-4">Upcoming Deadlines (Next 14 Days)</h3>
-          <DeadlinesList />
+          <DeadlinesList onEventClick={handleEventClick} />
         </div>
       </div>
     </div>

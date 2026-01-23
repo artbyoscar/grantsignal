@@ -3,12 +3,38 @@
 import { useState } from 'react';
 import { api } from '@/lib/trpc/client';
 import {
-  Shield, AlertTriangle, CheckCircle, Clock,
-  ChevronRight, RefreshCw, Plus, Filter,
-  AlertCircle, FileText, Calendar, TrendingUp
+  Shield, AlertTriangle, CheckCircle, Clock, RefreshCw,
+  Plus, Filter, Search, ChevronDown, Calendar, Building2,
+  FileText, User, Activity
 } from 'lucide-react';
 import { formatDistanceToNow, format, isPast, differenceInDays } from 'date-fns';
 import { ResolveConflictModal } from '@/components/compliance/resolve-conflict-modal';
+import { AddCommitmentModal } from '@/components/compliance/add-commitment-modal';
+import { useUser } from '@clerk/nextjs';
+
+const TYPE_LABELS: Record<string, string> = {
+  DELIVERABLE: 'Deliverable',
+  OUTCOME_METRIC: 'Outcome Metric',
+  REPORT_DUE: 'Report Due',
+  BUDGET_SPEND: 'Budget',
+  STAFFING: 'Staffing',
+  TIMELINE: 'Timeline'
+};
+
+const STATUS_CONFIG = {
+  PENDING: { label: 'Pending', color: 'bg-amber-500/20 text-amber-400', icon: Clock },
+  IN_PROGRESS: { label: 'In Progress', color: 'bg-blue-500/20 text-blue-400', icon: Clock },
+  COMPLETED: { label: 'Completed', color: 'bg-emerald-500/20 text-emerald-400', icon: CheckCircle },
+  OVERDUE: { label: 'Overdue', color: 'bg-red-500/20 text-red-400', icon: AlertTriangle }
+};
+
+const ACTION_TYPE_LABELS: Record<string, { label: string; icon: any; color: string }> = {
+  CONFLICT_DETECTED: { label: 'Conflict Detected', icon: AlertTriangle, color: 'text-red-400' },
+  CONFLICT_RESOLVED: { label: 'Conflict Resolved', icon: CheckCircle, color: 'text-emerald-400' },
+  CONFLICT_IGNORED: { label: 'Conflict Ignored', icon: AlertTriangle, color: 'text-slate-400' },
+  COMMITMENT_UPDATED: { label: 'Commitment Updated', icon: FileText, color: 'text-blue-400' },
+  SCAN_COMPLETED: { label: 'Scan Completed', icon: Activity, color: 'text-purple-400' }
+};
 
 // Health Score Card Component
 function HealthScoreCard({ score }: { score: number }) {
@@ -70,52 +96,155 @@ function HealthScoreCard({ score }: { score: number }) {
   );
 }
 
-// Stats Cards Component
-function StatsCards({ summary }: { summary: any }) {
-  const stats = [
-    {
-      label: 'Total Commitments',
-      value: summary.totalCommitments,
-      icon: FileText,
-      color: 'text-blue-400'
-    },
-    {
-      label: 'Pending',
-      value: summary.pendingCommitments,
-      icon: Clock,
-      color: 'text-amber-400'
-    },
-    {
-      label: 'Overdue',
-      value: summary.overdueCommitments,
-      icon: AlertTriangle,
-      color: summary.overdueCommitments > 0 ? 'text-red-400' : 'text-slate-400'
-    },
-    {
-      label: 'Conflicts',
-      value: summary.unresolvedConflicts,
-      icon: AlertCircle,
-      color: summary.unresolvedConflicts > 0 ? 'text-red-400' : 'text-emerald-400'
+// Commitment Registry Component (Left Column - 45%)
+function CommitmentRegistry({ onAddClick }: { onAddClick: () => void }) {
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const { data, isLoading } = api.compliance.listCommitments.useQuery({
+    status: statusFilter as any,
+    limit: 100
+  });
+
+  const filteredCommitments = data?.commitments.filter(c => {
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      return c.description.toLowerCase().includes(searchLower) ||
+             c.grant?.funder?.name?.toLowerCase().includes(searchLower);
     }
-  ];
+    return true;
+  });
+
+  const getEffectiveStatus = (commitment: any) => {
+    if (commitment.status === 'PENDING' && commitment.dueDate && isPast(new Date(commitment.dueDate))) {
+      return 'OVERDUE';
+    }
+    return commitment.status;
+  };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat) => (
-        <div key={stat.label} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-slate-400 text-sm">{stat.label}</span>
-            <stat.icon className={`w-4 h-4 ${stat.color}`} />
-          </div>
-          <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+    <div className="bg-slate-800 border border-slate-700 rounded-lg flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b border-slate-700">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <FileText className="w-5 h-5 text-slate-400" />
+            Commitment Registry
+          </h3>
+          <button
+            onClick={onAddClick}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
         </div>
-      ))}
+
+        {/* Filters */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search commitments..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <select
+            value={statusFilter || ''}
+            onChange={(e) => setStatusFilter(e.target.value || undefined)}
+            className="px-3 py-1.5 bg-slate-700 border border-slate-600 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <div className="p-4 space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-slate-700 rounded animate-pulse" />
+            ))}
+          </div>
+        ) : filteredCommitments?.length === 0 ? (
+          <div className="p-8 text-center">
+            <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">No commitments found</p>
+            <p className="text-slate-500 text-xs mt-1">
+              Extract commitments from grant documents or add manually
+            </p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-slate-800 border-b border-slate-700">
+              <tr>
+                <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Commitment</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Grant</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Due</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-slate-400">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700">
+              {filteredCommitments?.map((commitment) => {
+                const status = getEffectiveStatus(commitment);
+                const statusConfig = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING;
+                const StatusIcon = statusConfig.icon;
+
+                return (
+                  <tr key={commitment.id} className="hover:bg-slate-700/50 transition-colors">
+                    <td className="px-3 py-2.5">
+                      <p className="text-white text-sm font-medium line-clamp-2">{commitment.description}</p>
+                      <p className="text-xs text-slate-500">{TYPE_LABELS[commitment.type] || commitment.type}</p>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                        <span className="text-slate-300 text-xs truncate">
+                          {commitment.grant?.funder?.name || 'Unknown'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {commitment.dueDate ? (
+                        <span className={`text-xs ${
+                          isPast(new Date(commitment.dueDate)) ? 'text-red-400' :
+                          differenceInDays(new Date(commitment.dueDate), new Date()) <= 14 ? 'text-amber-400' :
+                          'text-slate-300'
+                        }`}>
+                          {format(new Date(commitment.dueDate), 'MMM d')}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded ${statusConfig.color}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        {statusConfig.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
 
-// Conflicts List Component
-function ConflictsList({ conflicts, onResolve }: { conflicts: any[]; onResolve: (conflict: any) => void }) {
+// Conflict Detection Component (Center Column - 30%)
+function ConflictDetection({ onResolve }: { onResolve: (conflict: any) => void }) {
+  const { data: conflicts, isLoading } = api.compliance.listConflicts.useQuery({ status: 'UNRESOLVED' });
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'CRITICAL': return 'bg-red-500/20 text-red-400 border-red-500/50';
@@ -125,105 +254,149 @@ function ConflictsList({ conflicts, onResolve }: { conflicts: any[]; onResolve: 
     }
   };
 
-  if (conflicts.length === 0) {
-    return (
-      <div className="bg-slate-800 border border-slate-700 rounded-lg p-8 text-center">
-        <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-white mb-2">No Conflicts Detected</h3>
-        <p className="text-slate-400">Your commitments are consistent across all grants.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {conflicts.map((conflict) => (
-        <div key={conflict.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <span className={`px-2 py-1 text-xs font-medium rounded border ${getSeverityColor(conflict.severity)}`}>
-                {conflict.severity}
-              </span>
-              <span className="text-xs text-slate-500 uppercase">{conflict.conflictType.replace('_', ' ')}</span>
-            </div>
-            <button
-              onClick={() => onResolve(conflict)}
-              className="text-sm text-blue-400 hover:text-blue-300"
-            >
-              Resolve
-            </button>
+    <div className="bg-slate-800 border border-slate-700 rounded-lg flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b border-slate-700">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-slate-400" />
+          Conflict Detection
+        </h3>
+        <p className="text-xs text-slate-500 mt-1">
+          {conflicts?.length || 0} unresolved conflict{conflicts?.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {isLoading ? (
+          [...Array(3)].map((_, i) => (
+            <div key={i} className="h-24 bg-slate-700 rounded animate-pulse" />
+          ))
+        ) : conflicts?.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center py-8">
+            <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
+            <h4 className="text-white font-medium mb-1">No Conflicts Detected</h4>
+            <p className="text-slate-400 text-sm">
+              Your commitments are consistent across all grants
+            </p>
           </div>
+        ) : (
+          conflicts?.map((conflict) => (
+            <div key={conflict.id} className="bg-slate-700/50 border border-slate-600 rounded-lg p-3">
+              <div className="flex items-start justify-between mb-2">
+                <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getSeverityColor(conflict.severity)}`}>
+                  {conflict.severity}
+                </span>
+                <button
+                  onClick={() => onResolve(conflict)}
+                  className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+                >
+                  Resolve
+                </button>
+              </div>
 
-          <p className="text-white mb-3">{conflict.description}</p>
+              <p className="text-white text-sm mb-2 line-clamp-2">{conflict.description}</p>
 
-          {conflict.suggestedResolution && (
-            <div className="bg-slate-700/50 rounded p-3 mb-3">
-              <p className="text-xs text-slate-400 mb-1">Suggested Resolution:</p>
-              <p className="text-sm text-slate-300">{conflict.suggestedResolution}</p>
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Building2 className="w-3 h-3" />
+                <span className="truncate">{conflict.commitment?.grant?.funder?.name || 'Unknown'}</span>
+              </div>
+
+              <div className="text-xs text-slate-500 mt-1">
+                {formatDistanceToNow(new Date(conflict.createdAt), { addSuffix: true })}
+              </div>
             </div>
-          )}
-
-          <div className="flex items-center gap-4 text-xs text-slate-500">
-            <span>Grant: {conflict.commitment?.grant?.funder?.name || 'Unknown'}</span>
-            <span>Detected: {formatDistanceToNow(new Date(conflict.createdAt), { addSuffix: true })}</span>
-          </div>
-        </div>
-      ))}
+          ))
+        )}
+      </div>
     </div>
   );
 }
 
-// Upcoming Commitments Component
-function UpcomingCommitments({ commitments }: { commitments: any[] }) {
-  const getUrgencyColor = (dueDate: Date) => {
-    const days = differenceInDays(dueDate, new Date());
-    if (days < 0) return 'text-red-400 bg-red-500/20';
-    if (days <= 7) return 'text-amber-400 bg-amber-500/20';
-    return 'text-slate-400 bg-slate-700';
-  };
+// Audit Trail Component (Right Column - 25%)
+function AuditTrail() {
+  const { user } = useUser();
+  const { data: auditLogs, isLoading } = api.compliance.getAuditTrail.useQuery({ limit: 20 });
+
+  // Group logs by date
+  const groupedLogs = auditLogs?.reduce((acc, log) => {
+    const date = format(new Date(log.createdAt), 'yyyy-MM-dd');
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(log);
+    return acc;
+  }, {} as Record<string, typeof auditLogs>);
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg">
+    <div className="bg-slate-800 border border-slate-700 rounded-lg flex flex-col h-full">
+      {/* Header */}
       <div className="p-4 border-b border-slate-700">
         <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-slate-400" />
-          Upcoming Commitments
+          <Activity className="w-5 h-5 text-slate-400" />
+          Audit Trail
         </h3>
+        <p className="text-xs text-slate-500 mt-1">Recent compliance actions</p>
       </div>
 
-      {commitments.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="text-slate-400">No upcoming commitments in the next 30 days.</p>
-        </div>
-      ) : (
-        <div className="divide-y divide-slate-700">
-          {commitments.map((commitment) => (
-            <div key={commitment.id} className="p-4 hover:bg-slate-700/50 transition-colors">
-              <div className="flex items-start justify-between mb-2">
+      {/* Timeline */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {isLoading ? (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-slate-700 animate-pulse" />
                 <div className="flex-1">
-                  <p className="text-white font-medium">{commitment.description}</p>
-                  <p className="text-sm text-slate-400">
-                    {commitment.grant?.funder?.name || 'Unknown Funder'}
-                  </p>
+                  <div className="h-4 bg-slate-700 rounded w-3/4 mb-2 animate-pulse" />
+                  <div className="h-3 bg-slate-700 rounded w-1/2 animate-pulse" />
                 </div>
-                {commitment.dueDate && (
-                  <span className={`px-2 py-1 text-xs rounded ${getUrgencyColor(new Date(commitment.dueDate))}`}>
-                    {format(new Date(commitment.dueDate), 'MMM d, yyyy')}
-                  </span>
-                )}
               </div>
-
-              {commitment.metricName && commitment.metricValue && (
-                <div className="flex items-center gap-2 text-sm">
-                  <TrendingUp className="w-4 h-4 text-slate-500" />
-                  <span className="text-slate-400">{commitment.metricName}:</span>
-                  <span className="text-white font-medium">{commitment.metricValue}</span>
+            ))}
+          </div>
+        ) : !auditLogs || auditLogs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center py-8">
+            <Activity className="w-10 h-10 text-slate-600 mb-3" />
+            <p className="text-slate-400 text-sm">No audit logs yet</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(groupedLogs || {}).map(([date, logs]) => (
+              <div key={date}>
+                <div className="text-xs font-medium text-slate-400 mb-2 sticky top-0 bg-slate-800 py-1">
+                  {format(new Date(date), 'MMM d, yyyy')}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+                <div className="space-y-3">
+                  {logs.map((log) => {
+                    const config = ACTION_TYPE_LABELS[log.actionType] || {
+                      label: log.actionType,
+                      icon: Activity,
+                      color: 'text-slate-400'
+                    };
+                    const Icon = config.icon;
+
+                    return (
+                      <div key={log.id} className="flex gap-2.5 text-sm">
+                        <div className={`w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0 ${config.color}`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs leading-relaxed">
+                            {log.description}
+                          </p>
+                          <p className="text-slate-500 text-xs mt-0.5">
+                            {format(new Date(log.createdAt), 'h:mm a')}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -231,12 +404,14 @@ function UpcomingCommitments({ commitments }: { commitments: any[] }) {
 // Main Page Component
 export default function CompliancePage() {
   const [selectedConflict, setSelectedConflict] = useState<any | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } =
     api.compliance.getSummary.useQuery();
 
-  const { data: conflicts, isLoading: conflictsLoading, refetch: refetchConflicts } =
-    api.compliance.listConflicts.useQuery({ status: 'UNRESOLVED' });
+  const { refetch: refetchConflicts } = api.compliance.listConflicts.useQuery({ status: 'UNRESOLVED' });
+
+  const utils = api.useUtils();
 
   const detectMutation = api.compliance.detectConflicts.useMutation({
     onSuccess: () => {
@@ -245,27 +420,21 @@ export default function CompliancePage() {
     }
   });
 
-  const handleRunDetection = () => {
-    detectMutation.mutate();
-  };
-
-  const handleResolve = (conflict: any) => {
-    setSelectedConflict(conflict);
-  };
-
   const handleResolveComplete = () => {
     refetchSummary();
     refetchConflicts();
+    utils.compliance.getAuditTrail.invalidate();
   };
 
   if (summaryLoading) {
     return (
       <div className="space-y-6">
         <div className="h-8 bg-slate-700 rounded w-48 animate-pulse" />
-        <div className="grid grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-24 bg-slate-800 rounded-lg animate-pulse" />
-          ))}
+        <div className="h-32 bg-slate-800 rounded-lg animate-pulse" />
+        <div className="grid grid-cols-12 gap-6 h-[600px]">
+          <div className="col-span-5 bg-slate-800 rounded-lg animate-pulse" />
+          <div className="col-span-4 bg-slate-800 rounded-lg animate-pulse" />
+          <div className="col-span-3 bg-slate-800 rounded-lg animate-pulse" />
         </div>
       </div>
     );
@@ -279,20 +448,14 @@ export default function CompliancePage() {
           <h1 className="text-3xl font-bold text-white">Compliance Guardian</h1>
           <p className="text-slate-400 mt-1">Track commitments and detect conflicts across grants</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleRunDetection}
-            disabled={detectMutation.isPending}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${detectMutation.isPending ? 'animate-spin' : ''}`} />
-            Run Detection
-          </button>
-          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Add Commitment
-          </button>
-        </div>
+        <button
+          onClick={() => detectMutation.mutate()}
+          disabled={detectMutation.isPending}
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${detectMutation.isPending ? 'animate-spin' : ''}`} />
+          Run Detection
+        </button>
       </div>
 
       {/* Critical Alert Banner */}
@@ -310,43 +473,28 @@ export default function CompliancePage() {
         </div>
       )}
 
-      {/* Stats Row */}
-      {summary && <StatsCards summary={summary} />}
+      {/* Health Score */}
+      {summary && <HealthScoreCard score={summary.healthScore} />}
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left Column - Health Score */}
-        <div className="lg:col-span-1 space-y-6">
-          {summary && <HealthScoreCard score={summary.healthScore} />}
-          {summary && <UpcomingCommitments commitments={summary.upcomingCommitments} />}
+      {/* Three Column Layout */}
+      <div className="grid grid-cols-12 gap-6" style={{ height: 'calc(100vh - 400px)', minHeight: '600px' }}>
+        {/* Left Column - Commitment Registry (45%) */}
+        <div className="col-span-5">
+          <CommitmentRegistry onAddClick={() => setIsAddModalOpen(true)} />
         </div>
 
-        {/* Right Column - Conflicts */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">Active Conflicts</h2>
-            <button className="text-sm text-slate-400 hover:text-white flex items-center gap-1">
-              <Filter className="w-4 h-4" />
-              Filter
-            </button>
-          </div>
+        {/* Center Column - Conflict Detection (30%) */}
+        <div className="col-span-4">
+          <ConflictDetection onResolve={setSelectedConflict} />
+        </div>
 
-          {conflictsLoading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-slate-800 rounded-lg animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <ConflictsList
-              conflicts={conflicts || []}
-              onResolve={handleResolve}
-            />
-          )}
+        {/* Right Column - Audit Trail (25%) */}
+        <div className="col-span-3">
+          <AuditTrail />
         </div>
       </div>
 
-      {/* Conflict Resolution Modal */}
+      {/* Modals */}
       {selectedConflict && (
         <ResolveConflictModal
           conflict={selectedConflict}
@@ -354,6 +502,15 @@ export default function CompliancePage() {
           onResolved={handleResolveComplete}
         />
       )}
+
+      <AddCommitmentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => {
+          utils.compliance.listCommitments.invalidate();
+          utils.compliance.getSummary.invalidate();
+        }}
+      />
     </div>
   );
 }

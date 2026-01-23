@@ -624,6 +624,7 @@ export const reportsRouter = router({
 
   /**
    * Get win rate data by month
+   * Win Rate = (Awarded Grants / Submitted Grants) * 100
    */
   getWinRateData: orgProcedure
     .input(
@@ -636,32 +637,31 @@ export const reportsRouter = router({
       const now = new Date()
       const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1)
 
-      // Get all grants with AWARDED or DECLINED status
-      const grants = await ctx.db.grant.findMany({
+      // Get all grants with submittedAt in the date range
+      const submittedGrants = await ctx.db.grant.findMany({
         where: {
           organizationId: ctx.organizationId,
-          status: { in: ['AWARDED', 'DECLINED'] },
-          updatedAt: { gte: startDate },
+          submittedAt: { gte: startDate },
         },
         select: {
           status: true,
+          submittedAt: true,
           awardedAt: true,
-          updatedAt: true,
         },
       })
 
       // Group by month and calculate win rate
-      const monthlyData = new Map<string, { awarded: number; declined: number }>()
+      const monthlyData = new Map<string, { submitted: number; awarded: number }>()
 
-      grants.forEach((grant) => {
-        const date = grant.status === 'AWARDED' && grant.awardedAt ? grant.awardedAt : grant.updatedAt
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      submittedGrants.forEach((grant) => {
+        if (!grant.submittedAt) return
 
-        const existing = monthlyData.get(monthKey) || { awarded: 0, declined: 0 }
+        const monthKey = `${grant.submittedAt.getFullYear()}-${String(grant.submittedAt.getMonth() + 1).padStart(2, '0')}`
+
+        const existing = monthlyData.get(monthKey) || { submitted: 0, awarded: 0 }
+        existing.submitted++
         if (grant.status === 'AWARDED') {
           existing.awarded++
-        } else {
-          existing.declined++
         }
         monthlyData.set(monthKey, existing)
       })
@@ -670,11 +670,11 @@ export const reportsRouter = router({
       const result = Array.from(monthlyData.entries())
         .map(([month, data]) => ({
           month,
-          rate: data.awarded + data.declined > 0
-            ? Math.round((data.awarded / (data.awarded + data.declined)) * 100)
+          rate: data.submitted > 0
+            ? Math.round((data.awarded / data.submitted) * 100)
             : 0,
           awarded: data.awarded,
-          declined: data.declined,
+          submitted: data.submitted,
         }))
         .sort((a, b) => a.month.localeCompare(b.month))
 
@@ -730,7 +730,7 @@ export const reportsRouter = router({
   }),
 
   /**
-   * Get pipeline by stage
+   * Get pipeline by stage (matching Pipeline Kanban view)
    */
   getPipelineByStage: orgProcedure.query(async ({ ctx }) => {
     const grants = await ctx.db.grant.findMany({
@@ -744,19 +744,17 @@ export const reportsRouter = router({
       },
     })
 
-    // Define pipeline stages with colors
-    const stageConfig: Record<GrantStatus, { label: string; color: string }> = {
-      PROSPECT: { label: 'Prospect', color: 'hsl(var(--chart-1))' },
-      RESEARCHING: { label: 'Researching', color: 'hsl(var(--chart-2))' },
-      WRITING: { label: 'Writing', color: 'hsl(var(--chart-3))' },
-      REVIEW: { label: 'Review', color: 'hsl(var(--chart-4))' },
-      SUBMITTED: { label: 'Submitted', color: 'hsl(var(--chart-5))' },
-      PENDING: { label: 'Pending', color: 'hsl(var(--chart-1))' },
-      AWARDED: { label: 'Awarded', color: 'hsl(142 71% 45%)' },
-      DECLINED: { label: 'Declined', color: 'hsl(0 72% 51%)' },
-      ACTIVE: { label: 'Active', color: 'hsl(var(--chart-2))' },
-      CLOSEOUT: { label: 'Closeout', color: 'hsl(var(--chart-3))' },
-      COMPLETED: { label: 'Completed', color: 'hsl(var(--chart-4))' },
+    // Define pipeline stages with colors (matching Pipeline Kanban columns)
+    // Only include the 8 stages shown in the Kanban board
+    const stageConfig: Partial<Record<GrantStatus, { label: string; color: string }>> = {
+      PROSPECT: { label: 'Prospect', color: '#64748b' },
+      RESEARCHING: { label: 'Researching', color: '#a855f7' },
+      WRITING: { label: 'Writing', color: '#3b82f6' },
+      REVIEW: { label: 'Review', color: '#f59e0b' },
+      SUBMITTED: { label: 'Submitted', color: '#06b6d4' },
+      PENDING: { label: 'Pending', color: '#f97316' },
+      AWARDED: { label: 'Awarded', color: '#10b981' },
+      DECLINED: { label: 'Declined', color: '#ef4444' },
     }
 
     // Group by status
@@ -847,6 +845,7 @@ export const reportsRouter = router({
 
   /**
    * Get year-over-year comparison
+   * Metrics: Total awarded, number of grants, win rate
    */
   getYoYComparison: orgProcedure.query(async ({ ctx }) => {
     const now = new Date()
@@ -854,35 +853,50 @@ export const reportsRouter = router({
     const lastYear = currentYear - 1
     const twoYearsAgo = currentYear - 2
 
-    // Get grants from last 2 years
+    // Get all submitted grants from last 2 years to calculate win rate
     const startDate = new Date(twoYearsAgo, 0, 1)
 
-    const grants = await ctx.db.grant.findMany({
+    const allGrants = await ctx.db.grant.findMany({
       where: {
         organizationId: ctx.organizationId,
-        status: 'AWARDED',
-        awardedAt: { gte: startDate },
+        submittedAt: { gte: startDate },
       },
       select: {
-        awardedAt: true,
+        submittedAt: true,
+        status: true,
         amountAwarded: true,
       },
     })
 
     // Group by quarter and year
-    const quarterData = new Map<string, { year: number; quarter: number; count: number; amount: number }>()
+    const quarterData = new Map<string, {
+      year: number
+      quarter: number
+      submitted: number
+      awarded: number
+      amount: number
+    }>()
 
-    grants.forEach((grant) => {
-      if (!grant.awardedAt) return
+    allGrants.forEach((grant) => {
+      if (!grant.submittedAt) return
 
-      const date = grant.awardedAt
+      const date = grant.submittedAt
       const year = date.getFullYear()
       const quarter = Math.floor(date.getMonth() / 3) + 1
       const key = `${year}-Q${quarter}`
 
-      const existing = quarterData.get(key) || { year, quarter, count: 0, amount: 0 }
-      existing.count++
-      existing.amount += Number(grant.amountAwarded || 0)
+      const existing = quarterData.get(key) || {
+        year,
+        quarter,
+        submitted: 0,
+        awarded: 0,
+        amount: 0
+      }
+      existing.submitted++
+      if (grant.status === 'AWARDED') {
+        existing.awarded++
+        existing.amount += Number(grant.amountAwarded || 0)
+      }
       quarterData.set(key, existing)
     })
 
@@ -890,24 +904,38 @@ export const reportsRouter = router({
     const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
     const comparison = quarters.map((quarter) => {
       const quarterNum = parseInt(quarter.substring(1))
-      const lastYearData = quarterData.get(`${lastYear}-${quarter}`) || { count: 0, amount: 0 }
-      const currentYearData = quarterData.get(`${currentYear}-${quarter}`) || { count: 0, amount: 0 }
+      const lastYearData = quarterData.get(`${lastYear}-${quarter}`) || {
+        submitted: 0,
+        awarded: 0,
+        amount: 0
+      }
+      const currentYearData = quarterData.get(`${currentYear}-${quarter}`) || {
+        submitted: 0,
+        awarded: 0,
+        amount: 0
+      }
 
       return {
         quarter,
         lastYear: {
           year: lastYear,
-          count: lastYearData.count,
+          count: lastYearData.awarded,
           amount: lastYearData.amount,
+          winRate: lastYearData.submitted > 0
+            ? Math.round((lastYearData.awarded / lastYearData.submitted) * 100)
+            : 0,
         },
         currentYear: {
           year: currentYear,
-          count: currentYearData.count,
+          count: currentYearData.awarded,
           amount: currentYearData.amount,
+          winRate: currentYearData.submitted > 0
+            ? Math.round((currentYearData.awarded / currentYearData.submitted) * 100)
+            : 0,
         },
-        change: lastYearData.count > 0
-          ? Math.round(((currentYearData.count - lastYearData.count) / lastYearData.count) * 100)
-          : currentYearData.count > 0 ? 100 : 0,
+        change: lastYearData.amount > 0
+          ? Math.round(((currentYearData.amount - lastYearData.amount) / lastYearData.amount) * 100)
+          : currentYearData.amount > 0 ? 100 : 0,
       }
     })
 

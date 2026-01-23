@@ -7,6 +7,10 @@ interface YoYData {
   category: string
   currentYear: number
   previousYear: number
+  currentYearCount?: number
+  previousYearCount?: number
+  currentYearWinRate?: number
+  previousYearWinRate?: number
 }
 
 interface YoYComparisonChartProps {
@@ -89,20 +93,36 @@ export function YoYComparisonChart({
         </BarChart>
       </ResponsiveContainer>
 
-          <div className="mt-3 pt-3 border-t border-slate-700 grid grid-cols-2 gap-3">
-        <div>
-          <span className="text-xs text-slate-400">{previousYearLabel}</span>
-          <p className="text-sm font-bold text-slate-300">
-            ${previousTotal.toLocaleString()}
-          </p>
-        </div>
-        <div>
-          <span className="text-xs text-slate-400">{currentYearLabel}</span>
-          <p className="text-sm font-bold text-white">
-            ${currentTotal.toLocaleString()}
-          </p>
-        </div>
-      </div>
+          <div className="mt-3 pt-3 border-t border-slate-700">
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div>
+                <span className="text-xs text-slate-400">{previousYearLabel} Total</span>
+                <p className="text-sm font-bold text-slate-300">
+                  ${previousTotal.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <span className="text-xs text-slate-400">{currentYearLabel} Total</span>
+                <p className="text-sm font-bold text-white">
+                  ${currentTotal.toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Grants Awarded:</span>
+                <span className="text-slate-300">
+                  {data.reduce((sum, item) => sum + (item.previousYearCount || 0), 0)} → {data.reduce((sum, item) => sum + (item.currentYearCount || 0), 0)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Avg Win Rate:</span>
+                <span className="text-slate-300">
+                  {Math.round(data.reduce((sum, item) => sum + (item.previousYearWinRate || 0), 0) / data.filter(d => d.previousYearWinRate).length || 0)}% → {Math.round(data.reduce((sum, item) => sum + (item.currentYearWinRate || 0), 0) / data.filter(d => d.currentYearWinRate).length || 0)}%
+                </span>
+              </div>
+            </div>
+          </div>
         </>
       )}
     </div>

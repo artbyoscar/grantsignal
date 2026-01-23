@@ -39,7 +39,8 @@ export default function ReportsPage() {
     rate: d.rate,
   })) || []
 
-  const funnelStages = pipelineData?.slice(0, 4).map((stage) => ({
+  // Show all pipeline stages (matching Pipeline Kanban)
+  const funnelStages = pipelineData?.map((stage) => ({
     name: stage.name,
     value: stage.value,
     count: stage.count,
@@ -57,6 +58,10 @@ export default function ReportsPage() {
     category: d.quarter,
     currentYear: d.currentYear.amount,
     previousYear: d.lastYear.amount,
+    currentYearCount: d.currentYear.count,
+    previousYearCount: d.lastYear.count,
+    currentYearWinRate: d.currentYear.winRate,
+    previousYearWinRate: d.lastYear.winRate,
   })) || []
 
   const currentYear = new Date().getFullYear()
@@ -172,8 +177,12 @@ export default function ReportsPage() {
                   <h3 className="text-sm font-semibold text-white mb-0.5">{report.title}</h3>
                   <p className="text-xs text-slate-400 line-clamp-2">{report.description}</p>
                 </div>
-                <button className="mt-auto w-full px-2 py-1 text-xs font-medium text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded transition">
-                  Generate
+                <button
+                  className="mt-auto w-full px-2 py-1 text-xs font-medium text-slate-400 bg-slate-700/50 rounded cursor-not-allowed"
+                  disabled
+                  title="Coming Soon - Report generation in development"
+                >
+                  Coming Soon
                 </button>
               </div>
             )
