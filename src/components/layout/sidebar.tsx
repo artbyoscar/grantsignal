@@ -57,22 +57,22 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     <aside
       className={cn(
         "h-screen bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300",
-        isCollapsed ? "w-16" : "w-64"
+        isCollapsed ? "w-14" : "w-[200px]"
       )}
     >
       {/* Logo Area */}
-      <div className="hidden md:flex items-center justify-between p-4 border-b border-slate-800">
+      <div className="hidden md:flex items-center justify-between h-12 px-3 border-b border-slate-800">
         {!isCollapsed && (
-          <h1 className="text-xl font-bold text-white">
+          <h1 className="text-[16px] font-semibold text-white">
             <span className="drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">GrantSignal</span>
           </h1>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-150"
+          className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all duration-150"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+          {isCollapsed ? <ChevronRight className="w-[18px] h-[18px]" /> : <ChevronLeft className="w-[18px] h-[18px]" />}
         </button>
       </div>
 
@@ -82,7 +82,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon
@@ -93,21 +93,21 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                 href={item.href}
                 onClick={onNavigate}
                 className={cn(
-                  "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all duration-150",
+                  "flex items-center h-9 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150",
                   isCollapsed ? "justify-center" : "gap-3",
                   isActive
-                    ? "text-blue-400 bg-blue-500/10 border-l-2 border-blue-500 rounded-l-none"
-                    : "text-slate-400 bg-transparent hover:text-slate-200 hover:bg-slate-800/50"
+                    ? "text-blue-400 bg-blue-600/20"
+                    : "text-slate-300 bg-transparent hover:text-slate-200 hover:bg-slate-800"
                 )}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
+                <Icon className={cn("w-[18px] h-[18px] flex-shrink-0", isActive ? "text-blue-400" : "text-slate-400")} />
                 {!isCollapsed && (
                   <>
                     <span className="flex-1">{item.label}</span>
                     {item.badge !== undefined && (
                       <span
                         className={cn(
-                          "px-2 py-0.5 rounded-full text-xs font-semibold text-white",
+                          "px-1.5 py-0.5 rounded-full text-[10px] font-semibold text-white",
                           item.badgeColor || "bg-blue-500"
                         )}
                       >
@@ -116,17 +116,14 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                     )}
                   </>
                 )}
-                {isCollapsed && isActive && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-400" />
-                )}
               </Link>
 
               {/* Tooltip for collapsed state */}
               {isCollapsed && (
-                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 text-slate-200 text-sm rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50">
+                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 text-[12px] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
                   {item.label}
                   {item.badge !== undefined && (
-                    <span className={cn("ml-2 px-1.5 py-0.5 rounded-full text-xs font-semibold text-white", item.badgeColor || "bg-blue-500")}>
+                    <span className={cn("ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-semibold text-white", item.badgeColor || "bg-blue-500")}>
                       {item.badge}
                     </span>
                   )}
@@ -140,28 +137,25 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       {/* Bottom Section */}
       <div className="border-t border-slate-800">
         {/* Settings Link */}
-        <div className="p-4">
+        <div className="p-3">
           <div className="relative group">
             <Link
               href="/settings"
               className={cn(
-                "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all duration-150",
+                "flex items-center h-9 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150",
                 isCollapsed ? "justify-center" : "gap-3",
                 pathname === '/settings'
-                  ? "text-blue-400 bg-blue-500/10 border-l-2 border-blue-500 rounded-l-none"
-                  : "text-slate-400 bg-transparent hover:text-slate-200 hover:bg-slate-800/50"
+                  ? "text-blue-400 bg-blue-600/20"
+                  : "text-slate-300 bg-transparent hover:text-slate-200 hover:bg-slate-800"
               )}
             >
-              <Settings className="w-5 h-5 flex-shrink-0" />
+              <Settings className={cn("w-[18px] h-[18px] flex-shrink-0", pathname === '/settings' ? "text-blue-400" : "text-slate-400")} />
               {!isCollapsed && <span>Settings</span>}
-              {isCollapsed && pathname === '/settings' && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-400" />
-              )}
             </Link>
 
             {/* Tooltip for collapsed state */}
             {isCollapsed && (
-              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-800 text-slate-200 text-sm rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50">
+              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-slate-700 border border-slate-600 text-slate-200 text-[12px] rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-50 shadow-lg">
                 Settings
               </div>
             )}
@@ -169,18 +163,18 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 pt-0">
+        <div className="p-3 pt-0">
           <div className={cn(
-            "flex items-center px-3 py-2 rounded-lg",
+            "flex items-center h-14 px-3 py-2 rounded-md",
             isCollapsed ? "justify-center" : "gap-3"
           )}>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-medium text-white">O</span>
+              <span className="text-[13px] font-semibold text-white">O</span>
             </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-200 truncate">Oscar</p>
-                <p className="text-xs text-slate-400 truncate">View Profile</p>
+                <p className="text-[13px] font-semibold text-slate-200 truncate">Oscar</p>
+                <p className="text-[10px] text-slate-400 truncate">View Profile</p>
               </div>
             )}
           </div>

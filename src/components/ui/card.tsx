@@ -41,7 +41,7 @@ function Card({ className, variant = "default", accentColor = "blue", ...props }
     <div
       data-slot="card"
       className={cn(
-        "text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        "text-card-foreground flex flex-col gap-3 rounded-xl border p-3 shadow-sm",
         "transition-all duration-150 ease-in-out",
         "hover:-translate-y-1 hover:shadow-md hover:border-slate-600/60",
         getVariantStyles(),
@@ -57,7 +57,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
+        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-3",
         className
       )}
       {...props}
@@ -102,7 +102,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-6", className)}
+      className={cn("", className)}
       {...props}
     />
   )
@@ -112,7 +112,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
-      className={cn("flex items-center px-6 [.border-t]:pt-6", className)}
+      className={cn("flex items-center [.border-t]:pt-3", className)}
       {...props}
     />
   )
