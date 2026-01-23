@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, Target, Award, ClipboardList, CheckSquare } from 'lucide-react'
+import { FileText, Target, Award, ClipboardList, CheckSquare, BarChart3 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { api } from '@/lib/trpc/client'
 import { DateRangeSelector } from '@/components/reports/date-range-selector'
@@ -11,8 +11,11 @@ import { FundingByProgramChart } from '@/components/reports/funding-by-program-c
 import { PipelineFunnel } from '@/components/reports/pipeline-funnel'
 import { TopFundersChart } from '@/components/reports/top-funders-chart'
 import { YoYComparisonChart } from '@/components/reports/yoy-comparison-chart'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useRouter } from 'next/navigation'
 
 export default function ReportsPage() {
+  const router = useRouter()
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
@@ -67,6 +70,13 @@ export default function ReportsPage() {
   const currentYear = new Date().getFullYear()
   const previousYear = currentYear - 1
 
+  // Check if we have any data
+  const isLoading = winRateLoading || fundingLoading || pipelineLoading || fundersLoading || yoyLoading
+  const hasNoData = !isLoading && (
+    funnelStages.length === 0 ||
+    funnelStages.every(stage => stage.count === 0)
+  )
+
   // Report type cards
   const reportTypes = [
     {
@@ -116,8 +126,21 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Top Row: Win Rate + Funding Donut (2 columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Empty State */}
+      {hasNoData ? (
+        <EmptyState
+          icon={BarChart3}
+          title="Not enough data yet"
+          description="Add grants and track their progress to generate reports and analytics."
+          primaryAction={{
+            label: "Go to Pipeline",
+            onClick: () => router.push("/pipeline"),
+          }}
+        />
+      ) : (
+        <>
+          {/* Top Row: Win Rate + Funding Donut (2 columns) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {winRateLoading ? (
           <Skeleton className="h-[200px]" />
         ) : (
@@ -190,11 +213,13 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Export Buttons */}
-      <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-lg p-3">
-        <span className="text-xs text-slate-400">Export Options</span>
-        <ExportButtons />
-      </div>
+          {/* Export Buttons */}
+          <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-lg p-3">
+            <span className="text-xs text-slate-400">Export Options</span>
+            <ExportButtons />
+          </div>
+        </>
+      )}
     </div>
   )
 }

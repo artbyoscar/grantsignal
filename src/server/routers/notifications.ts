@@ -221,4 +221,217 @@ export const notificationsRouter = router({
 
       return { success: true };
     }),
+
+  // ============================================================================
+  // IN-APP NOTIFICATIONS
+  // ============================================================================
+
+  // Get in-app notifications for current user
+  getNotifications: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(10),
+        offset: z.number().min(0).default(0),
+        unreadOnly: z.boolean().default(false),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.auth.userId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+      }
+
+      // Find the organization user record
+      const orgUser = await ctx.db.organizationUser.findFirst({
+        where: { clerkUserId: ctx.auth.userId },
+      });
+
+      if (!orgUser) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found',
+        });
+      }
+
+      const notifications = await ctx.db.notification.findMany({
+        where: {
+          organizationId: orgUser.organizationId,
+          OR: [
+            { userId: orgUser.id }, // User-specific notifications
+            { userId: null }, // Org-wide notifications
+          ],
+          ...(input.unreadOnly && { isRead: false }),
+        },
+        orderBy: { createdAt: 'desc' },
+        take: input.limit,
+        skip: input.offset,
+      });
+
+      const total = await ctx.db.notification.count({
+        where: {
+          organizationId: orgUser.organizationId,
+          OR: [
+            { userId: orgUser.id },
+            { userId: null },
+          ],
+          ...(input.unreadOnly && { isRead: false }),
+        },
+      });
+
+      return {
+        notifications,
+        total,
+        hasMore: total > input.offset + input.limit,
+      };
+    }),
+
+  // Get unread notification count
+  getUnreadCount: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.auth.userId) {
+      throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
+
+    // Find the organization user record
+    const orgUser = await ctx.db.organizationUser.findFirst({
+      where: { clerkUserId: ctx.auth.userId },
+    });
+
+    if (!orgUser) {
+      return { count: 0 };
+    }
+
+    const count = await ctx.db.notification.count({
+      where: {
+        organizationId: orgUser.organizationId,
+        OR: [
+          { userId: orgUser.id },
+          { userId: null },
+        ],
+        isRead: false,
+      },
+    });
+
+    return { count };
+  }),
+
+  // Mark a notification as read
+  markAsRead: publicProcedure
+    .input(z.object({ notificationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.userId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+      }
+
+      // Find the organization user record
+      const orgUser = await ctx.db.organizationUser.findFirst({
+        where: { clerkUserId: ctx.auth.userId },
+      });
+
+      if (!orgUser) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found',
+        });
+      }
+
+      // Verify the notification belongs to this user/org
+      const notification = await ctx.db.notification.findFirst({
+        where: {
+          id: input.notificationId,
+          organizationId: orgUser.organizationId,
+          OR: [
+            { userId: orgUser.id },
+            { userId: null },
+          ],
+        },
+      });
+
+      if (!notification) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Notification not found',
+        });
+      }
+
+      await ctx.db.notification.update({
+        where: { id: input.notificationId },
+        data: { isRead: true },
+      });
+
+      return { success: true };
+    }),
+
+  // Mark all notifications as read
+  markAllAsRead: publicProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.auth.userId) {
+      throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
+
+    // Find the organization user record
+    const orgUser = await ctx.db.organizationUser.findFirst({
+      where: { clerkUserId: ctx.auth.userId },
+    });
+
+    if (!orgUser) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'User not found',
+      });
+    }
+
+    await ctx.db.notification.updateMany({
+      where: {
+        organizationId: orgUser.organizationId,
+        OR: [
+          { userId: orgUser.id },
+          { userId: null },
+        ],
+        isRead: false,
+      },
+      data: { isRead: true },
+    });
+
+    return { success: true };
+  }),
+
+  // Create a notification (for testing and background jobs)
+  createNotification: publicProcedure
+    .input(
+      z.object({
+        type: z.enum(['DEADLINE', 'OPPORTUNITY', 'TEAM', 'DOCUMENT', 'SYSTEM']),
+        title: z.string(),
+        message: z.string(),
+        linkUrl: z.string().optional(),
+        userId: z.string().optional(), // If not provided, it's org-wide
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.auth.userId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+      }
+
+      // Find the organization user record
+      const orgUser = await ctx.db.organizationUser.findFirst({
+        where: { clerkUserId: ctx.auth.userId },
+      });
+
+      if (!orgUser) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'User not found',
+        });
+      }
+
+      const notification = await ctx.db.notification.create({
+        data: {
+          organizationId: orgUser.organizationId,
+          userId: input.userId || null,
+          type: input.type,
+          title: input.title,
+          message: input.message,
+          linkUrl: input.linkUrl,
+        },
+      });
+
+      return notification;
+    }),
 });

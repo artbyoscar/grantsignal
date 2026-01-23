@@ -22,6 +22,7 @@ export const grantsRouter = router({
         assignedToId: z.string().optional(),
         deadlineFrom: z.date().optional(),
         deadlineTo: z.date().optional(),
+        search: z.string().optional(),
         cursor: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
         includeTerminalStates: z.boolean().default(false), // Allow opt-in for DECLINED/COMPLETED
@@ -32,7 +33,7 @@ export const grantsRouter = router({
         console.log('[grants.list] Starting query with organizationId:', ctx.organizationId);
         console.log('[grants.list] Input:', input);
 
-        const { cursor, limit, status, statuses, programId, funderType, assignedToId, deadlineFrom, deadlineTo, includeTerminalStates } = input
+        const { cursor, limit, status, statuses, programId, funderType, assignedToId, deadlineFrom, deadlineTo, search, includeTerminalStates } = input
 
         // Build status filter
         // Priority: explicit status > explicit statuses array > default (exclude terminal states)
@@ -76,6 +77,13 @@ export const grantsRouter = router({
                   },
                 }
               : {}),
+            ...(search && {
+              OR: [
+                { notes: { contains: search, mode: 'insensitive' } },
+                { funder: { name: { contains: search, mode: 'insensitive' } } },
+                { opportunity: { title: { contains: search, mode: 'insensitive' } } },
+              ],
+            }),
           },
           take: limit + 1,
           cursor: cursor ? { id: cursor } : undefined,

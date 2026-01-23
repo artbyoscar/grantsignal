@@ -3,6 +3,7 @@ import { db } from '@/lib/prisma';
 import { resend, FROM_EMAIL } from '@/lib/resend';
 import { render } from '@react-email/render';
 import { DocumentProcessedEmail } from '@/lib/email-templates/document-processed';
+import { createDocumentProcessedNotification } from '@/lib/notifications/create-notification';
 
 /**
  * Event-driven function that sends document processing notifications
@@ -70,7 +71,7 @@ export const sendDocumentProcessed = inngest.createFunction(
           html: emailHtml,
         });
 
-        // Log the notification
+        // Log the email notification
         await db.notificationLog.create({
           data: {
             userId,
@@ -79,6 +80,14 @@ export const sendDocumentProcessed = inngest.createFunction(
             metadata: { documentId, status: document.status },
             success: true,
           },
+        });
+
+        // Create in-app notification
+        await createDocumentProcessedNotification({
+          organizationId: document.organizationId,
+          userId,
+          documentName: document.name,
+          documentId: document.id,
         });
 
         return { success: true };

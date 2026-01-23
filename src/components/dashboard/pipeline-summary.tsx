@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Plus, LayoutGrid } from "lucide-react";
 
 export interface PipelineStage {
   id: string;
@@ -34,6 +36,35 @@ export function PipelineSummary({ stages }: PipelineSummaryProps) {
   // Calculate totals
   const totalCount = stages.reduce((sum, stage) => sum + stage.count, 0);
   const totalAmount = stages.reduce((sum, stage) => sum + stage.amount, 0);
+
+  // Show empty state if no grants
+  if (totalCount === 0) {
+    return (
+      <Card>
+        <div className="p-6 pb-4">
+          <h2 className="text-lg font-semibold text-slate-100">
+            Pipeline Summary
+          </h2>
+        </div>
+        <EmptyState
+          icon={LayoutGrid}
+          title="Your pipeline is empty"
+          description="Start building your grant pipeline by adding your first grant opportunity."
+          primaryAction={{
+            label: "Add Grant",
+            onClick: () => router.push("/pipeline"),
+            icon: Plus,
+          }}
+          secondaryAction={{
+            label: "Browse Opportunities",
+            onClick: () => router.push("/opportunities"),
+            variant: "outline",
+          }}
+          className="py-8"
+        />
+      </Card>
+    );
+  }
 
   // Format amount as $XK or $X.XM
   const formatAmount = (amount: number): string => {

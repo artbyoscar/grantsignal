@@ -3,6 +3,7 @@ import { db } from '@/lib/prisma';
 import { resend, FROM_EMAIL } from '@/lib/resend';
 import { render } from '@react-email/render';
 import { DeadlineReminderEmail } from '@/lib/email-templates/deadline-reminder';
+import { createDeadlineNotification } from '@/lib/notifications/create-notification';
 
 /**
  * Scheduled function that runs daily at 8 AM to send deadline reminders
@@ -88,7 +89,7 @@ export const sendDeadlineReminders = inngest.createFunction(
               html: emailHtml,
             });
 
-            // Log the notification
+            // Log the email notification
             await db.notificationLog.create({
               data: {
                 userId: orgUser.id,
@@ -97,6 +98,15 @@ export const sendDeadlineReminders = inngest.createFunction(
                 metadata: { grantId: grant.id, daysUntilDeadline },
                 success: true,
               },
+            });
+
+            // Create in-app notification
+            await createDeadlineNotification({
+              organizationId: grant.organization.id,
+              userId: orgUser.id,
+              grantName: grant.funder?.name || 'Grant',
+              daysUntilDeadline,
+              grantId: grant.id,
             });
 
             count++;

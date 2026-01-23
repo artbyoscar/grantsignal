@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { api } from '@/trpc/react'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 
 interface SidebarProps {
   onNavigate?: () => void
@@ -67,13 +68,16 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
             <span className="drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">GrantSignal</span>
           </h1>
         )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all duration-150"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? <ChevronRight className="w-[18px] h-[18px]" /> : <ChevronLeft className="w-[18px] h-[18px]" />}
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <NotificationBell />
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all duration-150"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? <ChevronRight className="w-[18px] h-[18px]" /> : <ChevronLeft className="w-[18px] h-[18px]" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Logo */}

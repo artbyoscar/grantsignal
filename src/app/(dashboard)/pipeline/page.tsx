@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Filter, X } from 'lucide-react'
+import { Filter, X, Plus, Telescope } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
 import { toast } from 'sonner'
 import { PipelineTable } from '@/components/pipeline/pipeline-table'
@@ -11,6 +11,7 @@ import { KanbanBoard } from '@/components/pipeline/kanban-board'
 import { AddGrantModal, type NewGrantData } from '@/components/pipeline/add-grant-modal'
 import { GrantStatus, FunderType, type Grant } from '@/types/client-types'
 import type { PipelineCardProps } from '@/components/pipeline/pipeline-card'
+import { EmptyState } from '@/components/ui/empty-state'
 
 // Column configuration with colors
 const COLUMNS = [
@@ -380,7 +381,40 @@ export default function PipelinePage() {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        {activeView === 'kanban' ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full text-slate-400">
+            Loading...
+          </div>
+        ) : grants.length === 0 && !hasActiveFilters ? (
+          <EmptyState
+            icon={Telescope}
+            title="Start building your grant pipeline"
+            description="Track your grant opportunities from prospect to award. Add your first grant to get started."
+            primaryAction={{
+              label: "Add Grant",
+              onClick: () => setIsAddModalOpen(true),
+              icon: Plus,
+            }}
+            secondaryAction={{
+              label: "Browse Opportunities",
+              onClick: () => router.push("/opportunities"),
+              variant: "outline",
+            }}
+            className="h-full flex items-center justify-center"
+          />
+        ) : grants.length === 0 && hasActiveFilters ? (
+          <EmptyState
+            icon={Filter}
+            title="No grants match your filters"
+            description="Try adjusting your filter criteria to see more results."
+            primaryAction={{
+              label: "Clear Filters",
+              onClick: handleClearFilters,
+              variant: "outline",
+            }}
+            className="h-full flex items-center justify-center"
+          />
+        ) : activeView === 'kanban' ? (
           <KanbanBoard
             columns={columns}
             onCardMove={handleCardMove}

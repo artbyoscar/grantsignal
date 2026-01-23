@@ -1,23 +1,94 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { api } from "@/trpc/react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NotificationsSettingsPage() {
+  const { toast } = useToast();
+  const utils = api.useUtils();
+
+  // Load current preferences
+  const { data: preferences, isLoading } = api.notifications.getPreferences.useQuery();
+
+  // Local state for form
   const [grantDeadlines, setGrantDeadlines] = useState(true);
-  const [documentProcessing, setDocumentProcessing] = useState(true);
-  const [teamUpdates, setTeamUpdates] = useState(false);
+  const [documentProcessing, setDocumentProcessing] = useState(false);
+  const [complianceAlerts, setComplianceAlerts] = useState(true);
   const [weeklyDigest, setWeeklyDigest] = useState(true);
   const [deadlineThreshold, setDeadlineThreshold] = useState([7]);
-  const [isSaving, setIsSaving] = useState(false);
+
+  // Update local state when preferences load
+  useEffect(() => {
+    if (preferences) {
+      setGrantDeadlines(preferences.deadlineRemindersEnabled);
+      setDocumentProcessing(preferences.documentProcessedEnabled);
+      setComplianceAlerts(preferences.complianceAlertsEnabled);
+      setWeeklyDigest(preferences.weeklyDigestEnabled);
+      // Use first threshold value, default to 7 if empty
+      setDeadlineThreshold([preferences.reminderThresholds[0] || 7]);
+    }
+  }, [preferences]);
+
+  const updatePreferencesMutation = api.notifications.updatePreferences.useMutation({
+    onSuccess: () => {
+      utils.notifications.getPreferences.invalidate();
+      toast({
+        title: "Preferences saved",
+        description: "Your notification preferences have been updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save preferences.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testNotificationMutation = api.notifications.sendTestNotification.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Test notification sent",
+        description: "Check your email for the test notification.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send test notification.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSave = async () => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSaving(false);
+    await updatePreferencesMutation.mutateAsync({
+      deadlineRemindersEnabled: grantDeadlines,
+      documentProcessedEnabled: documentProcessing,
+      complianceAlertsEnabled: complianceAlerts,
+      weeklyDigestEnabled: weeklyDigest,
+      reminderThresholds: deadlineThreshold,
+    });
   };
+
+  const handleTestNotification = async () => {
+    await testNotificationMutation.mutateAsync({
+      type: 'DEADLINE_REMINDER',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-slate-400">Loading preferences...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -76,19 +147,19 @@ export default function NotificationsSettingsPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <label
-                htmlFor="team-updates"
+                htmlFor="compliance-alerts"
                 className="text-sm font-medium text-[#f8fafc] cursor-pointer"
               >
-                Team Updates
+                Compliance Alerts
               </label>
               <p className="text-xs text-[#94a3b8]">
-                Receive updates when team members make changes
+                Get notified about commitment conflicts and compliance issues
               </p>
             </div>
             <Switch
-              id="team-updates"
-              checked={teamUpdates}
-              onCheckedChange={setTeamUpdates}
+              id="compliance-alerts"
+              checked={complianceAlerts}
+              onCheckedChange={setComplianceAlerts}
               className="data-[state=checked]:bg-[#3b82f6]"
             />
           </div>
@@ -183,13 +254,21 @@ export default function NotificationsSettingsPage() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <Button
+          onClick={handleTestNotification}
+          disabled={testNotificationMutation.isPending}
+          variant="outline"
+          className="border-slate-700 text-slate-300 hover:bg-slate-800"
+        >
+          {testNotificationMutation.isPending ? "Sending..." : "Send Test Email"}
+        </Button>
         <Button
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={updatePreferencesMutation.isPending}
           className="bg-[#3b82f6] text-white hover:bg-[#2563eb]"
         >
-          {isSaving ? "Saving..." : "Save Changes"}
+          {updatePreferencesMutation.isPending ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>

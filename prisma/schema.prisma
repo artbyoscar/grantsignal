@@ -146,6 +146,14 @@ enum DigestFrequency {
   NONE
 }
 
+enum InAppNotificationType {
+  DEADLINE
+  OPPORTUNITY
+  TEAM
+  DOCUMENT
+  SYSTEM
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -187,6 +195,7 @@ model Organization {
   apiKeys          ApiKey[]
   webhooks         Webhook[]
   aiGenerations    AIGeneration[]
+  notifications    Notification[]
 }
 
 model OrganizationUser {
@@ -203,6 +212,7 @@ model OrganizationUser {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   notificationPreferences NotificationPreferences?
   notificationLogs        NotificationLog[]
+  notifications           Notification[]
   assignedGrants Grant[]      // Grants assigned to this user
 
   @@unique([organizationId, clerkUserId])
@@ -550,6 +560,28 @@ model NotificationLog {
   @@index([userId])
   @@index([type])
   @@index([sentAt])
+}
+
+model Notification {
+  id                String                  @id @default(cuid())
+  organizationId    String
+  userId            String?                 // Nullable for org-wide notifications
+  type              InAppNotificationType
+  title             String
+  message           String                  @db.Text
+  linkUrl           String?                 // Where to navigate on click
+  isRead            Boolean                 @default(false)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  // Relations
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user              OrganizationUser?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
 }
 
 model TeamInvitation {
