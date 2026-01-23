@@ -53,7 +53,10 @@
       "Bash(if exist .next rmdir /s /q .next)",
       "Bash(curl:*)",
       "Bash(netstat:*)",
-      "Bash(TURBOPACK=0 pnpm dev:*)"
+      "Bash(TURBOPACK=0 pnpm dev:*)",
+      "Bash(tasklist:*)",
+      "Bash(timeout /t 2)",
+      "Bash(git rm:*)"
     ]
   }
 }
