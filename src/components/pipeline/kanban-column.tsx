@@ -127,25 +127,32 @@ export function KanbanColumn({
 
   // Expanded state
   return (
-    <div className="w-[300px] shrink-0 flex flex-col max-h-full">
+    <div className="w-[280px] shrink-0 flex flex-col max-h-full">
       {/* Column Header */}
       <div
         className={`
-          flex items-center justify-between px-3 py-2 rounded-t-xl
+          group flex items-center justify-between px-3 py-2 rounded-t-xl
           ${classes.border} ${classes.headerBg} backdrop-blur-sm
         `}
       >
         {/* Left: Colored Dot + Title + Count Badge */}
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${classes.dot}`} />
-          <h3 className="text-sm font-semibold text-white truncate">{label}</h3>
-          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-700/50 text-slate-300">
+          <h3 className="text-[13px] font-semibold text-white truncate">{label}</h3>
+          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-700 text-slate-300 min-w-[20px] text-center">
             {count}
           </span>
         </div>
 
         {/* Right: Action Buttons */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Add button - appears on hover */}
+          <button
+            className="p-1 hover:bg-white/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+            aria-label="Add grant"
+          >
+            <Plus className="w-4 h-4 text-slate-400" />
+          </button>
           <button
             onClick={onToggleCollapse}
             className="p-1 hover:bg-white/10 rounded transition-colors"

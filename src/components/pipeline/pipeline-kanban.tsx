@@ -259,7 +259,7 @@ export function PipelineKanban({ grants, defaultView = 'kanban' }: PipelineKanba
           onDragEnd={handleDragEnd}
         >
           <div className="flex-1 overflow-x-auto">
-            <div className="flex gap-4 p-4 h-full min-w-max">
+            <div className="flex gap-3 p-4 h-full min-w-max">
               {KANBAN_COLUMNS.map((column) => {
                 const columnGrants = grantsByStatus.get(column.id) || []
                 const isCollapsed = collapsedColumns.has(column.id)
@@ -300,12 +300,14 @@ export function PipelineKanban({ grants, defaultView = 'kanban' }: PipelineKanba
 
           <DragOverlay>
             {activeGrant && activeColumn ? (
-              <GrantCard
-                grant={activeGrant}
-                color={activeColumn.color}
-                progress={getGrantProgress(activeGrant)}
-                logoUrl={getFunderLogoUrl(activeGrant)}
-              />
+              <div style={{ transform: 'scale(1.02) rotate(2deg)' }} className="shadow-xl">
+                <GrantCard
+                  grant={activeGrant}
+                  color={activeColumn.color}
+                  progress={getGrantProgress(activeGrant)}
+                  logoUrl={getFunderLogoUrl(activeGrant)}
+                />
+              </div>
             ) : null}
           </DragOverlay>
         </DndContext>

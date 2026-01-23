@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Filter, X } from 'lucide-react'
 import { api } from '@/lib/trpc/client'
@@ -100,50 +100,54 @@ export default function PipelinePage() {
     return sum + (grant.amountRequested ?? 0)
   }, 0)
 
-  // Transform grants to PipelineCardProps
-  const transformGrantToCard = (grant: Grant): PipelineCardProps => {
-    const deadline = grant.opportunity?.deadline || grant.deadline
-    const daysLeft = deadline
-      ? Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-      : undefined
+  // Transform grants to PipelineCardProps - memoized to prevent recalculation
+  const transformGrantToCard = useMemo(() => {
+    return (grant: Grant): PipelineCardProps => {
+      const deadline = grant.opportunity?.deadline || grant.deadline
+      const daysLeft = deadline
+        ? Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : undefined
 
-    return {
-      id: grant.id,
-      funderName: grant.funder?.name || 'Unknown Funder',
-      funderLogo: grant.funder?.name
-        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(grant.funder.name)}&background=1e293b&color=94a3b8`
-        : undefined,
-      grantTitle: grant.opportunity?.title || 'Untitled Grant',
-      programArea: grant.program?.name || 'General',
-      amount: grant.amountRequested || 0,
-      deadline: deadline ? new Date(deadline) : undefined,
-      daysLeft,
-      progress: grant.status === GrantStatus.WRITING ? Math.floor(Math.random() * 100) : undefined,
-      assignee: grant.assignedTo
-        ? {
-            name: grant.assignedTo.displayName || 'Unknown',
-            initials: grant.assignedTo.displayName
-              ?.split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2) || '?',
-            avatarUrl: grant.assignedTo.avatarUrl || undefined,
-          }
-        : undefined,
-      hasFlag: false, // Could be determined by deadline urgency or other criteria
+      return {
+        id: grant.id,
+        funderName: grant.funder?.name || 'Unknown Funder',
+        funderLogo: grant.funder?.name
+          ? `https://ui-avatars.com/api/?name=${encodeURIComponent(grant.funder.name)}&background=1e293b&color=94a3b8`
+          : undefined,
+        grantTitle: grant.opportunity?.title || 'Untitled Grant',
+        programArea: grant.program?.name || 'General',
+        amount: grant.amountRequested || 0,
+        deadline: deadline ? new Date(deadline) : undefined,
+        daysLeft,
+        progress: grant.status === GrantStatus.WRITING ? Math.floor(Math.random() * 100) : undefined,
+        assignee: grant.assignedTo
+          ? {
+              name: grant.assignedTo.displayName || 'Unknown',
+              initials: grant.assignedTo.displayName
+                ?.split(' ')
+                .map((n) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2) || '?',
+              avatarUrl: grant.assignedTo.avatarUrl || undefined,
+            }
+          : undefined,
+        hasFlag: false, // Could be determined by deadline urgency or other criteria
+      }
     }
-  }
+  }, [])
 
-  // Transform grants to column format for KanbanBoard
-  const columns = COLUMNS.map((column) => ({
-    id: column.id,
-    title: column.title,
-    color: column.color,
-    cards: grants
-      .filter((grant) => grant.status === column.id)
-      .map(transformGrantToCard),
-  }))
+  // Transform grants to column format for KanbanBoard - memoized to prevent re-renders
+  const columns = useMemo(() => {
+    return COLUMNS.map((column) => ({
+      id: column.id,
+      title: column.title,
+      color: column.color,
+      cards: grants
+        .filter((grant) => grant.status === column.id)
+        .map(transformGrantToCard),
+    }))
+  }, [grants, transformGrantToCard])
 
   // Update status mutation
   const updateStatusMutation = api.grants.updateStatus.useMutation({
@@ -157,39 +161,40 @@ export default function PipelinePage() {
     },
   })
 
-  // Handle card move with optimistic updates
-  const handleCardMove = async (
-    cardId: string,
-    fromColumn: string,
-    toColumn: string,
-    newIndex: number
-  ) => {
-    if (fromColumn === toColumn) return
+  // Handle card move with optimistic updates - memoized to prevent re-renders
+  const handleCardMove = useCallback(
+    async (cardId: string, fromColumn: string, toColumn: string, newIndex: number) => {
+      if (fromColumn === toColumn) return
 
-    const newStatus = toColumn as GrantStatus
+      const newStatus = toColumn as GrantStatus
 
-    // Optimistic update: this will be reflected immediately in the UI
-    // because the mutation will trigger a refetch
-    try {
-      await updateStatusMutation.mutateAsync({
-        id: cardId,
-        status: newStatus,
-      })
-    } catch (error) {
-      // Error already handled by mutation
-    }
-  }
+      // Optimistic update: this will be reflected immediately in the UI
+      // because the mutation will trigger a refetch
+      try {
+        await updateStatusMutation.mutateAsync({
+          id: cardId,
+          status: newStatus,
+        })
+      } catch (error) {
+        // Error already handled by mutation
+      }
+    },
+    [updateStatusMutation]
+  )
 
-  // Handle card click - navigate to writer
-  const handleCardClick = (cardId: string) => {
-    router.push(`/write/${cardId}`)
-  }
+  // Handle card click - navigate to writer - memoized
+  const handleCardClick = useCallback(
+    (cardId: string) => {
+      router.push(`/write/${cardId}`)
+    },
+    [router]
+  )
 
-  // Handle add card button
-  const handleAddCard = (columnId: string) => {
+  // Handle add card button - memoized
+  const handleAddCard = useCallback((columnId: string) => {
     setSelectedColumnForAdd(columnId)
     setIsAddModalOpen(true)
-  }
+  }, [])
 
   // Create grant mutation
   const createGrantMutation = api.grants.create.useMutation({

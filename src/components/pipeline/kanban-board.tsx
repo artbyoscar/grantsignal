@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   DndContext,
   DragOverlay,
-  closestCenter,
+  closestCorners,
   useDroppable,
   KeyboardSensor,
   PointerSensor,
@@ -121,11 +121,11 @@ export function KanbanBoard({ columns, onCardMove, onCardClick, onAddCard }: Kan
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
 
-  // Configure sensors for drag interactions
+  // Configure sensors for drag interactions - memoized for performance
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Minimum drag distance to activate
+        distance: 3, // Reduced from 8px for instant drag feedback
       },
     }),
     useSensor(KeyboardSensor, {
@@ -133,24 +133,25 @@ export function KanbanBoard({ columns, onCardMove, onCardClick, onAddCard }: Kan
     })
   )
 
-  // Find the active card being dragged
-  const activeCard = activeId
-    ? columns.flatMap((col) => col.cards).find((card) => card.id === activeId)
-    : null
+  // Find the active card being dragged - memoized to avoid recalculation on every render
+  const activeCard = useMemo(() => {
+    if (!activeId) return null
+    return columns.flatMap((col) => col.cards).find((card) => card.id === activeId) || null
+  }, [activeId, columns])
 
-  // Handle drag start
-  const handleDragStart = (event: DragStartEvent) => {
+  // Handle drag start - wrapped in useCallback to prevent recreating on every render
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string)
-  }
+  }, [])
 
-  // Handle drag over (when dragging over different columns)
-  const handleDragOver = (event: DragOverEvent) => {
+  // Handle drag over (when dragging over different columns) - wrapped in useCallback
+  const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over } = event
     setOverId(over ? (over.id as string) : null)
-  }
+  }, [])
 
-  // Handle drag end
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Handle drag end - wrapped in useCallback
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
 
     if (!over) {
@@ -219,18 +220,18 @@ export function KanbanBoard({ columns, onCardMove, onCardClick, onAddCard }: Kan
 
     setActiveId(null)
     setOverId(null)
-  }
+  }, [columns, onCardMove])
 
-  // Handle drag cancel
-  const handleDragCancel = (event: DragCancelEvent) => {
+  // Handle drag cancel - wrapped in useCallback
+  const handleDragCancel = useCallback((event: DragCancelEvent) => {
     setActiveId(null)
     setOverId(null)
-  }
+  }, [])
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
