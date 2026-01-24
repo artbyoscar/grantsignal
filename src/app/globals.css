@@ -217,6 +217,42 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Enhanced focus styles for WCAG 2.1 AA compliance */
+  /* Focus visible indicator - 2px ring for all interactive elements */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-blue-500;
+  }
+
+  /* Ensure links have visible focus */
+  a:focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900 rounded;
+  }
+
+  /* Button focus - handled by button component but ensure fallback */
+  button:focus-visible {
+    @apply ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900;
+  }
+
+  /* Input focus */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply ring-2 ring-blue-500 border-transparent;
+  }
+}
+
+/* Accessible Color Contrast Fixes */
+/* slate-400 on slate-900 has ~4.5:1 ratio - use slate-300 for better contrast */
+@layer utilities {
+  .text-accessible-muted {
+    @apply text-slate-300;
+  }
+
+  /* High contrast text for critical information */
+  .text-accessible-important {
+    @apply text-slate-100;
+  }
 }
 
 /* Gradient Text Utility */

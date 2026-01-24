@@ -66,12 +66,25 @@ const TableRow = React.forwardRef<
 ))
 TableRow.displayName = "TableRow"
 
+/**
+ * TableHead Component
+ *
+ * Accessibility Features:
+ * - Default scope="col" for column headers (WCAG 2.1 AA)
+ * - Supports aria-sort for sortable columns
+ *
+ * Usage:
+ * <TableHead>Name</TableHead>
+ * <TableHead scope="row">Row Header</TableHead>
+ * <TableHead aria-sort="ascending">Sortable Column</TableHead>
+ */
 const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+>(({ className, scope = "col", ...props }, ref) => (
   <th
     ref={ref}
+    scope={scope}
     className={cn(
       "h-9 px-3 py-2 text-left align-middle font-medium text-muted-foreground text-[11px] uppercase tracking-wide [&:has([role=checkbox])]:pr-0",
       className

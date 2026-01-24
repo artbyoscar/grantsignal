@@ -184,6 +184,8 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
         <div
           className={`absolute top-2 right-2 px-2 py-0.5 text-[10px] font-bold rounded border ${getFitScoreColor(fitScore.overallScore)}`}
           title={`Fit Score: ${fitScore.overallScore}\nMission: ${fitScore.missionScore} | Capacity: ${fitScore.capacityScore}`}
+          aria-label={`Fit score: ${fitScore.overallScore} out of 100. Mission alignment: ${fitScore.missionScore}, Capacity: ${fitScore.capacityScore}`}
+          role="status"
         >
           {fitScore.overallScore}
         </div>
@@ -204,9 +206,10 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
         <DropdownMenu>
           <DropdownMenuTrigger
             onClick={(e) => e.stopPropagation()}
-            className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0"
+            className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500"
+            aria-label={`Actions for ${grant.funder?.name || 'grant'}`}
           >
-            <MoreHorizontal className="w-3 h-3 text-slate-400" />
+            <MoreHorizontal className="w-3 h-3 text-slate-400" aria-hidden="true" />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="bg-slate-800 border-slate-700" align="end">
             <DropdownMenuItem
@@ -216,7 +219,7 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
               }}
               className="text-slate-300 cursor-pointer focus:bg-slate-700 focus:text-slate-100"
             >
-              <Edit className="w-4 h-4 mr-2" />
+              <Edit className="w-4 h-4 mr-2" aria-hidden="true" />
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -226,7 +229,7 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
               }}
               className="text-slate-300 cursor-pointer focus:bg-slate-700 focus:text-slate-100"
             >
-              <FileText className="w-4 h-4 mr-2" />
+              <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
               Open Writer
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -283,9 +286,10 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
             e.stopPropagation()
             handleEdit()
           }}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium rounded transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
+          aria-label="Edit grant"
         >
-          <Edit className="w-3 h-3" />
+          <Edit className="w-3 h-3" aria-hidden="true" />
           Edit
         </button>
         <button
@@ -293,9 +297,10 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
             e.stopPropagation()
             handleOpenWriter()
           }}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded transition-colors focus-visible:ring-2 focus-visible:ring-white/50"
+          aria-label="Open grant writer"
         >
-          <FileText className="w-3 h-3" />
+          <FileText className="w-3 h-3" aria-hidden="true" />
           Writer
         </button>
       </div>
@@ -360,8 +365,11 @@ export function GrantCard({ grant, color, progress, isFlagged = false, logoUrl }
             {grant.funder?.name || 'Unknown Funder'}
           </h4>
         </div>
-        <button className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0">
-          <MoreHorizontal className="w-3 h-3 text-slate-400" />
+        <button
+          className="p-1 hover:bg-slate-700 rounded transition-colors flex-shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500"
+          aria-label="Grant options"
+        >
+          <MoreHorizontal className="w-3 h-3 text-slate-400" aria-hidden="true" />
         </button>
       </div>
 
