@@ -24,8 +24,8 @@ Transform grant writing from 20 hours to 2 hours by capturing institutional know
 | Team Collaboration | ⏳ Planned |
 | Email Notifications | ⏳ Planned |
 
-**Production URL:** [grantsignal.vercel.app](https://grantsignal.vercel.app)  
-**Last Updated:** January 21, 2026
+**Production URL:** [grantsignal.vercel.app](https://grantsignal.vercel.app)
+**Last Updated:** January 24, 2026
 
 ---
 
@@ -331,7 +331,7 @@ This is the multi-million dollar feature that justifies premium pricing and sell
 
 | Layer | Technology | Rationale |
 |-------|------------|-----------|
-| Framework | Next.js 16 (App Router) | Server Components, streaming, Turbopack |
+| Framework | Next.js 15 (App Router) | Server Components, streaming, Turbopack |
 | Language | TypeScript 5.x (strict) | Type safety end-to-end |
 | Styling | Tailwind CSS 4 + shadcn/ui | Utility-first, consistent design system |
 | API | tRPC v11 | Type-safe RPC with React Query |

@@ -57,6 +57,8 @@ export default function WriterPage({ params }: PageProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [sectionContents, setSectionContents] = useState<Record<string, string>>({});
   const [highlightedText, setHighlightedText] = useState<{ start: number; end: number; color: string } | undefined>();
+  // Mobile tab state
+  const [mobileTab, setMobileTab] = useState<'assist' | 'editor' | 'outline'>('editor');
 
   // Fetch grant data
   const { data: rawGrant, isLoading: isLoadingGrant } = api.grants.byId.useQuery({
@@ -358,9 +360,6 @@ export default function WriterPage({ params }: PageProps) {
       </div>
     );
   }
-
-  // Mobile tab state
-  const [mobileTab, setMobileTab] = useState<'assist' | 'editor' | 'outline'>('editor');
 
   return (
     <div className="flex h-screen bg-slate-900">

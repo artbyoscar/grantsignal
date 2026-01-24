@@ -67,7 +67,9 @@
       "Bash(pnpm remove:*)",
       "Bash(npx create-next-app:*)",
       "Bash(npx create-next-app@latest:*)",
-      "Bash(npx next build)"
+      "Bash(npx next build)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)"
     ]
   }
 }
