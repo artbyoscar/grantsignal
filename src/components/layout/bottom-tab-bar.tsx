@@ -60,9 +60,11 @@ export function BottomTabBar({ onMoreClick }: BottomTabBarProps) {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={item.isActive ? 'page' : undefined}
               className={cn(
                 "flex flex-col items-center justify-center min-w-[60px] h-full px-2 transition-colors touch-manipulation",
-                "active:bg-slate-800/50"
+                "active:bg-slate-800/50",
+                "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
               )}
             >
               <Icon
@@ -72,6 +74,7 @@ export function BottomTabBar({ onMoreClick }: BottomTabBarProps) {
                     ? "text-blue-400"
                     : "text-slate-400"
                 )}
+                aria-hidden="true"
               />
               <span
                 className={cn(
@@ -90,12 +93,15 @@ export function BottomTabBar({ onMoreClick }: BottomTabBarProps) {
         {/* More Button */}
         <button
           onClick={onMoreClick}
+          aria-label="More navigation options"
+          aria-haspopup="menu"
           className={cn(
             "flex flex-col items-center justify-center min-w-[60px] h-full px-2 transition-colors touch-manipulation",
-            "active:bg-slate-800/50"
+            "active:bg-slate-800/50",
+            "focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded"
           )}
         >
-          <MoreHorizontal className="w-6 h-6 mb-1 text-slate-400" />
+          <MoreHorizontal className="w-6 h-6 mb-1 text-slate-400" aria-hidden="true" />
           <span className="text-[10px] font-medium leading-none text-slate-400">
             More
           </span>

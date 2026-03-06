@@ -22,10 +22,13 @@ export function Sidebar({ userName, userEmail, userInitial }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 min-h-screen bg-slate-800 border-r border-slate-700 p-4 flex flex-col">
+    <aside
+      className="w-64 min-h-screen bg-slate-800 border-r border-slate-700 p-4 flex flex-col"
+      aria-label="Main navigation"
+    >
       <div className="text-xl font-bold text-white mb-8">GrantSignal</div>
 
-      <nav className="space-y-2 flex-1">
+      <nav className="space-y-2 flex-1" aria-label="Primary">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           const Icon = item.icon
@@ -34,7 +37,8 @@ export function Sidebar({ userName, userEmail, userInitial }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded transition-colors ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex items-center gap-3 px-3 py-2 rounded transition-colors focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800 ${
                 isActive
                   ? 'bg-slate-700/50 text-white border-l-2 border-blue-500'
                   : 'text-slate-300 hover:bg-slate-700/50'
@@ -43,6 +47,7 @@ export function Sidebar({ userName, userEmail, userInitial }: SidebarProps) {
               <Icon
                 size={20}
                 className={isActive ? 'text-white' : 'text-slate-400'}
+                aria-hidden="true"
               />
               <span>{item.label}</span>
             </Link>

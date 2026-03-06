@@ -62,14 +62,15 @@ function DroppableColumn({ column, isOver, onCardClick, onAddCard }: DroppableCo
         </div>
         <button
           onClick={() => onAddCard(column.id)}
-          className="text-slate-400 hover:text-slate-200 transition-colors"
-          title="Add card"
+          className="text-slate-400 hover:text-slate-200 transition-colors p-1 rounded focus-visible:ring-2 focus-visible:ring-blue-500"
+          aria-label={`Add card to ${column.title}`}
         >
           <svg
             className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -88,6 +89,9 @@ function DroppableColumn({ column, isOver, onCardClick, onAddCard }: DroppableCo
       >
         <div
           ref={setNodeRef}
+          role="region"
+          aria-label={`${column.title} column with ${column.cards.length} cards`}
+          aria-live="polite"
           className={`
             min-h-[200px] rounded-lg border-2 border-dashed p-3 space-y-3
             ${

@@ -32,8 +32,10 @@ const eslintConfig = [
       "@typescript-eslint/no-empty-object-type": "warn",
       // Allow let when const could be used
       "prefer-const": "warn",
-      // Disable React Compiler rules
+      // Disable React Compiler rules (from react-hooks v7+)
       "react-compiler/react-compiler": "off",
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       // Allow Link elements
       "@next/next/no-html-link-for-pages": "warn",
     },

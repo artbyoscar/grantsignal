@@ -51,9 +51,13 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
                 if (httpStatus === 401) {
                   toast.error('Authentication required', {
                     description: 'Please sign in to continue.',
+                    action: {
+                      label: 'Sign In',
+                      onClick: () => {
+                        window.location.href = '/sign-in'
+                      },
+                    },
                   })
-                  // Optionally redirect to sign-in
-                  // window.location.href = '/sign-in'
                   return
                 }
 

@@ -163,7 +163,7 @@ export default function TeamPage() {
           </p>
         </div>
         <Button onClick={() => setInviteModalOpen(true)} className="gap-2">
-          <UserPlus className="w-4 h-4" />
+          <UserPlus className="w-4 h-4" aria-hidden="true" />
           Invite Team Member
         </Button>
       </div>
@@ -190,8 +190,8 @@ export default function TeamPage() {
                   </Avatar>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Member actions menu">
-                        <MoreVertical className="w-4 h-4" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${displayName}`}>
+                        <MoreVertical className="w-4 h-4" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
