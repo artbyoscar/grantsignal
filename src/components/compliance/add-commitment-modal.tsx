@@ -41,9 +41,11 @@ export function AddCommitmentModal({ isOpen, onClose, onSuccess }: AddCommitment
   const [grantSearchQuery, setGrantSearchQuery] = useState('')
 
   // Fetch grants for dropdown
+  // Include all active grant statuses so users can track commitments
+  // from the moment they start writing through completion
   const { data: grantsData } = api.grants.list.useQuery({
     limit: 100,
-    statuses: ['AWARDED', 'SUBMITTED']
+    statuses: ['WRITING', 'REVIEW', 'SUBMITTED', 'PENDING', 'AWARDED', 'COMPLETED']
   })
 
   // Create commitment mutation
