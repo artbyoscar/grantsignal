@@ -5,11 +5,8 @@ import type { FitScoreResult } from '../../lib/fit-scoring'
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { inngest } from '@/inngest/client'
-
-/**
- * Mock delay to simulate API processing
- */
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+import { anthropic } from '@/lib/anthropic'
+import { parseDocument } from '@/server/services/documents/parser'
 
 /**
  * S3 client for file uploads
@@ -23,12 +20,95 @@ const s3Client = new S3Client({
 })
 
 /**
+ * Use Claude to extract structured RFP data from raw text.
+ * Returns parsed grant opportunity details.
+ */
+async function extractRfpWithClaude(text: string, source: string) {
+  const prompt = `You are analyzing a grant opportunity document (RFP, FOA, NOFO, or similar). Extract structured information from the following text.
+
+Return a JSON object with exactly these fields:
+{
+  "title": "The grant/opportunity title",
+  "description": "A 2-3 sentence summary of what the grant funds",
+  "deadline": "ISO 8601 date string if found, or null",
+  "amountMin": number or null (minimum funding amount in USD),
+  "amountMax": number or null (maximum funding amount in USD),
+  "requirements": [
+    {
+      "section": "Section name (e.g. 'Project Narrative', 'Budget')",
+      "description": "What this section requires",
+      "wordLimit": number or 0 if not specified
+    }
+  ],
+  "eligibility": ["eligibility criterion 1", "eligibility criterion 2"],
+  "confidence": number between 0 and 1 representing how confident you are in the extraction
+}
+
+Important:
+- If the text does not appear to be a grant document, still extract what you can and set confidence low (below 0.5).
+- For amounts, extract numbers without currency symbols.
+- For deadlines, look for submission dates, due dates, closing dates.
+- Include all major application sections in requirements.
+- Be thorough with eligibility criteria.
+
+Document text:
+${text.substring(0, 50000)}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const content = response.content[0]
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude')
+    }
+
+    // Extract JSON from response (handle markdown code blocks)
+    let jsonStr = content.text
+    const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1]
+    }
+
+    const parsed = JSON.parse(jsonStr.trim())
+
+    return {
+      title: parsed.title || 'Untitled Opportunity',
+      description: parsed.description || text.substring(0, 300),
+      deadline: parsed.deadline ? new Date(parsed.deadline) : undefined,
+      amountMin: typeof parsed.amountMin === 'number' ? parsed.amountMin : undefined,
+      amountMax: typeof parsed.amountMax === 'number' ? parsed.amountMax : undefined,
+      requirements: Array.isArray(parsed.requirements) ? parsed.requirements : [],
+      eligibility: Array.isArray(parsed.eligibility) ? parsed.eligibility : [],
+      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.5,
+      source,
+    }
+  } catch (error) {
+    console.error('Claude RFP extraction failed:', error)
+    // Fallback: return basic extraction from text
+    return {
+      title: text.substring(0, 100).split('\n')[0] || 'Untitled Opportunity',
+      description: text.substring(0, 500),
+      deadline: undefined,
+      amountMin: undefined,
+      amountMax: undefined,
+      requirements: [],
+      eligibility: [],
+      confidence: 0.3,
+      source,
+    }
+  }
+}
+
+/**
  * Discovery router for RFP parsing and fit scoring
  */
 export const discoveryRouter = router({
   /**
-   * Parse RFP from URL or text
-   * TODO: Integrate with Claude API for real parsing
+   * Parse RFP from URL or pasted text using Claude AI
    */
   parseRfp: orgProcedure
     .input(
@@ -41,51 +121,26 @@ export const discoveryRouter = router({
       )
     )
     .mutation(async ({ ctx, input }) => {
-      // Simulate processing time
-      await delay(2000)
+      const source = input.url || 'Direct text input'
+      const text = input.text || ''
 
-      // Mock parsed RFP data
-      const mockData = {
-        title: input.url
-          ? 'Community Development Block Grant'
-          : 'Sample Grant Opportunity',
-        description: 'This grant supports community development initiatives focused on improving infrastructure, housing, and economic opportunities in underserved areas. The program aims to create lasting impact through sustainable community partnerships.',
-        deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
-        amountMin: 50000,
-        amountMax: 250000,
-        requirements: [
-          {
-            section: 'Project Narrative',
-            description: 'Describe your proposed project, goals, and expected outcomes',
-            wordLimit: 1000,
-          },
-          {
-            section: 'Organizational Capacity',
-            description: 'Detail your organization\'s experience and capabilities',
-            wordLimit: 500,
-          },
-          {
-            section: 'Budget Justification',
-            description: 'Provide detailed budget breakdown and justification',
-            wordLimit: 750,
-          },
-          {
-            section: 'Evaluation Plan',
-            description: 'Explain how you will measure success and impact',
-            wordLimit: 500,
-          },
-        ],
-        eligibility: [
-          'Must be a registered 501(c)(3) nonprofit organization',
-          'Organization must have been operational for at least 2 years',
-          'Project must serve communities with median income below 80% of area median',
-          'Must demonstrate community partnership and support',
-        ],
-        confidence: 0.92, // Confidence score for parsing accuracy
-        source: input.url || 'Direct text input',
+      // If URL provided, we would fetch content here in the future
+      // For now, URL-based parsing requires the user to paste the text
+      if (!text && input.url) {
+        return {
+          title: 'URL-based RFP',
+          description: 'URL fetching is not yet supported. Please copy and paste the RFP text directly.',
+          deadline: undefined,
+          amountMin: undefined,
+          amountMax: undefined,
+          requirements: [],
+          eligibility: [],
+          confidence: 0.1,
+          source,
+        }
       }
 
-      return mockData
+      return await extractRfpWithClaude(text, source)
     }),
 
   /**
@@ -521,7 +576,8 @@ export const discoveryRouter = router({
 
   /**
    * Parse RFP from uploaded file
-   * Triggers Inngest job to process the file and extract RFP details
+   * Downloads from S3, extracts text, and uses Claude to parse RFP details.
+   * Runs synchronously so the frontend gets immediate results.
    */
   parseRfpFile: orgProcedure
     .input(
@@ -531,21 +587,43 @@ export const discoveryRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Trigger Inngest job to parse the RFP file
-      await inngest.send({
-        name: 'rfp/parse-file',
-        data: {
-          s3Key: input.s3Key,
-          fileName: input.fileName,
-          organizationId: ctx.organizationId,
-        },
+      // Step 1: Download file from S3
+      const command = new GetObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET!,
+        Key: input.s3Key,
       })
 
-      // For now, return a placeholder while processing
-      // In production, this would be replaced by polling or webhooks
-      return {
-        status: 'processing',
-        message: 'RFP file is being processed. This may take a few moments.',
+      const response = await s3Client.send(command)
+
+      if (!response.Body) {
+        throw new Error('Failed to download file from storage')
       }
+
+      // Convert stream to buffer
+      const chunks: Uint8Array[] = []
+      for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+        chunks.push(chunk)
+      }
+      const buffer = Buffer.concat(chunks)
+
+      // Step 2: Parse document to extract text
+      const extension = input.fileName.split('.').pop()?.toLowerCase()
+      let mimeType = 'application/pdf'
+      if (extension === 'docx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      } else if (extension === 'doc') {
+        mimeType = 'application/msword'
+      }
+
+      const parseResult = await parseDocument(buffer, mimeType)
+
+      if (!parseResult.text || parseResult.text.trim().length < 50) {
+        throw new Error('Could not extract sufficient text from the document. The file may be scanned or image-based.')
+      }
+
+      // Step 3: Use Claude to extract structured RFP data
+      const rfpData = await extractRfpWithClaude(parseResult.text, `File: ${input.fileName}`)
+
+      return rfpData
     }),
 })

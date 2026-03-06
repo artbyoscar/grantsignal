@@ -343,22 +343,15 @@ ${fitScore.reusableContent.strengths.length > 0 ? `Strengths:\n${fitScore.reusab
         setUploadingFile(prev => prev ? { ...prev, progress } : null)
       })
 
-      // Step 3: Trigger RFP parsing
+      // Step 3: Parse the uploaded RFP file (synchronous - downloads from S3, extracts text, uses Claude)
       setUploadingFile(prev => prev ? { ...prev, status: 'parsing', progress: 100 } : null)
 
-      await parseRfpFileMutation.mutateAsync({
+      const parsed = await parseRfpFileMutation.mutateAsync({
         s3Key,
         fileName: file.name,
       })
 
-      // For now, simulate the parsing result
-      await delay(3000)
-
-      const parsed = await parseRfpMutation.mutateAsync({
-        text: `Uploaded file: ${file.name}`,
-      })
-
-      setParsedRfp(parsed)
+      setParsedRfp(parsed as any)
       setAnalysisStep('scoring')
 
       // Save opportunity temporarily
