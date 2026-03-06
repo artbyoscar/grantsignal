@@ -11,6 +11,7 @@ import { sendDeadlineReminders } from '@/inngest/send-deadline-reminders'
 import { sendWeeklyDigest } from '@/inngest/send-weekly-digest'
 import { sendComplianceAlert } from '@/inngest/send-compliance-alert'
 import { sendDocumentProcessed } from '@/inngest/send-document-processed'
+import { sendTestNotification } from '@/inngest/send-test-notification'
 
 /**
  * Inngest API route handler
@@ -30,6 +31,7 @@ export const { GET, POST, PUT } = serve({
     sendWeeklyDigest,
     sendComplianceAlert,
     sendDocumentProcessed,
+    sendTestNotification,
   ],
   // Use the Inngest Cloud for production, local dev server for development
   signingKey: process.env.INNGEST_SIGNING_KEY,
