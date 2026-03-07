@@ -69,4 +69,11 @@ export type Events = {
       email: string
     }
   }
+  'compliance/detect-conflicts': {
+    data: {
+      organizationId: string
+      documentId: string
+      trigger: 'document_processed' | 'manual'
+    }
+  }
 }

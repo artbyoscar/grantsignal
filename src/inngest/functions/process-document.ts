@@ -327,7 +327,33 @@ export const processDocument = inngest.createFunction(
       }
     })
 
-    // Step 6: Send document processed notifications
+    // Step 6: Trigger real-time compliance detection for award documents
+    await step.run('trigger-compliance-check', async () => {
+      // Get document type to decide if we should trigger conflict detection
+      const document = await db.document.findUnique({
+        where: { id: documentId },
+        select: { type: true, grantId: true, grant: { select: { status: true } } },
+      })
+
+      const awardDocTypes = ['AWARD_LETTER', 'AGREEMENT']
+      if (!document || !awardDocTypes.includes(document.type)) {
+        return { skipped: true, reason: 'Not an award document' }
+      }
+
+      // Emit event for real-time conflict detection
+      await inngest.send({
+        name: 'compliance/detect-conflicts',
+        data: {
+          organizationId,
+          documentId,
+          trigger: 'document_processed',
+        },
+      })
+
+      return { triggered: true, documentType: document.type }
+    })
+
+    // Step 7: Send document processed notifications
     await step.run('send-notifications', async () => {
       try {
         // Get all users for this organization with document notifications enabled
