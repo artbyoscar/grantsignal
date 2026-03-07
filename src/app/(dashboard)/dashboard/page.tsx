@@ -6,23 +6,30 @@ import { PipelineSummary } from "@/components/dashboard/pipeline-summary";
 import { ActivityFeedClient } from "@/components/dashboard/activity-feed-client";
 import { AIDigestClient } from "@/components/dashboard/ai-digest-client";
 import { QuickActionsPanel } from "@/components/dashboard/quick-actions";
+import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { Skeleton } from "@/components/ui/skeleton";
 
 async function DashboardContent() {
   const caller = await api();
 
   // Fetch all data in parallel
-  const [stats, urgentActions, pipelineStages, recentActivity, aiInsights] =
+  const [stats, urgentActions, pipelineStages, recentActivity, aiInsights, setupProgress] =
     await Promise.all([
       caller.dashboard.getStats(),
       caller.dashboard.getUrgentActions(),
       caller.dashboard.getPipelineStages(),
       caller.dashboard.getRecentActivity({ limit: 10 }),
       caller.dashboard.getAIInsights(),
+      caller.dashboard.getSetupProgress(),
     ]);
 
   return (
     <>
+      {/* Setup Checklist - shown until all steps complete */}
+      {!setupProgress.allDone && (
+        <SetupChecklist initialData={setupProgress} />
+      )}
+
       {/* Quick Stats */}
       <QuickStats stats={stats} />
 

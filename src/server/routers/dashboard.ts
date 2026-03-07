@@ -403,4 +403,90 @@ export const dashboardRouter = router({
 
     return insights
   }),
+
+  /**
+   * Get setup progress for post-onboarding checklist.
+   * Returns completion status for key first-run actions.
+   * Once all items are done, the checklist hides itself.
+   */
+  getSetupProgress: orgProcedure.query(async ({ ctx }) => {
+    const [
+      org,
+      documentCount,
+      grantCount,
+      programCount,
+      teamMemberCount,
+    ] = await Promise.all([
+      ctx.db.organization.findUnique({
+        where: { id: ctx.organizationId },
+        select: {
+          name: true,
+          mission: true,
+          voiceProfile: true,
+          primaryProgramAreas: true,
+        },
+      }),
+      ctx.db.document.count({
+        where: { organizationId: ctx.organizationId, status: 'COMPLETED' },
+      }),
+      ctx.db.grant.count({
+        where: { organizationId: ctx.organizationId },
+      }),
+      ctx.db.program.count({
+        where: { organizationId: ctx.organizationId },
+      }),
+      ctx.db.organizationMember.count({
+        where: { organizationId: ctx.organizationId },
+      }),
+    ])
+
+    const steps = [
+      {
+        id: 'profile',
+        title: 'Complete your organization profile',
+        description: 'Add your mission statement and program areas to improve AI matching',
+        href: '/settings',
+        completed: !!(org?.name && org?.mission && (org?.primaryProgramAreas?.length ?? 0) > 0),
+      },
+      {
+        id: 'documents',
+        title: 'Upload past proposals or reports',
+        description: 'Train GrantSignal on your writing style and organizational history',
+        href: '/documents?upload=true',
+        completed: documentCount >= 1,
+      },
+      {
+        id: 'grant',
+        title: 'Add your first grant to the pipeline',
+        description: 'Start tracking an opportunity from prospect to award',
+        href: '/pipeline',
+        completed: grantCount >= 1,
+      },
+      {
+        id: 'voice',
+        title: 'Run voice analysis',
+        description: 'Capture your unique writing voice for AI-assisted drafting',
+        href: '/settings/voice',
+        completed: !!org?.voiceProfile,
+      },
+      {
+        id: 'team',
+        title: 'Invite a team member',
+        description: 'Collaborate on grants with colleagues',
+        href: '/settings/team',
+        completed: teamMemberCount > 1, // >1 because the creator is member #1
+      },
+    ]
+
+    const completedCount = steps.filter(s => s.completed).length
+    const allDone = completedCount === steps.length
+
+    return {
+      steps,
+      completedCount,
+      totalCount: steps.length,
+      percentComplete: Math.round((completedCount / steps.length) * 100),
+      allDone,
+    }
+  }),
 })
