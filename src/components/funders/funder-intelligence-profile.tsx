@@ -87,8 +87,8 @@ interface FunderIntelligenceProfileProps {
       id: string
       title: string
       deadline: Date | null
-      amountMin: string | number | null
-      amountMax: string | number | null
+      amountMin: { toNumber(): number } | string | number | null
+      amountMax: { toNumber(): number } | string | number | null
     }>
     recommendations: string[]
   }
