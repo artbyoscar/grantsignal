@@ -315,7 +315,7 @@ export const grantsRouter = router({
       }
 
       // Update the grant
-      return ctx.db.grant.update({
+      const updated = await ctx.db.grant.update({
         where: { id },
         data,
         include: {
@@ -324,6 +324,18 @@ export const grantsRouter = router({
           program: true,
         },
       })
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.GRANT_UPDATED,
+        entityType: 'grant',
+        entityId: id,
+        description: `Updated grant "${updated.funder?.name || 'Unknown'}"`,
+        metadata: { fieldsUpdated: Object.keys(data) },
+      })
+
+      return updated
     }),
 
   /**
@@ -444,6 +456,15 @@ export const grantsRouter = router({
       if (grant.count === 0) {
         throw new Error('Grant not found or access denied')
       }
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.GRANT_DELETED,
+        entityType: 'grant',
+        entityId: input.id,
+        description: `Deleted grant`,
+      })
 
       return { success: true }
     }),

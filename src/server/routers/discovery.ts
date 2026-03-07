@@ -7,6 +7,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { inngest } from '@/inngest/client'
 import { anthropic } from '@/lib/anthropic'
 import { parseDocument } from '@/server/services/documents/parser'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 /**
  * S3 client for file uploads
@@ -140,7 +141,18 @@ export const discoveryRouter = router({
         }
       }
 
-      return await extractRfpWithClaude(text, source)
+      const result = await extractRfpWithClaude(text, source)
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.RFP_PARSED,
+        entityType: 'opportunity',
+        description: `Parsed RFP: "${result.title || 'Untitled'}" (${Math.round(result.confidence * 100)}% confidence)`,
+        metadata: { source, confidence: result.confidence },
+      })
+
+      return result
     }),
 
   /**
@@ -531,6 +543,16 @@ export const discoveryRouter = router({
           funder: true,
           program: true,
         },
+      })
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.OPPORTUNITY_SAVED,
+        entityType: 'grant',
+        entityId: grant.id,
+        description: `Saved opportunity "${title}" to pipeline`,
+        metadata: { fitScore, source, opportunityId: opportunity.id },
       })
 
       return {

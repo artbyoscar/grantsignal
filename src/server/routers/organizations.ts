@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
 import { inngest } from '@/inngest/client'
 import { rewriteInOrganizationVoice, type VoiceProfile } from '../services/ai/voice-analyzer'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 export const organizationsRouter = router({
   /**
@@ -181,6 +182,15 @@ export const organizationsRouter = router({
           organizationId: ctx.organizationId,
           forceRefresh: input.forceRefresh,
         },
+      })
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.VOICE_ANALYZED,
+        entityType: 'organization',
+        entityId: ctx.organizationId,
+        description: `Started voice analysis${input.forceRefresh ? ' (forced refresh)' : ''}`,
       })
 
       return {

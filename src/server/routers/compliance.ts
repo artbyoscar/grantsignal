@@ -3,6 +3,7 @@ import { router, orgProcedure } from '../trpc';
 import { extractCommitmentsFromDocument } from '../services/compliance/commitment-extractor';
 import { detectConflicts, resolveConflict } from '../services/compliance/conflict-detector';
 import { CommitmentType, CommitmentStatus, ConflictStatus } from '@prisma/client';
+import { logActivity, ActivityActions } from '@/lib/activity-logger';
 
 export const complianceRouter = router({
 
@@ -164,7 +165,7 @@ export const complianceRouter = router({
       dueDate: z.date().optional()
     }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.commitment.create({
+      const commitment = await ctx.db.commitment.create({
         data: {
           organizationId: ctx.organizationId,
           ...input,
@@ -173,6 +174,18 @@ export const complianceRouter = router({
           status: 'PENDING'
         }
       });
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.COMMITMENT_CREATED,
+        entityType: 'commitment',
+        entityId: commitment.id,
+        description: `Created commitment: "${input.description.slice(0, 80)}"`,
+        metadata: { type: input.type, grantId: input.grantId },
+      });
+
+      return commitment;
     }),
 
   // Update commitment status
@@ -291,6 +304,17 @@ export const complianceRouter = router({
         input.notes,
         ctx.auth.userId!
       );
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.CONFLICT_RESOLVED,
+        entityType: 'conflict',
+        entityId: input.conflictId,
+        description: `${input.resolution === 'RESOLVED' ? 'Resolved' : 'Ignored'} compliance conflict`,
+        metadata: { resolution: input.resolution },
+      });
+
       return { success: true };
     }),
 

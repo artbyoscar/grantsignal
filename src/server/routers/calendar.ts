@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { router, orgProcedure } from '../trpc';
+import { logActivity, ActivityActions } from '@/lib/activity-logger';
 
 const eventTypeEnum = z.enum(['grant_deadline', 'report_due', 'milestone', 'submission', 'award']);
 
@@ -287,6 +288,17 @@ export const calendarRouter = router({
           createdBy: ctx.auth.userId!,
         },
       });
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.CALENDAR_EVENT_CREATED,
+        entityType: 'calendarEvent',
+        entityId: event.id,
+        description: `Created calendar event "${input.title}"`,
+        metadata: { type: input.type, date: input.date.toISOString() },
+      });
+
       return event;
     }),
 

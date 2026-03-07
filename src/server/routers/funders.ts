@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
 import { inngest } from '@/inngest/client'
 import { TRPCError } from '@trpc/server'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 /**
  * Funders router for managing funder data and 990 intelligence
@@ -168,6 +169,16 @@ export const fundersRouter = router({
           },
         })
       }
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.FUNDER_CREATED,
+        entityType: 'funder',
+        entityId: funder.id,
+        description: `Added funder "${funder.name}"${sync990 && funder.ein ? ' with 990 sync' : ''}`,
+        metadata: { type: funder.type, ein: funder.ein },
+      })
 
       return funder
     }),

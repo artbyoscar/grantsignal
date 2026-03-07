@@ -5,6 +5,7 @@ import { S3Client, PutObjectCommand, HeadObjectCommand, DeleteObjectCommand } fr
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { inngest } from '@/inngest/client'
 import { queryOrganizationMemory, deleteDocumentVectors } from '../services/ai/rag'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -154,7 +155,6 @@ export const documentsRouter = router({
 
       // Verify file exists in S3 before triggering processing
       try {
-        console.log(`[VERIFY] Checking S3 file existence for document ${doc.id}: ${doc.s3Key}`)
 
         const headCommand = new HeadObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET!,
@@ -162,7 +162,6 @@ export const documentsRouter = router({
         })
 
         await s3Client.send(headCommand)
-        console.log(`[VERIFY] S3 file confirmed for document ${doc.id}`)
       } catch (error) {
         console.error(`[ERROR] S3 file not found for document ${doc.id}:`, error)
 
@@ -193,7 +192,6 @@ export const documentsRouter = router({
         },
       })
 
-      console.log(`[TRIGGER] Starting Inngest processing for document ${doc.id}`)
 
       // Trigger Inngest document processing job
       await inngest.send({
@@ -204,6 +202,16 @@ export const documentsRouter = router({
           s3Key: doc.s3Key,
           mimeType: doc.mimeType,
         },
+      })
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.DOCUMENT_UPLOADED,
+        entityType: 'document',
+        entityId: doc.id,
+        description: `Uploaded document "${doc.name}"`,
+        metadata: { fileName: doc.name, type: doc.type, size: doc.size },
       })
 
       return ctx.db.document.findUnique({
@@ -314,6 +322,15 @@ export const documentsRouter = router({
       if (document.count === 0) {
         throw new Error('Document not found or not in NEEDS_REVIEW status')
       }
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.DOCUMENT_APPROVED,
+        entityType: 'document',
+        entityId: input.documentId,
+        description: `Approved document for use`,
+      })
 
       return ctx.db.document.findUnique({
         where: { id: input.documentId },
@@ -600,13 +617,11 @@ export const documentsRouter = router({
 
       // Delete from S3
       try {
-        console.log(`Deleting document from S3: ${doc.s3Key}`)
         const deleteCommand = new DeleteObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET!,
           Key: doc.s3Key,
         })
         await s3Client.send(deleteCommand)
-        console.log(`Successfully deleted document from S3: ${doc.s3Key}`)
       } catch (error) {
         console.error('Error deleting document from S3:', error)
         // Continue with deletion even if S3 deletion fails
@@ -614,9 +629,7 @@ export const documentsRouter = router({
 
       // Delete vectors from Pinecone
       try {
-        console.log(`Deleting document vectors from Pinecone: ${doc.id}`)
         await deleteDocumentVectors(doc.id, ctx.organizationId)
-        console.log(`Successfully deleted document vectors from Pinecone: ${doc.id}`)
       } catch (error) {
         console.error('Error deleting document vectors from Pinecone:', error)
         // Continue with deletion even if Pinecone deletion fails
@@ -627,6 +640,16 @@ export const documentsRouter = router({
         where: {
           id: input.documentId,
         },
+      })
+
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.DOCUMENT_DELETED,
+        entityType: 'document',
+        entityId: input.documentId,
+        description: `Deleted document "${doc.name}"`,
+        metadata: { fileName: doc.name, type: doc.type },
       })
 
       return { success: true }

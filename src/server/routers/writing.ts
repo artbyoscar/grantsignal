@@ -4,6 +4,7 @@ import { queryOrganizationMemory } from '../services/ai/rag'
 import { generateEmbedding } from '../services/ai/embeddings'
 import { anthropic } from '@/lib/anthropic'
 import { TRPCError } from '@trpc/server'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 /**
  * Writing Studio Router
@@ -22,7 +23,6 @@ export const writingRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[writing.getGrantForWriting] Fetching grant:', input.grantId)
 
         const grant = await ctx.db.grant.findFirst({
           where: {
@@ -54,7 +54,6 @@ export const writingRouter = router({
           })
         }
 
-        console.log('[writing.getGrantForWriting] Grant loaded successfully')
 
         return grant
       } catch (error) {
@@ -83,7 +82,6 @@ export const writingRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[writing.getRFPSections] Fetching sections for grant:', input.grantId)
 
         const grant = await ctx.db.grant.findFirst({
           where: {
@@ -102,12 +100,10 @@ export const writingRouter = router({
         // Check if RFP has been parsed and stored in draftContent
         const draftContent = grant.draftContent as any
         if (draftContent?.rfpSections) {
-          console.log('[writing.getRFPSections] Returning parsed RFP sections')
           return draftContent.rfpSections
         }
 
         // Return default sections if no RFP parsed yet
-        console.log('[writing.getRFPSections] No parsed RFP found, returning defaults')
         const defaultSections = [
           {
             id: 'executive_summary',
@@ -174,7 +170,6 @@ export const writingRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[writing.getFunderIntelligence] Fetching funder:', input.funderId)
 
         const funder = await ctx.db.funder.findUnique({
           where: {
@@ -223,7 +218,6 @@ export const writingRouter = router({
           })),
         }
 
-        console.log('[writing.getFunderIntelligence] Funder data loaded successfully')
 
         return {
           id: funder.id,
@@ -263,7 +257,6 @@ export const writingRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log(`[writing.searchMemory] Searching for: "${input.query.slice(0, 50)}..."`)
 
         // Query Pinecone with organization namespace
         const contexts = await queryOrganizationMemory({
@@ -281,7 +274,6 @@ export const writingRouter = router({
           score: Math.round(ctx.score * 100) / 100, // Round to 2 decimals
         }))
 
-        console.log(`[writing.searchMemory] Found ${results.length} relevant chunks`)
 
         return { results }
       } catch (error) {
@@ -309,12 +301,6 @@ export const writingRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        console.log('[writing.generateDraft] Starting generation:', {
-          grantId: input.grantId,
-          sectionName: input.sectionName,
-          mode: input.mode,
-        })
-
         // Verify grant access
         const grant = await ctx.db.grant.findFirst({
           where: {
@@ -338,7 +324,6 @@ export const writingRouter = router({
           minScore: 0.7,
         })
 
-        console.log(`[writing.generateDraft] Found ${contexts.length} relevant contexts`)
 
         // Step 2: Calculate confidence score from average retrieval scores
         const averageScore =
@@ -353,17 +338,8 @@ export const writingRouter = router({
         const relevanceScore = averageScore * 60
         const confidenceScore = Math.round(contextQuantityScore + relevanceScore)
 
-        console.log('[writing.generateDraft] Confidence calculation:', {
-          contextsFound: contexts.length,
-          averageScore: averageScore.toFixed(3),
-          contextQuantityScore,
-          relevanceScore,
-          confidenceScore,
-        })
-
         // Step 3: V3 Trust Architecture - Check confidence threshold
         if (confidenceScore < 60) {
-          console.log('[writing.generateDraft] Confidence below threshold - returning sources only')
 
           return {
             shouldGenerate: false,
@@ -407,7 +383,6 @@ ${input.prompt}
 You are writing the "${input.sectionName}" section of a grant proposal.`
 
         // Step 7: Call Claude API
-        console.log('[writing.generateDraft] Calling Claude API...')
         const response = await anthropic.messages.create({
           model: 'claude-sonnet-4-5-20250929',
           max_tokens: 4096,
@@ -424,13 +399,18 @@ You are writing the "${input.sectionName}" section of a grant proposal.`
         // Step 8: Extract content from response
         const content = response.content[0].type === 'text' ? response.content[0].text : ''
 
-        console.log('[writing.generateDraft] Generation successful:', {
-          confidence: confidenceScore,
-          sourcesUsed: contexts.length,
-          tokensUsed: response.usage.input_tokens + response.usage.output_tokens,
+        // Step 9: Log AI content generation
+        logActivity({
+          organizationId: ctx.organizationId,
+          userId: ctx.auth.userId,
+          action: ActivityActions.AI_CONTENT_GENERATED,
+          entityType: 'grant',
+          entityId: input.grantId,
+          description: `Generated AI draft for "${input.sectionName}" (${confidenceScore}% confidence)`,
+          metadata: { sectionName: input.sectionName, mode: input.mode, confidence: confidenceScore, sourcesUsed: contexts.length },
         })
 
-        // Step 9: Return success response with sources
+        // Step 10: Return success response with sources
         return {
           shouldGenerate: true,
           content,
@@ -473,13 +453,6 @@ You are writing the "${input.sectionName}" section of a grant proposal.`
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        console.log('[writing.saveContent] Saving content:', {
-          grantId: input.grantId,
-          sectionName: input.sectionName,
-          isAiGenerated: input.isAiGenerated,
-          contentLength: input.content.length,
-        })
-
         // Verify grant access
         const grant = await ctx.db.grant.findFirst({
           where: {
@@ -520,7 +493,15 @@ You are writing the "${input.sectionName}" section of a grant proposal.`
           },
         })
 
-        console.log('[writing.saveContent] Content saved successfully')
+        logActivity({
+          organizationId: ctx.organizationId,
+          userId: ctx.auth.userId,
+          action: ActivityActions.DRAFT_SAVED,
+          entityType: 'grant',
+          entityId: input.grantId,
+          description: `Saved draft for "${input.sectionName}"${input.isAiGenerated ? ' (AI-generated)' : ''}`,
+          metadata: { sectionName: input.sectionName, isAiGenerated: input.isAiGenerated, contentLength: input.content.length },
+        })
 
         return {
           success: true,
@@ -552,7 +533,6 @@ You are writing the "${input.sectionName}" section of a grant proposal.`
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[writing.getGrantDraft] Fetching draft for grant:', input.grantId)
 
         // Verify grant access
         const grant = await ctx.db.grant.findFirst({
@@ -572,7 +552,6 @@ You are writing the "${input.sectionName}" section of a grant proposal.`
         // Parse draft content from notes field
         const draftData = grant.notes ? JSON.parse(grant.notes) : { sections: {} }
 
-        console.log('[writing.getGrantDraft] Found sections:', Object.keys(draftData.sections || {}).length)
 
         return {
           grantId: input.grantId,
