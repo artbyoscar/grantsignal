@@ -435,7 +435,7 @@ export const dashboardRouter = router({
       ctx.db.program.count({
         where: { organizationId: ctx.organizationId },
       }),
-      ctx.db.organizationMember.count({
+      ctx.db.organizationUser.count({
         where: { organizationId: ctx.organizationId },
       }),
     ])
