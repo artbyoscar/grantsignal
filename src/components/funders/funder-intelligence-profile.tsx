@@ -87,7 +87,8 @@ interface FunderIntelligenceProfileProps {
       id: string
       title: string
       deadline: Date | null
-      amountRange: string | null
+      amountMin: string | number | null
+      amountMax: string | number | null
     }>
     recommendations: string[]
   }
@@ -431,8 +432,14 @@ export function FunderIntelligenceProfile({
               >
                 <div>
                   <div className="text-white font-medium text-sm">{opp.title}</div>
-                  {opp.amountRange && (
-                    <div className="text-xs text-slate-400 mt-0.5">{opp.amountRange}</div>
+                  {(opp.amountMin || opp.amountMax) && (
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      {opp.amountMin && opp.amountMax
+                        ? `$${Number(opp.amountMin).toLocaleString()} - $${Number(opp.amountMax).toLocaleString()}`
+                        : opp.amountMin
+                          ? `From $${Number(opp.amountMin).toLocaleString()}`
+                          : `Up to $${Number(opp.amountMax).toLocaleString()}`}
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2">

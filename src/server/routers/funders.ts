@@ -648,7 +648,8 @@ export const fundersRouter = router({
           id: o.id,
           title: o.title,
           deadline: o.deadline,
-          amountRange: o.amountRange,
+          amountMin: o.amountMin,
+          amountMax: o.amountMax,
         })),
         recommendations,
       }
