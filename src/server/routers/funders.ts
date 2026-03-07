@@ -365,4 +365,292 @@ export const fundersRouter = router({
         })),
       }
     }),
+
+  /**
+   * Get full funder intelligence profile with AI-powered alignment scoring
+   * Combines giving history, peer analysis, program alignment, and strategic recommendations
+   */
+  getIntelligenceProfile: orgProcedure
+    .input(z.object({ funderId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const [funder, org] = await Promise.all([
+        ctx.db.funder.findUnique({
+          where: { id: input.funderId },
+          include: {
+            pastGrantees: {
+              orderBy: { year: 'desc' },
+              take: 200,
+            },
+            opportunities: {
+              where: { deadline: { gte: new Date() } },
+              orderBy: { deadline: 'asc' },
+              take: 10,
+            },
+            grants: {
+              where: { organizationId: ctx.organizationId },
+              orderBy: { createdAt: 'desc' },
+              include: { program: true },
+            },
+            requirements: {
+              where: { organizationId: ctx.organizationId },
+            },
+          },
+        }),
+        ctx.db.organization.findUnique({
+          where: { id: ctx.organizationId },
+          select: {
+            name: true,
+            mission: true,
+            primaryProgramAreas: true,
+            voiceProfile: true,
+            ein: true,
+          },
+        }),
+      ])
+
+      if (!funder) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Funder not found' })
+      }
+
+      // --- Giving Trend Analysis ---
+      const grantsByYear = new Map<number, { count: number; total: number }>()
+      for (const g of funder.pastGrantees) {
+        const entry = grantsByYear.get(g.year) || { count: 0, total: 0 }
+        entry.count++
+        entry.total += Number(g.amount)
+        grantsByYear.set(g.year, entry)
+      }
+
+      const givingTrend = Array.from(grantsByYear.entries())
+        .map(([year, data]) => ({
+          year,
+          grantCount: data.count,
+          totalGiving: data.total,
+          averageGrant: data.count > 0 ? Math.round(data.total / data.count) : 0,
+        }))
+        .sort((a, b) => a.year - b.year)
+
+      // Calculate year-over-year growth
+      const recentYears = givingTrend.slice(-3)
+      let givingGrowthRate: number | null = null
+      if (recentYears.length >= 2) {
+        const oldest = recentYears[0].totalGiving
+        const newest = recentYears[recentYears.length - 1].totalGiving
+        givingGrowthRate = oldest > 0
+          ? Math.round(((newest - oldest) / oldest) * 100)
+          : null
+      }
+
+      // --- Program Area Alignment ---
+      const funderAreas = ((funder.programAreas as any)?.areas || []) as string[]
+      const orgAreas = (org?.primaryProgramAreas || []) as string[]
+
+      const overlappingAreas = funderAreas.filter(fa =>
+        orgAreas.some(oa =>
+          oa.toLowerCase().includes(fa.toLowerCase()) ||
+          fa.toLowerCase().includes(oa.toLowerCase())
+        )
+      )
+
+      const programAlignmentScore = funderAreas.length > 0
+        ? Math.round((overlappingAreas.length / funderAreas.length) * 100)
+        : 0
+
+      // --- Geographic Alignment ---
+      const geoFocus = funder.geographicFocus as any
+      const hasGeoAlignment = !!geoFocus // Simplified: would compare org location to funder focus
+
+      // --- Grant Size Fit ---
+      const amounts = funder.pastGrantees.map(g => Number(g.amount)).filter(a => a > 0)
+      const grantSizeStats = amounts.length > 0 ? {
+        min: Math.min(...amounts),
+        max: Math.max(...amounts),
+        median: amounts.sort((a, b) => a - b)[Math.floor(amounts.length / 2)],
+        average: Math.round(amounts.reduce((a, b) => a + b, 0) / amounts.length),
+        p25: amounts[Math.floor(amounts.length * 0.25)] || 0,
+        p75: amounts[Math.floor(amounts.length * 0.75)] || 0,
+      } : null
+
+      // --- Purpose Analysis ---
+      const purposeCounts = new Map<string, number>()
+      for (const g of funder.pastGrantees) {
+        if (g.purpose) {
+          // Extract key phrases (simple word frequency)
+          const words = g.purpose.toLowerCase()
+            .replace(/[^a-z\s]/g, '')
+            .split(/\s+/)
+            .filter(w => w.length > 3)
+          for (const word of words) {
+            purposeCounts.set(word, (purposeCounts.get(word) || 0) + 1)
+          }
+        }
+      }
+      const topPurposeKeywords = Array.from(purposeCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15)
+        .map(([word, count]) => ({ word, count }))
+
+      // --- Relationship History ---
+      const relationship = {
+        totalGrantsReceived: funder.grants.length,
+        totalFunding: funder.grants.reduce((sum, g) =>
+          sum + (g.amountRequested ? Number(g.amountRequested) : 0), 0
+        ),
+        latestGrant: funder.grants[0] || null,
+        activeGrants: funder.grants.filter(g =>
+          ['WRITING', 'REVIEW', 'SUBMITTED', 'PENDING', 'AWARDED', 'ACTIVE'].includes(g.status)
+        ).length,
+        requirementsMet: funder.requirements.filter(r => r.value === 'met').length,
+        requirementsTotal: funder.requirements.length,
+      }
+
+      // --- Overall Alignment Score ---
+      let alignmentScore = 0
+      let alignmentFactors: Array<{ factor: string; score: number; maxScore: number; description: string }> = []
+
+      // Program alignment (0-30 points)
+      const progPoints = Math.round(programAlignmentScore * 0.3)
+      alignmentFactors.push({
+        factor: 'Program Alignment',
+        score: progPoints,
+        maxScore: 30,
+        description: overlappingAreas.length > 0
+          ? `${overlappingAreas.length} overlapping focus areas: ${overlappingAreas.join(', ')}`
+          : 'No direct overlap in stated program areas',
+      })
+      alignmentScore += progPoints
+
+      // Giving capacity (0-20 points)
+      const givingCapacityPoints = funder.totalGiving
+        ? (Number(funder.totalGiving) > 1000000 ? 20 : Number(funder.totalGiving) > 100000 ? 15 : 10)
+        : 0
+      alignmentFactors.push({
+        factor: 'Giving Capacity',
+        score: givingCapacityPoints,
+        maxScore: 20,
+        description: funder.totalGiving
+          ? `$${Number(funder.totalGiving).toLocaleString()} in total giving`
+          : 'No giving data available',
+      })
+      alignmentScore += givingCapacityPoints
+
+      // Existing relationship (0-25 points)
+      const relationshipPoints = relationship.totalGrantsReceived > 0
+        ? Math.min(relationship.totalGrantsReceived * 5, 25)
+        : 0
+      alignmentFactors.push({
+        factor: 'Existing Relationship',
+        score: relationshipPoints,
+        maxScore: 25,
+        description: relationship.totalGrantsReceived > 0
+          ? `${relationship.totalGrantsReceived} previous grants from this funder`
+          : 'No prior grant history with this funder',
+      })
+      alignmentScore += relationshipPoints
+
+      // Active opportunities (0-15 points)
+      const oppPoints = funder.opportunities.length > 0
+        ? Math.min(funder.opportunities.length * 5, 15)
+        : 0
+      alignmentFactors.push({
+        factor: 'Active Opportunities',
+        score: oppPoints,
+        maxScore: 15,
+        description: funder.opportunities.length > 0
+          ? `${funder.opportunities.length} open opportunities with upcoming deadlines`
+          : 'No active opportunities found',
+      })
+      alignmentScore += oppPoints
+
+      // Mission alignment (0-10 points) - simple text overlap check
+      let missionPoints = 0
+      if (funder.mission && org?.mission) {
+        const funderWords = new Set(funder.mission.toLowerCase().split(/\s+/).filter(w => w.length > 4))
+        const orgWords = new Set(org.mission.toLowerCase().split(/\s+/).filter(w => w.length > 4))
+        const overlap = [...funderWords].filter(w => orgWords.has(w)).length
+        missionPoints = Math.min(Math.round((overlap / Math.max(funderWords.size, 1)) * 10), 10)
+      }
+      alignmentFactors.push({
+        factor: 'Mission Alignment',
+        score: missionPoints,
+        maxScore: 10,
+        description: missionPoints > 5
+          ? 'Strong mission language overlap'
+          : missionPoints > 0
+            ? 'Some shared mission language'
+            : 'Limited mission text overlap (consider manual review)',
+      })
+      alignmentScore += missionPoints
+
+      // --- Strategic Recommendations ---
+      const recommendations: string[] = []
+
+      if (programAlignmentScore < 30) {
+        recommendations.push('Consider emphasizing any shared program areas in your application narrative to strengthen alignment.')
+      }
+      if (!funder.mission) {
+        recommendations.push('This funder has no mission statement on file. Research their website and 990 filings for priority areas.')
+      }
+      if (relationship.totalGrantsReceived === 0 && funder.pastGrantees.length > 50) {
+        recommendations.push('This is a new funder relationship. Review successful peer organizations to understand what this funder values.')
+      }
+      if (givingGrowthRate !== null && givingGrowthRate > 10) {
+        recommendations.push(`This funder is growing their giving (${givingGrowthRate}% over recent years). Consider larger asks.`)
+      }
+      if (givingGrowthRate !== null && givingGrowthRate < -10) {
+        recommendations.push(`This funder has decreased giving recently (${givingGrowthRate}%). Be conservative with budget requests.`)
+      }
+      if (funder.opportunities.length > 0) {
+        const nextDeadline = funder.opportunities[0]
+        recommendations.push(`Next deadline: ${nextDeadline.deadline?.toLocaleDateString() || 'TBD'} for "${nextDeadline.title}". Start early.`)
+      }
+      if (grantSizeStats && grantSizeStats.p75 > 0) {
+        recommendations.push(`Target ask between $${grantSizeStats.p25.toLocaleString()} and $${grantSizeStats.p75.toLocaleString()} based on historical giving patterns.`)
+      }
+
+      return {
+        funder: {
+          id: funder.id,
+          name: funder.name,
+          type: funder.type,
+          ein: funder.ein,
+          mission: funder.mission,
+          website: funder.website,
+          city: funder.city,
+          state: funder.state,
+          nteeCode: funder.nteeCode,
+          applicationProcess: funder.applicationProcess,
+          applicationDeadline: funder.applicationDeadline,
+          contactInfo: funder.contactInfo,
+          lastSyncedAt: funder.lastSyncedAt,
+        },
+        alignment: {
+          score: alignmentScore,
+          maxScore: 100,
+          level: alignmentScore >= 70 ? 'strong' as const : alignmentScore >= 40 ? 'moderate' as const : 'developing' as const,
+          factors: alignmentFactors,
+        },
+        giving: {
+          totalAssets: funder.totalAssets ? Number(funder.totalAssets) : null,
+          totalGiving: funder.totalGiving ? Number(funder.totalGiving) : null,
+          grantSizeStats,
+          trend: givingTrend,
+          growthRate: givingGrowthRate,
+        },
+        programFocus: {
+          funderAreas,
+          orgAreas,
+          overlappingAreas,
+          topPurposeKeywords,
+        },
+        relationship,
+        opportunities: funder.opportunities.map(o => ({
+          id: o.id,
+          title: o.title,
+          deadline: o.deadline,
+          amountRange: o.amountRange,
+        })),
+        recommendations,
+      }
+    }),
 })

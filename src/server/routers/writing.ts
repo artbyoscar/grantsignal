@@ -5,6 +5,7 @@ import { generateEmbedding } from '../services/ai/embeddings'
 import { anthropic } from '@/lib/anthropic'
 import { TRPCError } from '@trpc/server'
 import { logActivity, ActivityActions } from '@/lib/activity-logger'
+import { extractCommitmentsFromText } from '../services/compliance/commitment-extractor'
 
 /**
  * Writing Studio Router
@@ -667,6 +668,196 @@ You are writing the "${input.sectionName}" section of a grant proposal.`
         orgMemoryDocuments: totalDocs,
         hasVoiceProfile: !!org?.voiceProfile,
         hasCustomRfpSections,
+      }
+    }),
+
+  /**
+   * Real-time Compliance Check
+   * Analyzes draft content for commitments and cross-references existing commitments
+   * to detect potential conflicts BEFORE submission
+   */
+  checkCompliance: orgProcedure
+    .input(
+      z.object({
+        grantId: z.string(),
+        content: z.string().min(50, 'Content must be at least 50 characters for compliance analysis'),
+        sectionName: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify grant access
+      const grant = await ctx.db.grant.findFirst({
+        where: {
+          id: input.grantId,
+          organizationId: ctx.organizationId,
+        },
+        include: {
+          funder: { select: { name: true } },
+        },
+      })
+
+      if (!grant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Grant not found' })
+      }
+
+      // Step 1: Extract commitments from the draft text
+      const draftCommitments = await extractCommitmentsFromText(
+        input.content,
+        input.grantId,
+        ctx.organizationId
+      )
+
+      // Step 2: Fetch existing commitments across all grants for this org
+      const existingCommitments = await ctx.db.commitment.findMany({
+        where: {
+          organizationId: ctx.organizationId,
+          grant: {
+            status: { in: ['WRITING', 'REVIEW', 'SUBMITTED', 'PENDING', 'AWARDED', 'ACTIVE'] },
+          },
+        },
+        include: {
+          grant: {
+            select: { id: true, funder: { select: { name: true } } },
+          },
+        },
+      })
+
+      // Step 3: Cross-reference for potential conflicts
+      const warnings: Array<{
+        type: 'metric_mismatch' | 'capacity_risk' | 'timeline_conflict' | 'duplicate_commitment'
+        severity: 'info' | 'warning' | 'critical'
+        message: string
+        draftCommitment: string
+        existingCommitment?: string
+        existingGrant?: string
+        existingFunder?: string
+      }> = []
+
+      for (const draft of draftCommitments) {
+        if (!draft.metricName || !draft.metricValue) continue
+
+        // Check for metric mismatches with existing commitments
+        for (const existing of existingCommitments) {
+          if (!existing.metricName || !existing.metricValue) continue
+
+          // Skip same grant
+          if (existing.grantId === input.grantId) continue
+
+          // Check if metric names are similar
+          const draftMetric = draft.metricName.toLowerCase().trim()
+          const existingMetric = existing.metricName.toLowerCase().trim()
+
+          if (draftMetric === existingMetric || draftMetric.includes(existingMetric) || existingMetric.includes(draftMetric)) {
+            // Same metric, different values
+            if (draft.metricValue !== existing.metricValue) {
+              const draftNum = parseFloat(draft.metricValue)
+              const existingNum = parseFloat(existing.metricValue)
+
+              let severity: 'info' | 'warning' | 'critical' = 'warning'
+              if (!isNaN(draftNum) && !isNaN(existingNum)) {
+                const variance = Math.abs(draftNum - existingNum) / Math.max(draftNum, existingNum)
+                severity = variance > 0.25 ? 'critical' : variance > 0.1 ? 'warning' : 'info'
+              }
+
+              warnings.push({
+                type: 'metric_mismatch',
+                severity,
+                message: `You are committing to "${draft.metricName}: ${draft.metricValue}" but another grant promises "${existing.metricName}: ${existing.metricValue}" to ${existing.grant.funder?.name || 'another funder'}.`,
+                draftCommitment: draft.description,
+                existingCommitment: existing.description,
+                existingGrant: existing.grantId,
+                existingFunder: existing.grant.funder?.name || undefined,
+              })
+            }
+          }
+        }
+
+        // Check for capacity overcommit (staffing)
+        if (draft.type === 'STAFFING' && draft.metricValue) {
+          const draftFTE = parseFloat(draft.metricValue)
+          if (!isNaN(draftFTE)) {
+            const existingFTE = existingCommitments
+              .filter(c => c.type === 'STAFFING')
+              .reduce((sum, c) => {
+                const match = c.metricValue?.match(/(\d+\.?\d*)/)
+                return sum + (match ? parseFloat(match[1]) : 0)
+              }, 0)
+
+            if (existingFTE + draftFTE > 10) {
+              warnings.push({
+                type: 'capacity_risk',
+                severity: existingFTE + draftFTE > 20 ? 'critical' : 'warning',
+                message: `Adding ${draftFTE} FTE would bring total staffing commitments to ${(existingFTE + draftFTE).toFixed(1)} FTE across all grants. This may exceed organizational capacity.`,
+                draftCommitment: draft.description,
+              })
+            }
+          }
+        }
+
+        // Check for timeline conflicts
+        if (draft.type === 'DELIVERABLE' && draft.dueDate) {
+          const draftDate = new Date(draft.dueDate)
+          for (const existing of existingCommitments) {
+            if (existing.type !== 'DELIVERABLE' || !existing.dueDate) continue
+            if (existing.grantId === input.grantId) continue
+
+            // Similar deliverable name check
+            const draftDesc = draft.description.toLowerCase().slice(0, 50)
+            const existingDesc = existing.description.toLowerCase().slice(0, 50)
+
+            if (draftDesc.includes(existingDesc.slice(0, 20)) || existingDesc.includes(draftDesc.slice(0, 20))) {
+              const daysDiff = Math.abs(draftDate.getTime() - existing.dueDate.getTime()) / (1000 * 60 * 60 * 24)
+              if (daysDiff > 30) {
+                warnings.push({
+                  type: 'timeline_conflict',
+                  severity: daysDiff > 90 ? 'warning' : 'info',
+                  message: `Similar deliverable due ${draftDate.toLocaleDateString()} in this draft but due ${existing.dueDate.toLocaleDateString()} for ${existing.grant.funder?.name || 'another funder'} (${Math.round(daysDiff)} days apart).`,
+                  draftCommitment: draft.description,
+                  existingCommitment: existing.description,
+                  existingGrant: existing.grantId,
+                  existingFunder: existing.grant.funder?.name || undefined,
+                })
+              }
+            }
+          }
+        }
+      }
+
+      // Step 4: Build summary
+      const criticalCount = warnings.filter(w => w.severity === 'critical').length
+      const warningCount = warnings.filter(w => w.severity === 'warning').length
+      const infoCount = warnings.filter(w => w.severity === 'info').length
+
+      return {
+        commitments: draftCommitments.map(c => ({
+          type: c.type,
+          description: c.description,
+          metricName: c.metricName || null,
+          metricValue: c.metricValue || null,
+          dueDate: c.dueDate || null,
+          confidence: c.confidence,
+          sourceText: c.sourceText,
+        })),
+        warnings,
+        summary: {
+          commitmentsFound: draftCommitments.length,
+          existingCommitmentsChecked: existingCommitments.length,
+          criticalIssues: criticalCount,
+          warnings: warningCount,
+          informational: infoCount,
+          overallStatus: criticalCount > 0
+            ? 'critical' as const
+            : warningCount > 0
+              ? 'warning' as const
+              : 'clean' as const,
+          message: criticalCount > 0
+            ? `${criticalCount} critical compliance issue${criticalCount > 1 ? 's' : ''} detected. Review before submitting.`
+            : warningCount > 0
+              ? `${warningCount} potential consistency issue${warningCount > 1 ? 's' : ''} found across your grants.`
+              : draftCommitments.length > 0
+                ? `${draftCommitments.length} commitment${draftCommitments.length > 1 ? 's' : ''} detected. No conflicts with existing grants.`
+                : 'No specific commitments detected in this section.',
+        },
       }
     }),
 })

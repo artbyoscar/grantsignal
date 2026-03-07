@@ -102,12 +102,72 @@ ${document.extractedText.slice(0, 50000)}`;
   return commitments;
 }
 
+/**
+ * Extract commitments from ad-hoc text (e.g., draft content in Writing Studio)
+ * Used for real-time compliance checking during writing.
+ * Does NOT persist to database - returns analysis only.
+ */
 export async function extractCommitmentsFromText(
   text: string,
   grantId: string,
   organizationId: string
 ): Promise<ExtractedCommitment[]> {
-  // Same logic but for ad-hoc text analysis (e.g., draft being written)
-  // Used for real-time compliance checking in Writing Studio
-  return []
+  if (!text || text.trim().length < 50) {
+    return []
+  }
+
+  const prompt = `Analyze this grant proposal draft text and identify ALL commitments, promises, and quantifiable claims being made.
+
+For each commitment found, identify:
+1. Type: DELIVERABLE, OUTCOME_METRIC, REPORT_DUE, BUDGET_SPEND, STAFFING, TIMELINE
+2. Description: Clear statement of what is being promised
+3. Metric name (if applicable): e.g., "youth served", "meals provided"
+4. Metric value (if applicable): e.g., "500", "1,000"
+5. Due date (if specified): ISO 8601 format
+6. Source text: The EXACT quote from the text containing this commitment
+7. Confidence: 0-100 how certain you are this is a real commitment (not hypothetical)
+
+Return JSON array:
+[
+  {
+    "type": "OUTCOME_METRIC",
+    "description": "Serve 500 youth annually",
+    "metricName": "youth served",
+    "metricValue": "500",
+    "dueDate": null,
+    "sourceText": "We will serve 500 youth annually through our programs.",
+    "confidence": 85
+  }
+]
+
+IMPORTANT:
+- Only extract EXPLICIT commitments, not aspirational or hypothetical language
+- Include the exact source text so users can verify
+- Be conservative with confidence scores
+- Look for: specific numbers, dates, deliverables, outcomes, staffing promises, budget commitments
+- If no commitments found, return an empty array []
+
+Draft text:
+${text.slice(0, 30000)}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+
+    if (!jsonMatch) {
+      return [];
+    }
+
+    const commitments: ExtractedCommitment[] = JSON.parse(jsonMatch[0]);
+    return commitments;
+  } catch (error) {
+    console.error('[extractCommitmentsFromText] Error:', error);
+    return [];
+  }
 }
