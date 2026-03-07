@@ -37,11 +37,11 @@ export async function signInWithClerk(page: Page) {
 
   // Clerk renders an email input first
   await page.getByLabel('Email address').fill(email)
-  await page.getByRole('button', { name: /continue/i }).click()
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
 
   // Then a password input
   await page.getByLabel('Password').fill(password)
-  await page.getByRole('button', { name: /continue/i }).click()
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
 
   // Wait for redirect after successful login
   await page.waitForURL(/\/(dashboard|onboarding)/, { timeout: 15_000 })
