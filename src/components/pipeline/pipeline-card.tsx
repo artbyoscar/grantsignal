@@ -139,14 +139,14 @@ export function DraggableGrantCard({ grant, color, progress, isFlagged = false, 
 
     // If quick click with minimal movement, navigate to writer
     if (timeDiff < 300 && distance < 10 && !isDragging) {
-      router.push(`/writer/${grant.id}`)
+      router.push(`/write/${grant.id}/start`)
     }
 
     setPointerDown(null)
   }
 
   const handleOpenWriter = () => {
-    router.push(`/writer/${grant.id}`)
+    router.push(`/write/${grant.id}/start`)
   }
 
   const handleEdit = () => {

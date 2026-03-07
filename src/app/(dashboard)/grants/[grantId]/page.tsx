@@ -101,7 +101,7 @@ export default function GrantDetailPage() {
           <p className="text-slate-400 mt-1">View and manage grant information</p>
         </div>
         <button
-          onClick={() => router.push(`/write/${grant.id}`)}
+          onClick={() => router.push(`/write/${grant.id}/start`)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
         >
           <Edit3 className="w-4 h-4" />

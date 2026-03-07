@@ -578,6 +578,97 @@ You are writing the "${input.sectionName}" section of a grant proposal.`
         })
       }
     }),
+
+  /**
+   * Grant Writer Wizard - Writing Readiness Check
+   * Assesses what context is available before a user starts writing
+   */
+  getWritingReadiness: orgProcedure
+    .input(z.object({ grantId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const grant = await ctx.db.grant.findFirst({
+        where: {
+          id: input.grantId,
+          organizationId: ctx.organizationId,
+        },
+        include: {
+          funder: true,
+          opportunity: true,
+          program: true,
+          documents: {
+            where: { status: 'COMPLETED' },
+            select: { id: true, name: true, type: true },
+          },
+        },
+      })
+
+      if (!grant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Grant not found' })
+      }
+
+      // Check organization context
+      const org = await ctx.db.organization.findUnique({
+        where: { id: ctx.organizationId },
+        select: {
+          name: true,
+          mission: true,
+          voiceProfile: true,
+          primaryProgramAreas: true,
+        },
+      })
+
+      // Count available memory documents
+      const totalDocs = await ctx.db.document.count({
+        where: { organizationId: ctx.organizationId, status: 'COMPLETED' },
+      })
+
+      // Check existing draft progress
+      const draftContent = (grant.draftContent as Record<string, { content?: string; wordCount?: number }>) || {}
+      const sectionsStarted = Object.keys(draftContent).filter(
+        k => draftContent[k]?.content && draftContent[k].content!.trim().length > 0
+      ).length
+
+      // Check RFP sections availability
+      const dc = grant.draftContent as any
+      const hasCustomRfpSections = !!dc?.rfpSections
+
+      // Build readiness checklist
+      const checks = {
+        hasGrant: true,
+        hasFunder: !!grant.funder,
+        hasOpportunity: !!grant.opportunity,
+        hasDeadline: !!grant.deadline,
+        hasAmountRequested: !!grant.amountRequested,
+        hasDocuments: (grant.documents?.length ?? 0) > 0,
+        hasOrgMemory: totalDocs >= 3,
+        hasVoiceProfile: !!org?.voiceProfile,
+        hasMission: !!org?.mission,
+        hasCustomRfpSections,
+        hasDraftProgress: sectionsStarted > 0,
+      }
+
+      const readyCount = Object.values(checks).filter(Boolean).length
+      const totalChecks = Object.keys(checks).length
+      const readinessScore = Math.round((readyCount / totalChecks) * 100)
+
+      return {
+        grant: {
+          id: grant.id,
+          status: grant.status,
+          funderName: grant.funder?.name || null,
+          opportunityTitle: grant.opportunity?.title || null,
+          deadline: grant.deadline,
+          amountRequested: grant.amountRequested ? Number(grant.amountRequested) : null,
+        },
+        checks,
+        readinessScore,
+        sectionsStarted,
+        totalDocuments: grant.documents?.length ?? 0,
+        orgMemoryDocuments: totalDocs,
+        hasVoiceProfile: !!org?.voiceProfile,
+        hasCustomRfpSections,
+      }
+    }),
 })
 
 /**

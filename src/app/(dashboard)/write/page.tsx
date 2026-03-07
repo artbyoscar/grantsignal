@@ -31,7 +31,7 @@ export default function WriterIndexPage() {
           {activeGrants.map((grant) => (
             <Link
               key={grant.id}
-              href={`/write/${grant.id}`}
+              href={`/write/${grant.id}/start`}
               className="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-colors"
             >
               <div className="flex items-start justify-between mb-3">

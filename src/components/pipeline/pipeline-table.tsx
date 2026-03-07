@@ -432,7 +432,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                 return (
                   <tr
                     key={grant.id}
-                    onClick={() => router.push(`/write/${grant.id}`)}
+                    onClick={() => router.push(`/write/${grant.id}/start`)}
                     className="hover:bg-slate-800/50 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3">
@@ -558,7 +558,7 @@ export function PipelineTable({ grants }: PipelineTableProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            router.push(`/write/${grant.id}`)
+                            router.push(`/write/${grant.id}/start`)
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
                           title="Open in Writer"

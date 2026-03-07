@@ -264,7 +264,7 @@ export default function PipelinePage() {
   // Handle card click - navigate to writer - memoized
   const handleCardClick = useCallback(
     (cardId: string) => {
-      router.push(`/write/${cardId}`)
+      router.push(`/write/${cardId}/start`)
     },
     [router]
   )
