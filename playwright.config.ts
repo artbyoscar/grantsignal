@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
+import dotenv from 'dotenv'
+import path from 'path'
+
+// Load .env.local so Playwright tests can read CLERK_TEST_USER_* vars
+dotenv.config({ path: path.resolve(__dirname, '.env.local') })
 
 /**
  * Playwright E2E Test Configuration for GrantSignal
