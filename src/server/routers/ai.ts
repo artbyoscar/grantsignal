@@ -21,25 +21,12 @@ export const aiRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        console.log('[ai.generate] Starting generation:', {
-          organizationId: ctx.organizationId,
-          mode: input.mode,
-          promptLength: input.prompt.length,
-          hasExistingContent: !!input.existingContent,
-        })
-
         const result = await generateWithMemory({
           prompt: input.prompt,
           organizationId: ctx.organizationId,
           grantId: input.grantId,
           mode: input.mode,
           existingContent: input.existingContent,
-        })
-
-        console.log('[ai.generate] Generation successful:', {
-          confidence: result.confidence,
-          sourcesFound: result.sources.length,
-          tokensUsed: result.tokensUsed,
         })
 
         return result
@@ -68,13 +55,6 @@ export const aiRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        console.log('[ai.generateWithSources] Starting generation:', {
-          organizationId: ctx.organizationId,
-          grantId: input.grantId,
-          sectionId: input.sectionId,
-          writingMode: input.writingMode,
-        })
-
         // Verify grant access if provided
         if (input.grantId) {
           const grant = await ctx.db.grant.findFirst({
@@ -100,8 +80,6 @@ export const aiRouter = router({
           minScore: 0.7,
         })
 
-        console.log(`[ai.generateWithSources] Found ${contexts.length} relevant contexts`)
-
         // Step 2: Calculate confidence score
         const averageScore =
           contexts.length > 0
@@ -115,12 +93,6 @@ export const aiRouter = router({
         const relevanceScore = averageScore * 60
         const confidence = Math.round(contextQuantityScore + relevanceScore)
 
-        console.log('[ai.generateWithSources] Confidence calculation:', {
-          contextsFound: contexts.length,
-          averageScore: averageScore.toFixed(3),
-          confidence,
-        })
-
         // Format sources for response
         const sources = contexts.map((ctx) => ({
           documentId: ctx.documentId,
@@ -132,10 +104,6 @@ export const aiRouter = router({
 
         // Step 3: V3 Trust Architecture - Check confidence threshold
         if (confidence < 60) {
-          console.log(
-            '[ai.generateWithSources] Confidence below threshold - returning sources only'
-          )
-
           return {
             shouldGenerate: false,
             content: null,
@@ -172,7 +140,6 @@ ${input.prompt}
 ${input.sectionId ? `# Section\n\nYou are writing the "${input.sectionId}" section of a grant proposal.` : ''}`
 
         // Step 7: Call Claude API
-        console.log('[ai.generateWithSources] Calling Claude API...')
         const response = await anthropic.messages.create({
           model: 'claude-sonnet-4-5-20250929',
           max_tokens: 4096,
@@ -210,13 +177,6 @@ ${input.sectionId ? `# Section\n\nYou are writing the "${input.sectionId}" secti
             model: 'claude-sonnet-4-5-20250929',
             tokensUsed: response.usage.input_tokens + response.usage.output_tokens,
           },
-        })
-
-        console.log('[ai.generateWithSources] Generation successful:', {
-          auditId: auditLog.id,
-          confidence,
-          sourcesUsed: contexts.length,
-          tokensUsed: response.usage.input_tokens + response.usage.output_tokens,
         })
 
         return {
@@ -257,13 +217,6 @@ ${input.sectionId ? `# Section\n\nYou are writing the "${input.sectionId}" secti
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[ai.getSourcesForContent] Fetching sources:', {
-          contentId: input.contentId,
-          generatedAt: input.generatedAt,
-          grantId: input.grantId,
-          sectionId: input.sectionId,
-        })
-
         // Build query based on input
         let aiGeneration
 
@@ -356,11 +309,6 @@ ${input.sectionId ? `# Section\n\nYou are writing the "${input.sectionId}" secti
             grantId: doc?.grantId,
             funderName: doc?.grant?.funder?.name,
           }
-        })
-
-        console.log('[ai.getSourcesForContent] Found sources:', {
-          count: enrichedSources.length,
-          confidence: aiGeneration.confidence,
         })
 
         return {

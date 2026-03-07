@@ -32,16 +32,12 @@ export async function generateWithMemory(
 
   try {
     // Step 1: Query organizational memory for relevant context
-    console.log(`[AI Writer] Querying memory for: "${prompt.slice(0, 50)}..."`)
-
     const contexts = await queryOrganizationMemory({
       query: prompt,
       organizationId,
       topK: 5,
       minScore: 0.65,
     })
-
-    console.log(`[AI Writer] Found ${contexts.length} relevant contexts`)
 
     // Step 2: Build context string from RAG results
     const contextString =
@@ -68,7 +64,6 @@ ${ctx.text}
     })
 
     // Step 5: Call Claude API
-    console.log('[AI Writer] Calling Claude API...')
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 4096,
@@ -103,10 +98,6 @@ ${ctx.text}
       documentName: ctx.documentName,
       relevance: Math.round(ctx.score * 100),
     }))
-
-    console.log(
-      `[AI Writer] Generation complete. Confidence: ${confidence} (${confidenceScore}%)`
-    )
 
     return {
       content,

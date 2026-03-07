@@ -45,8 +45,6 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     for (let i = 0; i < texts.length; i += BATCH_SIZE) {
       const batch = texts.slice(i, i + BATCH_SIZE)
 
-      console.log(`Processing embedding batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(texts.length / BATCH_SIZE)}`)
-
       const response = await getOpenAI().embeddings.create({
         model: 'text-embedding-3-large',
         input: batch,

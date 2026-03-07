@@ -178,7 +178,6 @@ export async function fetchFunderFilings(ein: string): Promise<PastGrantee[]> {
 
       // ProPublica's search API returns basic info but not detailed Schedule I
       // This is a limitation of the free API
-      console.log(`ProPublica search found ${searchData.organizations?.length || 0} results for EIN ${cleanEin}`)
     }
 
     // For comprehensive Schedule I data, you need to:
@@ -186,8 +185,6 @@ export async function fetchFunderFilings(ein: string): Promise<PastGrantee[]> {
     // 2. Use a paid service like Candid API
     // 3. Manually enter grantee data from 990s
 
-    console.log(`Schedule I data requires PDF parsing or paid API for EIN ${cleanEin}`)
-    console.log(`Consider using Candid Foundation Directory API or parsing PDF 990s manually`)
 
     return []
   } catch (error) {

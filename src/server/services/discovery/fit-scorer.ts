@@ -213,8 +213,6 @@ Score Guidelines:
 
     const result = JSON.parse(jsonText) as { score: number; reasoning: string }
 
-    console.log(`Mission alignment: ${result.score}/100 - ${result.reasoning}`)
-
     return Math.max(0, Math.min(100, result.score))
   } catch (error) {
     console.error('Error calculating mission alignment:', error)
@@ -304,8 +302,6 @@ async function calculateCapacityMatch(
     factors.push('High workload - many active grants')
   }
 
-  console.log(`Capacity match: ${score}/100 - ${factors.join(', ')}`)
-
   return score
 }
 
@@ -319,7 +315,6 @@ async function calculateGeographicFit(
   // If no geographic data available, return neutral score
   const funder = opportunity.funder
   if (!funder || (!funder.city && !funder.state && !funder.geographicFocus)) {
-    console.log('Geographic fit: 70/100 - No geographic restrictions')
     return 70 // Neutral - assume no restrictions means organization can apply
   }
 
@@ -339,24 +334,19 @@ async function calculateGeographicFit(
     if (Array.isArray(geographicFocus)) {
       // Assume national or multi-state focus
       score = 80
-      console.log('Geographic fit: 80/100 - Multi-region funder')
     } else if (typeof geographicFocus === 'object') {
       // Check for national, statewide, or local focus
       if (geographicFocus.scope === 'national') {
         score = 100
-        console.log('Geographic fit: 100/100 - National scope')
       } else if (geographicFocus.scope === 'regional') {
         score = 70
-        console.log('Geographic fit: 70/100 - Regional scope')
       } else {
         score = 60
-        console.log('Geographic fit: 60/100 - Local scope')
       }
     }
   } else if (funderState) {
     // State-level matching would require organization location data
     score = 65
-    console.log(`Geographic fit: 65/100 - Funder in ${funderState}`)
   }
 
   return score
@@ -370,7 +360,6 @@ async function calculateHistoryScore(
   organizationId: string
 ): Promise<number> {
   if (!funderId) {
-    console.log('History score: 30/100 - No funder specified')
     return 30 // Neutral for opportunities without specific funder
   }
 
@@ -387,7 +376,6 @@ async function calculateHistoryScore(
   })
 
   if (pastGrants.length === 0) {
-    console.log('History score: 30/100 - No history with this funder')
     return 30 // No history
   }
 
@@ -397,12 +385,10 @@ async function calculateHistoryScore(
   )
 
   if (awardedGrants.length > 0) {
-    console.log(`History score: 100/100 - ${awardedGrants.length} previous award(s)`)
     return 100 // Previous award = highest history score
   }
 
   // Previous application but no award
-  console.log('History score: 50/100 - Previous application, no award')
   return 50
 }
 
@@ -481,10 +467,6 @@ async function analyzeReusableContent(
   const percentage = sections.length > 0
     ? Math.round((sectionsWithContent / sections.length) * 100)
     : 0
-
-  console.log(
-    `Reusable content: ${percentage}% (${sectionsWithContent}/${sections.length} sections)`
-  )
 
   return {
     percentage,

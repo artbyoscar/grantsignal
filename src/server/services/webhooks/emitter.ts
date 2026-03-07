@@ -139,7 +139,6 @@ export async function emitWebhookEvent(
     });
 
     if (webhooks.length === 0) {
-      console.log(`No webhooks subscribed to event: ${event.type}`);
       return;
     }
 
@@ -172,7 +171,6 @@ export async function emitWebhookEvent(
       })
     );
 
-    console.log(`Created ${deliveries.length} webhook deliveries for event: ${event.type}`);
   } catch (error) {
     console.error('Failed to emit webhook event:', error);
     throw error;

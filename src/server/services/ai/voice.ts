@@ -61,9 +61,6 @@ export async function analyzeOrganizationVoice(
   organizationId: string,
   documents: AnalyzeVoiceDocument[]
 ): Promise<VoiceProfile> {
-  console.log(`[Voice Analysis] Starting analysis for organization: ${organizationId}`)
-  console.log(`[Voice Analysis] Analyzing ${documents.length} documents`)
-
   try {
     // Step 1: Validate inputs
     if (!documents || documents.length === 0) {
@@ -76,8 +73,6 @@ export async function analyzeOrganizationVoice(
       .slice(0, 20)
       .map((d) => d.text.slice(0, 3000))
       .join('\n\n---\n\n')
-
-    console.log(`[Voice Analysis] Sample text length: ${sampleText.length} characters`)
 
     // Step 3: Call Claude API for voice analysis
     const response = await anthropic.messages.create({
@@ -96,8 +91,6 @@ export async function analyzeOrganizationVoice(
     const content =
       response.content[0].type === 'text' ? response.content[0].text : ''
 
-    console.log(`[Voice Analysis] Received response from Claude`)
-
     const voiceProfile = parseVoiceAnalysisResponse(content)
 
     // Step 5: Store in database
@@ -108,8 +101,6 @@ export async function analyzeOrganizationVoice(
         voiceUpdatedAt: new Date(),
       },
     })
-
-    console.log(`[Voice Analysis] Voice profile saved to database`)
 
     // Step 6: Return structured profile
     return voiceProfile
@@ -146,8 +137,6 @@ export async function rewriteInVoice(
   text: string,
   voiceProfile: VoiceProfile
 ): Promise<string> {
-  console.log(`[Voice Rewrite] Starting rewrite (${text.length} characters)`)
-
   try {
     // Step 1: Validate inputs
     if (!text || text.trim().length === 0) {
@@ -177,10 +166,6 @@ export async function rewriteInVoice(
     // Step 4: Extract the rewritten text
     const rewrittenText =
       response.content[0].type === 'text' ? response.content[0].text : ''
-
-    console.log(
-      `[Voice Rewrite] Rewrite complete (${rewrittenText.length} characters)`
-    )
 
     return rewrittenText.trim()
   } catch (error) {

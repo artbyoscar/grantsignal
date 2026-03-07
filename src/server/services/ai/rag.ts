@@ -49,11 +49,9 @@ export async function queryOrganizationMemory(
 
   try {
     // Generate embedding for the query
-    console.log(`Generating embedding for query: "${query.slice(0, 50)}..."`)
     const queryEmbedding = await generateEmbedding(query)
 
     // Query Pinecone with namespace filtering by organizationId
-    console.log(`Querying Pinecone for organization: ${organizationId}`)
     const queryResponse = await index.namespace(organizationId).query({
       vector: queryEmbedding,
       topK,
@@ -73,8 +71,6 @@ export async function queryOrganizationMemory(
         createdAt: match.metadata?.createdAt ? new Date(match.metadata.createdAt as string) : undefined,
       }))
       .filter(context => context.text.length > 0) // Ensure we have valid text
-
-    console.log(`Found ${contexts.length} relevant chunks (min score: ${minScore})`)
 
     return contexts
   } catch (error) {
@@ -108,11 +104,6 @@ export async function queryOrganizationMemoryWithConfidence(
   // Calculate retrieval confidence
   const confidence = confidenceScoring.calculateRetrievalConfidence(sources)
 
-  console.log(`Retrieval confidence: ${confidence.score}% (${confidence.level})`)
-  if (confidence.warnings.length > 0) {
-    console.warn('Retrieval warnings:', confidence.warnings)
-  }
-
   return {
     contexts,
     confidence,
@@ -141,7 +132,6 @@ export async function deleteDocumentVectors(
   try {
     // Delete all vectors with this document ID
     // Note: This requires fetching vector IDs first, then deleting
-    console.log(`Deleting vectors for document: ${documentId}`)
 
     // We can't directly query by metadata, so we'll use a filter if supported
     // For now, we'll assume vector IDs follow the pattern: `${documentId}-${chunkIndex}`
@@ -152,8 +142,6 @@ export async function deleteDocumentVectors(
     await index.namespace(organizationId).deleteMany({
       documentId: { $eq: documentId }
     })
-
-    console.log(`Successfully deleted vectors for document: ${documentId}`)
   } catch (error) {
     console.error('Error deleting document vectors:', error)
     // Don't throw - we want to continue even if vector deletion fails

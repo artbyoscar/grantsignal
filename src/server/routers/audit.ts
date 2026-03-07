@@ -35,14 +35,6 @@ export const auditRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        console.log('[audit.logGeneration] Logging AI generation:', {
-          organizationId: ctx.organizationId,
-          grantId: input.grantId,
-          sectionId: input.sectionId,
-          confidence: input.confidence,
-          sourcesCount: input.sources.length,
-        })
-
         // Verify grant access if grantId provided
         if (input.grantId) {
           const grant = await ctx.db.grant.findFirst({
@@ -75,11 +67,6 @@ export const auditRouter = router({
             model: input.model,
             tokensUsed: input.tokensUsed,
           },
-        })
-
-        console.log('[audit.logGeneration] Audit log created:', {
-          auditId: aiGeneration.id,
-          generatedAt: aiGeneration.generatedAt,
         })
 
         return {
@@ -116,12 +103,6 @@ export const auditRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[audit.getGenerationHistory] Fetching history:', {
-          grantId: input.grantId,
-          sectionId: input.sectionId,
-          limit: input.limit,
-        })
-
         // Verify grant access
         const grant = await ctx.db.grant.findFirst({
           where: {
@@ -174,11 +155,6 @@ export const auditRouter = router({
           nextCursor = nextItem!.id
         }
 
-        console.log('[audit.getGenerationHistory] Found generations:', {
-          count: generations.length,
-          hasMore: !!nextCursor,
-        })
-
         return {
           generations,
           nextCursor,
@@ -213,13 +189,6 @@ export const auditRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[audit.getOrganizationHistory] Fetching org history:', {
-          organizationId: ctx.organizationId,
-          startDate: input.startDate,
-          endDate: input.endDate,
-          minConfidence: input.minConfidence,
-        })
-
         // Build query filters
         const where: any = {
           organizationId: ctx.organizationId,
@@ -275,11 +244,6 @@ export const auditRouter = router({
           nextCursor = nextItem!.id
         }
 
-        console.log('[audit.getOrganizationHistory] Found generations:', {
-          count: generations.length,
-          hasMore: !!nextCursor,
-        })
-
         return {
           generations,
           nextCursor,
@@ -307,12 +271,6 @@ export const auditRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[audit.getUsageAnalytics] Calculating analytics:', {
-          organizationId: ctx.organizationId,
-          startDate: input.startDate,
-          endDate: input.endDate,
-        })
-
         // Build query filters
         const where: any = {
           organizationId: ctx.organizationId,
@@ -367,11 +325,6 @@ export const auditRouter = router({
                 return sum + (sources?.length || 0)
               }, 0) / totalGenerations
             : 0
-
-        console.log('[audit.getUsageAnalytics] Analytics calculated:', {
-          totalGenerations,
-          averageConfidence: Math.round(averageConfidence),
-        })
 
         return {
           totalGenerations,
