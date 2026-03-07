@@ -39,8 +39,8 @@ export async function signInWithClerk(page: Page) {
   await page.getByLabel('Email address').fill(email)
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
 
-  // Then a password input
-  await page.getByLabel('Password').fill(password)
+  // Then a password input (target the input directly to avoid matching "Show password" button)
+  await page.locator('input[name="password"]').fill(password)
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
 
   // Wait for redirect after successful login
