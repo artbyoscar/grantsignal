@@ -87,7 +87,7 @@ export function WinRateChart({ data, dateRange }: WinRateChartProps) {
               }}
               labelStyle={{ color: "#e2e8f0", marginBottom: "4px" }}
               itemStyle={{ color: "#3b82f6" }}
-              formatter={(value: number | undefined) => value !== undefined ? [`${value.toFixed(1)}%`, "Win Rate"] : ['-', "Win Rate"]}
+              formatter={(value) => typeof value === 'number' ? [`${value.toFixed(1)}%`, "Win Rate"] : [String(value), "Win Rate"]}
             />
             <Area
               type="monotone"

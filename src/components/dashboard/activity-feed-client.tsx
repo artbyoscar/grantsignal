@@ -15,8 +15,30 @@ function mapActionToType(action: string): ActivityItem['type'] {
   return 'status_change';
 }
 
+interface RawActivityLog {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  description: string;
+  userId: string | null;
+  metadata: unknown;
+  createdAt: Date;
+}
+
+function mapRawToActivityItem(item: RawActivityLog): ActivityItem {
+  return {
+    id: item.id,
+    type: mapActionToType(item.action),
+    actor: { name: item.userId || 'System' },
+    description: item.description,
+    grantName: item.entityType === 'grant' ? (item.metadata as Record<string, string> | null)?.grantName : undefined,
+    timestamp: new Date(item.createdAt),
+  };
+}
+
 interface ActivityFeedClientProps {
-  initialActivities: ActivityItem[];
+  initialActivities: RawActivityLog[];
 }
 
 export function ActivityFeedClient({ initialActivities }: ActivityFeedClientProps) {
@@ -26,17 +48,8 @@ export function ActivityFeedClient({ initialActivities }: ActivityFeedClientProp
 
   // Transform ActivityLog records into ActivityItem format
   const activities: ActivityItem[] = data?.items
-    ? data.items.map((item) => ({
-        id: item.id,
-        type: mapActionToType(item.action),
-        actor: {
-          name: item.userId || 'System',
-        },
-        description: item.description,
-        grantName: item.entityType === 'grant' ? (item.metadata as Record<string, string> | null)?.grantName : undefined,
-        timestamp: new Date(item.createdAt),
-      }))
-    : initialActivities;
+    ? data.items.map(mapRawToActivityItem)
+    : initialActivities.map(mapRawToActivityItem);
 
   const hasMore = !!data?.nextCursor;
 

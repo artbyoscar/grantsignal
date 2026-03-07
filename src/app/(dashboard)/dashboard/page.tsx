@@ -39,7 +39,7 @@ async function DashboardContent() {
         <div className="flex-1 space-y-6 min-w-0">
           <UrgentActionsPanel actions={urgentActions} />
           <PipelineSummary stages={pipelineStages} />
-          <ActivityFeedClient initialActivities={recentActivity} />
+          <ActivityFeedClient initialActivities={recentActivity.items} />
         </div>
 
         {/* Right Sidebar (280px fixed width on desktop) */}

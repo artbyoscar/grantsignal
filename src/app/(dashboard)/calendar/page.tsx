@@ -76,11 +76,12 @@ type Event = {
   title: string;
   date: Date;
   type: EventType;
-  grantId?: string;
+  grantId?: string | null;
   funderId?: string | null;
   funderName?: string | null;
-  opportunityId?: string;
+  opportunityId?: string | null;
   opportunityTitle?: string | null;
+  isCustom?: boolean;
 };
 
 // Event type color configuration

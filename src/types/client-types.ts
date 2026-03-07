@@ -79,6 +79,19 @@ export interface Grant {
   programId: string | null
   assignedToId: string | null
 
+  // JSON fields from Prisma schema
+  // Using unknown to be compatible with Prisma's JsonValue type
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  draftContent?: any
+  aiAuditLog?: any
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  // Aggregations (present when included by query)
+  _count?: {
+    documents: number
+    commitments: number
+  }
+
   // Relations
   funder: {
     id: string
@@ -89,6 +102,10 @@ export interface Grant {
     id: string
     title: string
     deadline: Date | null
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    requirements?: any
+    eligibility?: any
+    /* eslint-enable @typescript-eslint/no-explicit-any */
     fitScores?: Array<{
       overallScore: number
       missionScore: number

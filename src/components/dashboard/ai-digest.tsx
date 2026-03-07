@@ -9,7 +9,7 @@ import { useState } from "react";
 
 export interface AIInsight {
   id: string;
-  type: "opportunity" | "deadline" | "trend" | "compliance";
+  type: "opportunity" | "deadline" | "trend" | "compliance" | "capacity" | "performance";
   title: string;
   description: string;
   actionLabel?: string;
@@ -61,11 +61,13 @@ export function AIDigest({ insights, onRefresh }: AIDigestProps) {
         <>
           <div className="divide-y divide-slate-700/50">
             {insights.map((insight) => {
-              const typeColors = {
+              const typeColors: Record<string, string> = {
                 opportunity: "text-emerald-400",
                 deadline: "text-amber-400",
                 trend: "text-purple-400",
                 compliance: "text-orange-400",
+                capacity: "text-cyan-400",
+                performance: "text-pink-400",
               };
 
               const typeColor = typeColors[insight.type] || "text-blue-400";

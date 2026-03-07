@@ -44,9 +44,9 @@ export function PipelineByStageChart({ data }: PipelineByStageChartProps) {
               borderRadius: '8px',
               color: '#fff',
             }}
-            formatter={(value, name, props: any) => [
+            formatter={(value, _name, props) => [
               `$${Number(value).toLocaleString()}`,
-              `${props.payload.count} grants`,
+              `${(props as any)?.payload?.count ?? 0} grants`,
             ]}
           />
           <Bar

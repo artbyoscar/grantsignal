@@ -33,9 +33,7 @@ export default function RootLayout({
             </main>
             <Toaster position="bottom-right" theme="dark" />
           </TRPCProvider>
-          {/* Vercel Analytics - tracks page views and Core Web Vitals */}
           <Analytics />
-          {/* Vercel Speed Insights - tracks performance metrics */}
           <SpeedInsights />
         </body>
       </html>
