@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
-import { GrantStatus } from '@prisma/client'
+import { GrantStatus, PrismaClient } from '@prisma/client'
 import { STAGE_COLORS } from '@/components/dashboard/pipeline-summary'
 
 /**
@@ -8,7 +8,7 @@ import { STAGE_COLORS } from '@/components/dashboard/pipeline-summary'
  * Each point is the active-grant count at the end of that month.
  */
 async function computeMonthlySparkline(
-  db: Parameters<Parameters<typeof orgProcedure.query>[0]>['ctx']['db'],
+  db: PrismaClient,
   organizationId: string,
   statusFilter: GrantStatus[]
 ) {
