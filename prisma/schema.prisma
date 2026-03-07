@@ -196,6 +196,8 @@ model Organization {
   webhooks         Webhook[]
   aiGenerations    AIGeneration[]
   notifications    Notification[]
+  activityLogs     ActivityLog[]
+  calendarEvents   CalendarEvent[]
 }
 
 model OrganizationUser {
@@ -386,6 +388,7 @@ model Grant {
   documents       Document[]
   commitments     Commitment[]
   aiGenerations   AIGeneration[]
+  calendarEvents  CalendarEvent[]
 
   @@index([organizationId])
   @@index([status])
@@ -601,6 +604,50 @@ model TeamInvitation {
   @@index([email])
   @@index([token])
   @@index([organizationId])
+}
+
+// ============================================================================
+// ACTIVITY TRACKING & CALENDAR
+// ============================================================================
+
+model ActivityLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String?      // Clerk user ID (null for system actions)
+  action         String       // e.g., "grant.created", "document.uploaded", "status.changed"
+  entityType     String       // e.g., "grant", "document", "commitment", "team"
+  entityId       String?      // ID of the affected entity
+  description    String       // Human-readable description
+  metadata       Json?        // Additional context (old/new values, etc.)
+  createdAt      DateTime     @default(now())
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+}
+
+model CalendarEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  description    String?
+  date           DateTime
+  endDate        DateTime?
+  type           String       // "deadline", "meeting", "phase", "reminder"
+  grantId        String?
+  createdBy      String       // Clerk user ID
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grant          Grant?       @relation(fields: [grantId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, date])
+  @@index([grantId])
 }
 
 // ============================================================================

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { router, orgProcedure } from '../trpc'
 import { GrantStatus, FunderType } from '@prisma/client'
 import { emitGrantStatusChanged } from '@/server/services/webhooks/emitter'
+import { logActivity, ActivityActions } from '@/lib/activity-logger'
 
 export const grantsRouter = router({
   /**
@@ -30,8 +31,7 @@ export const grantsRouter = router({
     )
     .query(async ({ ctx, input }) => {
       try {
-        console.log('[grants.list] Starting query with organizationId:', ctx.organizationId);
-        console.log('[grants.list] Input:', input);
+
 
         const { cursor, limit, status, statuses, programId, funderType, assignedToId, deadlineFrom, deadlineTo, search, includeTerminalStates } = input
 
@@ -126,7 +126,7 @@ export const grantsRouter = router({
           },
         })
 
-        console.log('[grants.list] Found grants:', grants.length);
+
 
         let nextCursor: string | undefined = undefined
         if (grants.length > limit) {
@@ -134,19 +134,12 @@ export const grantsRouter = router({
           nextCursor = nextItem?.id
         }
 
-        console.log('[grants.list] Returning grants:', grants.length, 'nextCursor:', nextCursor);
+
         return {
           grants,
           nextCursor,
         }
       } catch (error) {
-        console.error('[grants.list] Error details:', {
-          error,
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
-          errorStack: error instanceof Error ? error.stack : undefined,
-          organizationId: ctx.organizationId,
-          input,
-        });
         throw error;
       }
     }),
@@ -271,6 +264,17 @@ export const grantsRouter = router({
         },
       })
 
+      // Log activity
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.GRANT_CREATED,
+        entityType: 'grant',
+        entityId: grant.id,
+        description: `Created grant "${grant.opportunity?.title || grant.funder?.name || 'New Grant'}" in ${grant.status} status`,
+        metadata: { status: grant.status, funderId: grant.funderId },
+      })
+
       return grant
     }),
 
@@ -386,6 +390,19 @@ export const grantsRouter = router({
           },
         },
       })
+
+      // Log activity for status change
+      if (oldStatus !== input.status && updatedGrant) {
+        logActivity({
+          organizationId: ctx.organizationId,
+          userId: ctx.auth.userId,
+          action: ActivityActions.GRANT_STATUS_CHANGED,
+          entityType: 'grant',
+          entityId: input.id,
+          description: `Moved grant to ${input.status} (from ${oldStatus})`,
+          metadata: { oldStatus, newStatus: input.status },
+        })
+      }
 
       // Emit webhook event if status changed
       if (oldStatus !== input.status && updatedGrant) {

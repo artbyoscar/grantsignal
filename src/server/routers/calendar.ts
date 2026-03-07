@@ -228,41 +228,100 @@ export const calendarRouter = router({
         })));
       }
 
+      // Get custom calendar events
+      const customEvents = await ctx.db.calendarEvent.findMany({
+        where: {
+          organizationId: orgId,
+          date: {
+            gte: input.start,
+            lte: input.end,
+          },
+          ...(input.grantId && { grantId: input.grantId }),
+        },
+        include: {
+          grant: {
+            select: {
+              id: true,
+              funder: { select: { id: true, name: true } },
+              opportunity: { select: { id: true, title: true } },
+            },
+          },
+        },
+      });
+
+      events.push(...customEvents.map(e => ({
+        id: `custom-${e.id}`,
+        title: e.title,
+        date: e.date,
+        type: e.type as 'grant_deadline' | 'report_due' | 'milestone' | 'submission' | 'award',
+        grantId: e.grantId,
+        funderId: e.grant?.funder?.id,
+        funderName: e.grant?.funder?.name,
+        opportunityId: e.grant?.opportunity?.id,
+        opportunityTitle: e.grant?.opportunity?.title || e.grant?.funder?.name,
+        isCustom: true,
+      })));
+
       return events;
     }),
 
   createEvent: orgProcedure
     .input(z.object({
-      title: z.string(),
+      title: z.string().min(1),
+      description: z.string().optional(),
       date: z.date(),
-      type: z.enum(['deadline', 'meeting', 'phase']),
-      opportunityId: z.string().optional(),
+      endDate: z.date().optional(),
+      type: z.enum(['deadline', 'meeting', 'phase', 'reminder']),
+      grantId: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      // TODO: Implement custom calendar event creation
-      // Would need a CalendarEvent model in schema
-      return {
-        id: 'temp-id',
-        ...input,
-      };
+    .mutation(async ({ ctx, input }) => {
+      const event = await ctx.db.calendarEvent.create({
+        data: {
+          organizationId: ctx.organizationId,
+          title: input.title,
+          description: input.description,
+          date: input.date,
+          endDate: input.endDate,
+          type: input.type,
+          grantId: input.grantId,
+          createdBy: ctx.auth.userId!,
+        },
+      });
+      return event;
     }),
 
   updateEvent: orgProcedure
     .input(z.object({
       id: z.string(),
       title: z.string().min(1).optional(),
+      description: z.string().optional(),
       date: z.date().optional(),
-      type: z.enum(['deadline', 'meeting', 'phase']).optional(),
+      endDate: z.date().optional(),
+      type: z.enum(['deadline', 'meeting', 'phase', 'reminder']).optional(),
     }))
-    .mutation(async ({ input }) => {
-      // TODO: Implement event update
-      return { success: true, ...input };
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      // Only update fields that were provided
+      const updateData: Record<string, unknown> = {};
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.date !== undefined) updateData.date = data.date;
+      if (data.endDate !== undefined) updateData.endDate = data.endDate;
+      if (data.type !== undefined) updateData.type = data.type;
+
+      const event = await ctx.db.calendarEvent.update({
+        where: { id, organizationId: ctx.organizationId },
+        data: updateData,
+      });
+      return event;
     }),
 
   deleteEvent: orgProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      // TODO: Implement event deletion
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.calendarEvent.delete({
+        where: { id: input.id, organizationId: ctx.organizationId },
+      });
       return { success: true, id: input.id };
     }),
 });

@@ -148,8 +148,8 @@ export default function PipelinePage() {
   const programs = programsData || []
 
   // Fetch team members for assignee filter
-  // TODO: Implement team.listMembers endpoint
-  const teamMembers: any[] = []
+  const { data: teamMembersData } = api.team.listMembers.useQuery()
+  const teamMembers = teamMembersData || []
 
   // Calculate stats
   const totalValue = grants.reduce((sum, grant) => {
@@ -175,7 +175,16 @@ export default function PipelinePage() {
         amount: grant.amountRequested || 0,
         deadline: deadline ? new Date(deadline) : undefined,
         daysLeft,
-        progress: grant.status === GrantStatus.WRITING ? Math.floor(Math.random() * 100) : undefined,
+        progress: grant.status === GrantStatus.WRITING
+          ? (() => {
+              // Calculate real progress from draft content sections
+              const draft = grant.draftContent as Record<string, { content?: string }> | null;
+              if (!draft) return 0;
+              const sections = Object.keys(draft);
+              const filled = sections.filter(k => draft[k]?.content && draft[k].content!.length > 0);
+              return sections.length > 0 ? Math.round((filled.length / sections.length) * 100) : 0;
+            })()
+          : undefined,
         assignee: grant.assignedTo
           ? {
               name: grant.assignedTo.displayName || 'Unknown',

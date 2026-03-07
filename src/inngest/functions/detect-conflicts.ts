@@ -15,8 +15,6 @@ export const detectConflictsScheduled = inngest.createFunction(
       select: { id: true, name: true }
     })
 
-    console.log(`Running scheduled conflict detection for ${orgs.length} organizations`)
-
     const results = []
 
     for (const org of orgs) {
@@ -35,17 +33,78 @@ export const detectConflictsScheduled = inngest.createFunction(
             }
           })
 
-          // TODO: Send compliance alerts for new high/critical conflicts
-          // This requires saving conflicts to DB first and getting their IDs
-          const newCriticalConflicts = conflicts.filter(
+          // Send compliance alerts for new HIGH/CRITICAL conflicts
+          const criticalConflicts = conflicts.filter(
             (c) => c.severity === 'HIGH' || c.severity === 'CRITICAL'
           )
+
+          let alertsSent = 0
+
+          if (criticalConflicts.length > 0) {
+            // Get all org users with compliance alerts enabled
+            const usersWithAlerts = await db.notificationPreferences.findMany({
+              where: {
+                complianceAlertsEnabled: true,
+                user: {
+                  organizationId: org.id,
+                },
+              },
+              include: {
+                user: true,
+              },
+            })
+
+            // Find the DB conflict records that were just created by detectConflicts
+            const recentConflicts = await db.commitmentConflict.findMany({
+              where: {
+                commitment: {
+                  organizationId: org.id,
+                },
+                status: 'UNRESOLVED',
+                severity: { in: ['HIGH', 'CRITICAL'] },
+                createdAt: {
+                  gte: new Date(Date.now() - 10 * 60 * 1000), // Last 10 minutes
+                },
+              },
+              select: { id: true, severity: true },
+            })
+
+            // Send alerts for each new conflict to each subscribed user
+            for (const conflict of recentConflicts) {
+              for (const pref of usersWithAlerts) {
+                await inngest.send({
+                  name: 'notification/compliance-alert',
+                  data: {
+                    conflictId: conflict.id,
+                    userId: pref.userId,
+                    email: pref.email,
+                    severity: conflict.severity,
+                  },
+                })
+                alertsSent++
+              }
+            }
+
+            // Also create in-app notifications
+            for (const pref of usersWithAlerts) {
+              await db.notification.create({
+                data: {
+                  organizationId: org.id,
+                  userId: pref.userId,
+                  type: 'SYSTEM',
+                  title: `${criticalConflicts.length} compliance conflict${criticalConflicts.length > 1 ? 's' : ''} detected`,
+                  message: `The nightly compliance scan found ${criticalConflicts.length} high or critical conflict${criticalConflicts.length > 1 ? 's' : ''} that require${criticalConflicts.length === 1 ? 's' : ''} your attention.`,
+                  linkUrl: '/compliance',
+                },
+              })
+            }
+          }
 
           return {
             orgId: org.id,
             orgName: org.name,
             conflictCount: conflicts.length,
-            alertsSent: 0, // TODO: Implement after saving conflicts to DB
+            alertsSent,
             success: true
           }
         } catch (error) {
@@ -67,14 +126,14 @@ export const detectConflictsScheduled = inngest.createFunction(
     const successful = results.filter(r => r.success).length
     const failed = results.filter(r => !r.success).length
     const totalConflicts = results.reduce((sum, r) => sum + (r.conflictCount || 0), 0)
-
-    console.log(`Scheduled conflict detection complete: ${successful} successful, ${failed} failed, ${totalConflicts} total conflicts`)
+    const totalAlerts = results.reduce((sum, r) => sum + (r.alertsSent || 0), 0)
 
     return {
       processedOrgs: orgs.length,
       successful,
       failed,
       totalConflicts,
+      totalAlerts,
       results
     }
   }

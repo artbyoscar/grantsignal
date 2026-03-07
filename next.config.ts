@@ -4,13 +4,12 @@ import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig: NextConfig = {
   /* config options here */
   eslint: {
-    // Skip ESLint during production builds (can still run separately via npm run lint)
-    ignoreDuringBuilds: true,
+    // Run ESLint during production builds to catch issues early
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    // Temporarily ignore type errors during build to allow deployment
-    // TypeScript check can still be run separately via npm run type-check
-    ignoreBuildErrors: true,
+    // Enforce type checking during builds - do not deploy broken code
+    ignoreBuildErrors: false,
   },
   // Output standalone for deployment
   output: 'standalone',

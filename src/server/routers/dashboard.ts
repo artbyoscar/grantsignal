@@ -3,170 +3,134 @@ import { router, orgProcedure } from '../trpc'
 import { GrantStatus } from '@prisma/client'
 import { STAGE_COLORS } from '@/components/dashboard/pipeline-summary'
 
+/**
+ * Helper: compute a 7-point sparkline from grant counts over the last 7 months.
+ * Each point is the active-grant count at the end of that month.
+ */
+async function computeMonthlySparkline(
+  db: Parameters<Parameters<typeof orgProcedure.query>[0]>['ctx']['db'],
+  organizationId: string,
+  statusFilter: GrantStatus[]
+) {
+  const now = new Date()
+  const points: number[] = []
+
+  for (let i = 6; i >= 0; i--) {
+    const asOf = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59) // end of month
+    const count = await db.grant.count({
+      where: {
+        organizationId,
+        status: { in: statusFilter },
+        createdAt: { lte: asOf },
+      },
+    })
+    points.push(count)
+  }
+  return points
+}
+
 export const dashboardRouter = router({
   /**
-   * Get dashboard statistics including active grants, pending decisions, YTD awarded, and win rate
-   *
-   * Metric Definitions:
-   * - Active Grants: Count of all grants EXCEPT those in terminal states (DECLINED, COMPLETED)
-   *   Includes: PROSPECT, RESEARCHING, WRITING, REVIEW, SUBMITTED, PENDING, AWARDED, ACTIVE, CLOSEOUT
-   *
-   * - Total Pipeline Value: Sum of amountRequested for all active grants
-   *   (Calculated client-side from the grants.list query in Dashboard components)
-   *
-   * - Pending Decisions: Count of grants with status SUBMITTED or PENDING
-   *   Represents grants awaiting funder response
-   *
-   * - YTD Awarded: Sum of amountAwarded for grants with status=AWARDED and awardedAt >= Jan 1 current year
-   *   Only includes grants actually awarded this calendar year
-   *
-   * - Win Rate: (Awarded Count / Total Decisions) * 100 for current year
-   *   Total Decisions = Awarded Count + Declined Count (both YTD)
-   *   Returns 0% if no decisions have been made yet
+   * Get dashboard statistics with real trends
    */
   getStats: orgProcedure.query(async ({ ctx }) => {
     const now = new Date()
     const startOfYear = new Date(now.getFullYear(), 0, 1)
     const lastYear = new Date(now.getFullYear() - 1, 0, 1)
     const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59)
+    const oneMonthAgo = new Date(now)
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
 
-    console.log('[Dashboard Stats] Calculating for org:', ctx.organizationId)
-    console.log('[Dashboard Stats] Year:', now.getFullYear(), 'Start of year:', startOfYear)
+    // Active statuses (everything except terminal)
+    const activeStatuses = [
+      GrantStatus.PROSPECT, GrantStatus.RESEARCHING, GrantStatus.WRITING,
+      GrantStatus.REVIEW, GrantStatus.SUBMITTED, GrantStatus.PENDING,
+      GrantStatus.AWARDED, GrantStatus.ACTIVE, GrantStatus.CLOSEOUT,
+    ]
 
-    // METRIC 1: Active Grants
-    // Count all grants in the pipeline (excludes DECLINED and COMPLETED terminal states)
-    // This count should match the Pipeline page when no filters are applied
+    // METRIC 1: Active Grants + trend
     const activeGrantsCount = await ctx.db.grant.count({
+      where: { organizationId: ctx.organizationId, status: { in: activeStatuses } },
+    })
+
+    const activeGrantsLastMonth = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
-        status: {
-          notIn: [GrantStatus.DECLINED, GrantStatus.COMPLETED],
-        },
+        status: { in: activeStatuses },
+        createdAt: { lte: oneMonthAgo },
       },
     })
-    console.log('[Dashboard Stats] Active grants count:', activeGrantsCount)
+
+    const activeGrantsTrend = activeGrantsLastMonth > 0
+      ? Math.round(((activeGrantsCount - activeGrantsLastMonth) / activeGrantsLastMonth) * 100)
+      : 0
 
     // METRIC 2: Pending Decisions
-    // Count grants awaiting funder response (SUBMITTED or PENDING status)
-    const pendingDecisionsCount = await ctx.db.grant.count({
-      where: {
-        organizationId: ctx.organizationId,
-        status: {
-          in: [GrantStatus.SUBMITTED, GrantStatus.PENDING],
-        },
-      },
-    })
-    console.log('[Dashboard Stats] Pending decisions count (SUBMITTED + PENDING):', pendingDecisionsCount)
-
-    // Get pending decisions due this week
     const nextWeek = new Date(now)
     nextWeek.setDate(nextWeek.getDate() + 7)
+
+    const pendingDecisionsCount = await ctx.db.grant.count({
+      where: { organizationId: ctx.organizationId, status: { in: [GrantStatus.SUBMITTED, GrantStatus.PENDING] } },
+    })
+
     const pendingDecisionsDueThisWeek = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
         status: GrantStatus.SUBMITTED,
-        deadline: {
-          gte: now,
-          lte: nextWeek,
-        },
+        deadline: { gte: now, lte: nextWeek },
       },
     })
 
-    // METRIC 3: YTD Awarded
-    // Sum of amountAwarded for grants awarded this calendar year
+    // METRIC 3: YTD Awarded + trend vs last year
     const ytdAwardedGrants = await ctx.db.grant.findMany({
-      where: {
-        organizationId: ctx.organizationId,
-        status: GrantStatus.AWARDED,
-        awardedAt: {
-          gte: startOfYear,
-        },
-      },
-      select: {
-        amountAwarded: true,
-      },
+      where: { organizationId: ctx.organizationId, status: GrantStatus.AWARDED, awardedAt: { gte: startOfYear } },
+      select: { amountAwarded: true },
     })
+    const ytdAwardedAmount = ytdAwardedGrants.reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0)
 
-    const ytdAwardedAmount = ytdAwardedGrants.reduce(
-      (sum, grant) => sum + Number(grant.amountAwarded || 0),
-      0
-    )
-    console.log('[Dashboard Stats] YTD awarded:', {
-      count: ytdAwardedGrants.length,
-      total: ytdAwardedAmount,
-      startOfYear: startOfYear.toISOString(),
-    })
-
-    // Get last year's awarded amount for comparison
     const lastYearAwardedGrants = await ctx.db.grant.findMany({
       where: {
         organizationId: ctx.organizationId,
         status: GrantStatus.AWARDED,
-        awardedAt: {
-          gte: lastYear,
-          lte: endOfLastYear,
-        },
+        awardedAt: { gte: lastYear, lte: endOfLastYear },
       },
-      select: {
-        amountAwarded: true,
-      },
+      select: { amountAwarded: true },
     })
+    const lastYearAwardedAmount = lastYearAwardedGrants.reduce((sum, g) => sum + Number(g.amountAwarded || 0), 0)
+    const ytdTrend = lastYearAwardedAmount > 0
+      ? ((ytdAwardedAmount - lastYearAwardedAmount) / lastYearAwardedAmount) * 100
+      : 0
 
-    const lastYearAwardedAmount = lastYearAwardedGrants.reduce(
-      (sum, grant) => sum + Number(grant.amountAwarded || 0),
-      0
-    )
-
-    // Calculate YTD trend as percentage change
-    const ytdTrend =
-      lastYearAwardedAmount > 0
-        ? ((ytdAwardedAmount - lastYearAwardedAmount) / lastYearAwardedAmount) * 100
-        : 0
-
-    // METRIC 4: Win Rate
-    // Percentage of awarded grants vs total decisions (awarded + declined) for current year
-    // Formula: (Awarded Count / Total Decisions) * 100
+    // METRIC 4: Win Rate + trend
     const awardedCount = await ctx.db.grant.count({
-      where: {
-        organizationId: ctx.organizationId,
-        status: GrantStatus.AWARDED,
-        awardedAt: {
-          gte: startOfYear,
-        },
-      },
+      where: { organizationId: ctx.organizationId, status: GrantStatus.AWARDED, awardedAt: { gte: startOfYear } },
     })
-
     const declinedCount = await ctx.db.grant.count({
-      where: {
-        organizationId: ctx.organizationId,
-        status: GrantStatus.DECLINED,
-        // Declined grants should have submittedAt or updatedAt to determine when they were declined
-        // Using updatedAt as proxy for decision date
-        updatedAt: {
-          gte: startOfYear,
-        },
-      },
+      where: { organizationId: ctx.organizationId, status: GrantStatus.DECLINED, updatedAt: { gte: startOfYear } },
     })
-
     const totalDecisions = awardedCount + declinedCount
     const winRatePercentage = totalDecisions > 0 ? (awardedCount / totalDecisions) * 100 : 0
-    console.log('[Dashboard Stats] Win rate (YTD):', {
-      awarded: awardedCount,
-      declined: declinedCount,
-      total: totalDecisions,
-      percentage: winRatePercentage.toFixed(1) + '%',
+
+    // Last year win rate for trend comparison
+    const awardedLastYear = await ctx.db.grant.count({
+      where: { organizationId: ctx.organizationId, status: GrantStatus.AWARDED, awardedAt: { gte: lastYear, lte: endOfLastYear } },
     })
+    const declinedLastYear = await ctx.db.grant.count({
+      where: { organizationId: ctx.organizationId, status: GrantStatus.DECLINED, updatedAt: { gte: lastYear, lte: endOfLastYear } },
+    })
+    const totalDecisionsLastYear = awardedLastYear + declinedLastYear
+    const winRateLastYear = totalDecisionsLastYear > 0 ? (awardedLastYear / totalDecisionsLastYear) * 100 : 0
+    const winRateTrend = Math.round(winRatePercentage - winRateLastYear)
 
-    // Mock sparkline data (7 data points for the past week)
-    // TODO: Implement real sparkline data based on historical trends
-    const mockSparkline = [65, 70, 68, 75, 72, 78, 80]
+    // Sparklines: monthly active grant counts over past 7 months
+    const activeSparkline = await computeMonthlySparkline(ctx.db, ctx.organizationId, activeStatuses)
 
-    const stats = {
+    return {
       activeGrants: {
         count: activeGrantsCount,
-        trend: 5, // Mock trend - TODO: Calculate actual trend
+        trend: activeGrantsTrend,
         trendPeriod: 'vs last month',
-        sparkline: mockSparkline,
+        sparkline: activeSparkline,
       },
       pendingDecisions: {
         count: pendingDecisionsCount,
@@ -175,17 +139,14 @@ export const dashboardRouter = router({
       ytdAwarded: {
         amount: ytdAwardedAmount,
         trend: Math.round(ytdTrend),
-        sparkline: mockSparkline,
+        sparkline: activeSparkline,
       },
       winRate: {
         percentage: Math.round(winRatePercentage),
-        trend: 3, // Mock trend - TODO: Calculate actual trend
-        sparkline: mockSparkline,
+        trend: winRateTrend,
+        sparkline: activeSparkline,
       },
     }
-
-    console.log('[Dashboard Stats] Final stats:', JSON.stringify(stats, null, 2))
-    return stats
   }),
 
   /**
@@ -195,56 +156,31 @@ export const dashboardRouter = router({
     const now = new Date()
     const fourteenDaysFromNow = new Date(now)
     fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14)
-
     const sevenDaysAgo = new Date(now)
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    // Query grants with deadline in the next 14 days OR overdue by up to 7 days
     const urgentGrants = await ctx.db.grant.findMany({
       where: {
         organizationId: ctx.organizationId,
-        deadline: {
-          gte: sevenDaysAgo,
-          lte: fourteenDaysFromNow,
-        },
-        status: {
-          notIn: [GrantStatus.DECLINED, GrantStatus.COMPLETED, GrantStatus.AWARDED],
-        },
+        deadline: { gte: sevenDaysAgo, lte: fourteenDaysFromNow },
+        status: { notIn: [GrantStatus.DECLINED, GrantStatus.COMPLETED, GrantStatus.AWARDED] },
       },
-      orderBy: {
-        deadline: 'asc',
-      },
+      orderBy: { deadline: 'asc' },
       include: {
-        funder: {
-          select: {
-            name: true,
-          },
-        },
-        opportunity: {
-          select: {
-            title: true,
-          },
-        },
+        funder: { select: { name: true } },
+        opportunity: { select: { title: true } },
       },
     })
 
-    // Map to UrgentAction format
     return urgentGrants.map((grant) => {
       const deadline = grant.deadline!
       const daysRemaining = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-
-      // Determine severity based on days remaining
       const severity: 'critical' | 'warning' = daysRemaining <= 3 ? 'critical' : 'warning'
 
-      // Determine action type based on status
       let actionType = 'Submit Application'
-      if (grant.status === GrantStatus.REVIEW) {
-        actionType = 'Review Draft'
-      } else if (grant.status === GrantStatus.WRITING) {
-        actionType = 'Continue Writing'
-      } else if (grant.status === GrantStatus.SUBMITTED) {
-        actionType = 'View Status'
-      }
+      if (grant.status === GrantStatus.REVIEW) actionType = 'Review Draft'
+      else if (grant.status === GrantStatus.WRITING) actionType = 'Continue Writing'
+      else if (grant.status === GrantStatus.SUBMITTED) actionType = 'View Status'
 
       return {
         id: grant.id,
@@ -260,34 +196,17 @@ export const dashboardRouter = router({
 
   /**
    * Get pipeline stages with counts and amounts
-   *
-   * Returns grants grouped by status, excluding terminal states (DECLINED, COMPLETED).
-   * This should match the totals shown on the Pipeline page when no filters are applied.
-   *
-   * Total Pipeline Value = Sum of all amountRequested across all active grants
    */
   getPipelineStages: orgProcedure.query(async ({ ctx }) => {
-    // Group grants by status (excludes DECLINED and COMPLETED to match Dashboard metrics)
     const grants = await ctx.db.grant.findMany({
       where: {
         organizationId: ctx.organizationId,
-        status: {
-          // Exclude terminal states - matches grants.list default behavior
-          notIn: [GrantStatus.DECLINED, GrantStatus.COMPLETED],
-        },
+        status: { notIn: [GrantStatus.DECLINED, GrantStatus.COMPLETED] },
       },
-      select: {
-        status: true,
-        amountRequested: true,
-      },
+      select: { status: true, amountRequested: true },
     })
 
-    // Aggregate by status
-    const stageMap = new Map<
-      GrantStatus,
-      { count: number; amount: number }
-    >()
-
+    const stageMap = new Map<GrantStatus, { count: number; amount: number }>()
     grants.forEach((grant) => {
       const existing = stageMap.get(grant.status) || { count: 0, amount: 0 }
       stageMap.set(grant.status, {
@@ -296,12 +215,9 @@ export const dashboardRouter = router({
       })
     })
 
-    // Map to PipelineStage format with colors
     const stages = Array.from(stageMap.entries()).map(([status, data]) => {
-      // Get color from STAGE_COLORS if available, otherwise use default
       const colorKey = status as keyof typeof STAGE_COLORS
       const color = colorKey in STAGE_COLORS ? STAGE_COLORS[colorKey] : '#64748b'
-
       return {
         id: status,
         name: status.charAt(0) + status.slice(1).toLowerCase().replace('_', ' '),
@@ -311,80 +227,178 @@ export const dashboardRouter = router({
       }
     })
 
-    // Sort by typical pipeline order
     const statusOrder: GrantStatus[] = [
-      GrantStatus.PROSPECT,
-      GrantStatus.RESEARCHING,
-      GrantStatus.WRITING,
-      GrantStatus.REVIEW,
-      GrantStatus.SUBMITTED,
-      GrantStatus.PENDING,
-      GrantStatus.AWARDED,
-      GrantStatus.ACTIVE,
-      GrantStatus.CLOSEOUT,
+      GrantStatus.PROSPECT, GrantStatus.RESEARCHING, GrantStatus.WRITING,
+      GrantStatus.REVIEW, GrantStatus.SUBMITTED, GrantStatus.PENDING,
+      GrantStatus.AWARDED, GrantStatus.ACTIVE, GrantStatus.CLOSEOUT,
     ]
-
-    stages.sort((a, b) => {
-      const aIndex = statusOrder.indexOf(a.id as GrantStatus)
-      const bIndex = statusOrder.indexOf(b.id as GrantStatus)
-      return aIndex - bIndex
-    })
-
+    stages.sort((a, b) => statusOrder.indexOf(a.id as GrantStatus) - statusOrder.indexOf(b.id as GrantStatus))
     return stages
   }),
 
   /**
-   * Get recent activity feed
-   * TODO: Implement ActivityLog model and real activity tracking
+   * Get recent activity feed from ActivityLog
    */
   getRecentActivity: orgProcedure
     .input(
       z.object({
         limit: z.number().min(1).max(50).default(10),
+        cursor: z.string().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      // For now, return mock data
-      // TODO: Query from ActivityLog model once implemented
-      return []
+      const activities = await ctx.db.activityLog.findMany({
+        where: { organizationId: ctx.organizationId },
+        orderBy: { createdAt: 'desc' },
+        take: input.limit + 1,
+        ...(input.cursor && {
+          cursor: { id: input.cursor },
+          skip: 1,
+        }),
+      })
+
+      const hasMore = activities.length > input.limit
+      const items = hasMore ? activities.slice(0, -1) : activities
+
+      return {
+        items: items.map((a) => ({
+          id: a.id,
+          action: a.action,
+          entityType: a.entityType,
+          entityId: a.entityId,
+          description: a.description,
+          userId: a.userId,
+          metadata: a.metadata,
+          createdAt: a.createdAt,
+        })),
+        nextCursor: hasMore ? items[items.length - 1]?.id : undefined,
+      }
     }),
 
   /**
-   * Get AI-generated insights
-   * TODO: Connect to Claude API for real insights
+   * Get AI-generated insights based on real org data
    */
   getAIInsights: orgProcedure.query(async ({ ctx }) => {
-    // For now, return mock insights
-    // TODO: Implement Claude API integration for personalized insights
-
-    // Get some real data to generate basic insights
-    const nextWeek = new Date()
+    const now = new Date()
+    const nextWeek = new Date(now)
     nextWeek.setDate(nextWeek.getDate() + 7)
+    const thirtyDaysAgo = new Date(now)
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const upcomingDeadlines = await ctx.db.grant.count({
+    const insights: Array<{
+      id: string
+      type: 'deadline' | 'opportunity' | 'compliance' | 'capacity' | 'performance'
+      title: string
+      description: string
+      actionLabel: string
+      actionHref: string
+    }> = []
+
+    // 1. Upcoming deadline urgency
+    const urgentGrants = await ctx.db.grant.count({
       where: {
         organizationId: ctx.organizationId,
-        deadline: {
-          gte: new Date(),
-          lte: nextWeek,
-        },
-        status: {
-          in: [GrantStatus.WRITING, GrantStatus.REVIEW],
-        },
+        deadline: { gte: now, lte: nextWeek },
+        status: { in: [GrantStatus.WRITING, GrantStatus.REVIEW] },
       },
     })
-
-    const insights = []
-
-    if (upcomingDeadlines > 0) {
+    if (urgentGrants > 0) {
       insights.push({
-        id: '1',
-        type: 'deadline' as const,
+        id: 'deadline-urgency',
+        type: 'deadline',
         title: 'Upcoming Deadlines Require Attention',
-        description: `You have ${upcomingDeadlines} grant${upcomingDeadlines > 1 ? 's' : ''} with deadlines in the next 7 days that ${upcomingDeadlines > 1 ? 'are' : 'is'} still in writing or review stage.`,
-        actionLabel: 'View Grants',
-        actionHref: '/grants?filter=deadline-soon',
+        description: `You have ${urgentGrants} grant${urgentGrants > 1 ? 's' : ''} with deadlines in the next 7 days still in writing or review stage.`,
+        actionLabel: 'View Pipeline',
+        actionHref: '/pipeline',
       })
+    }
+
+    // 2. Stale grants (no updates in 30+ days)
+    const staleGrants = await ctx.db.grant.count({
+      where: {
+        organizationId: ctx.organizationId,
+        status: { in: [GrantStatus.PROSPECT, GrantStatus.RESEARCHING, GrantStatus.WRITING] },
+        updatedAt: { lt: thirtyDaysAgo },
+      },
+    })
+    if (staleGrants > 0) {
+      insights.push({
+        id: 'stale-grants',
+        type: 'performance',
+        title: 'Stale Grants Need Review',
+        description: `${staleGrants} grant${staleGrants > 1 ? 's have' : ' has'} not been updated in over 30 days. Consider advancing or archiving them.`,
+        actionLabel: 'Review Grants',
+        actionHref: '/pipeline',
+      })
+    }
+
+    // 3. Unresolved compliance conflicts
+    const unresolvedConflicts = await ctx.db.commitmentConflict.count({
+      where: {
+        commitment: { organizationId: ctx.organizationId },
+        status: 'UNRESOLVED',
+        severity: { in: ['HIGH', 'CRITICAL'] },
+      },
+    })
+    if (unresolvedConflicts > 0) {
+      insights.push({
+        id: 'compliance-conflicts',
+        type: 'compliance',
+        title: 'Compliance Conflicts Need Resolution',
+        description: `${unresolvedConflicts} high or critical compliance conflict${unresolvedConflicts > 1 ? 's require' : ' requires'} your attention.`,
+        actionLabel: 'View Compliance',
+        actionHref: '/compliance',
+      })
+    }
+
+    // 4. Documents pending processing
+    const pendingDocs = await ctx.db.document.count({
+      where: {
+        organizationId: ctx.organizationId,
+        status: { in: ['PENDING', 'PROCESSING'] },
+      },
+    })
+    if (pendingDocs > 0) {
+      insights.push({
+        id: 'pending-documents',
+        type: 'capacity',
+        title: 'Documents Awaiting Processing',
+        description: `${pendingDocs} document${pendingDocs > 1 ? 's are' : ' is'} still being processed. Content from these documents is not yet available for grant writing.`,
+        actionLabel: 'View Documents',
+        actionHref: '/documents',
+      })
+    }
+
+    // 5. Win rate performance
+    const startOfYear = new Date(now.getFullYear(), 0, 1)
+    const awardedCount = await ctx.db.grant.count({
+      where: { organizationId: ctx.organizationId, status: GrantStatus.AWARDED, awardedAt: { gte: startOfYear } },
+    })
+    const declinedCount = await ctx.db.grant.count({
+      where: { organizationId: ctx.organizationId, status: GrantStatus.DECLINED, updatedAt: { gte: startOfYear } },
+    })
+    const totalDecisions = awardedCount + declinedCount
+    if (totalDecisions >= 3) {
+      const winRate = Math.round((awardedCount / totalDecisions) * 100)
+      if (winRate >= 50) {
+        insights.push({
+          id: 'win-rate-strong',
+          type: 'performance',
+          title: 'Strong Win Rate This Year',
+          description: `Your ${winRate}% win rate across ${totalDecisions} decisions is above the nonprofit average. Consider targeting more competitive opportunities.`,
+          actionLabel: 'View Reports',
+          actionHref: '/reports',
+        })
+      } else if (winRate < 30) {
+        insights.push({
+          id: 'win-rate-low',
+          type: 'performance',
+          title: 'Win Rate Needs Attention',
+          description: `Your ${winRate}% win rate this year is below typical. Review fit scores before submitting and consider focusing on better-matched opportunities.`,
+          actionLabel: 'View Opportunities',
+          actionHref: '/opportunities',
+        })
+      }
     }
 
     return insights

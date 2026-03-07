@@ -54,28 +54,40 @@ export function FitScoreCard({
   initialData,
   onRecalculate
 }: FitScoreCardProps) {
-  const [scoreData, setScoreData] = useState<FitScoreData | null>(initialData || null)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [isLoading, setIsLoading] = useState(!initialData)
 
-  // TODO: Replace with actual query when getFitScore endpoint is created
-  // const { data, isLoading, refetch } = api.discovery.getFitScore.useQuery({ opportunityId })
+  // Fetch cached fit score from database
+  const { data: fetchedScore, isLoading: queryLoading, refetch } = api.discovery.getFitScore.useQuery(
+    { opportunityId },
+    { enabled: !initialData }
+  )
+
+  const scoreData: FitScoreData | null = initialData || (fetchedScore ? {
+    overallScore: fetchedScore.overallScore,
+    missionScore: fetchedScore.missionScore,
+    capacityScore: fetchedScore.capacityScore,
+    geographicScore: fetchedScore.geographicScore,
+    historicalScore: fetchedScore.historyScore,
+    reusableContentPercentage: fetchedScore.reusableContent
+      ? Math.round((fetchedScore.reusableContent as { percentage?: number })?.percentage ?? 0)
+      : 0,
+    estimatedHours: fetchedScore.estimatedHours ?? 0,
+    strengths: (fetchedScore as unknown as { strengths?: string[] })?.strengths ?? [],
+    concerns: (fetchedScore as unknown as { concerns?: string[] })?.concerns ?? [],
+    recommendations: (fetchedScore as unknown as { recommendations?: string[] })?.recommendations ?? [],
+  } : null)
+
+  const isLoading = !initialData && queryLoading
 
   const recalculateMutation = api.discovery.calculateFitScore.useMutation({
-    onSuccess: (data) => {
-      setScoreData(data as unknown as FitScoreData)
+    onSuccess: () => {
+      refetch()
       onRecalculate?.()
     },
   })
 
   const handleRecalculate = () => {
-    setIsLoading(true)
-    // TODO: Call with actual opportunity data
-    // recalculateMutation.mutate({ opportunityId })
-    // Simulating for now
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 1000)
+    recalculateMutation.mutate({ opportunityId })
   }
 
   if (isLoading) {
