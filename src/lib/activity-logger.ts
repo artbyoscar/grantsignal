@@ -30,7 +30,7 @@ export async function logActivity({
         entityType,
         entityId,
         description,
-        metadata: metadata || undefined,
+        metadata: (metadata as any) || undefined,
       },
     })
   } catch (error) {
