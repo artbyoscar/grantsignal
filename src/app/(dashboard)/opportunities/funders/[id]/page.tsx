@@ -26,8 +26,10 @@ import {
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { FunderIntelligenceProfile } from '@/components/funders/funder-intelligence-profile'
+import { Target } from 'lucide-react'
 
-type Tab = 'overview' | 'giving-history' | 'past-grantees' | 'application' | 'your-history'
+type Tab = 'overview' | 'giving-history' | 'past-grantees' | 'application' | 'your-history' | 'intelligence'
 
 export default function FunderProfilePage() {
   const params = useParams()
@@ -38,6 +40,7 @@ export default function FunderProfilePage() {
   const { data: funder, isLoading, refetch } = api.funders.getById.useQuery({ funderId })
   const { data: givingHistory } = api.funders.getGivingHistory.useQuery({ funderId })
   const { data: peerIntel } = api.funders.getPeerIntelligence.useQuery({ funderId })
+  const { data: intelligenceProfile } = api.funders.getIntelligenceProfile.useQuery({ funderId })
 
   // Sync mutation
   const syncMutation = api.funders.sync990.useMutation({
@@ -74,6 +77,7 @@ export default function FunderProfilePage() {
     { id: 'past-grantees' as Tab, label: 'Past Grantees', icon: Users },
     { id: 'application' as Tab, label: 'Application Info', icon: FileText },
     { id: 'your-history' as Tab, label: 'Your History', icon: History },
+    { id: 'intelligence' as Tab, label: 'Intelligence', icon: Target },
   ]
 
   // Helper function to get initials from funder name
@@ -264,6 +268,18 @@ export default function FunderProfilePage() {
         {activeTab === 'application' && <ApplicationTab funder={funder} />}
         {activeTab === 'your-history' && (
           <YourHistoryTab grants={funder.grants} />
+        )}
+        {activeTab === 'intelligence' && intelligenceProfile && (
+          <FunderIntelligenceProfile
+            profile={intelligenceProfile}
+            onSync990={funder.ein ? handleSync : undefined}
+            isSyncing={syncMutation.isPending}
+          />
+        )}
+        {activeTab === 'intelligence' && !intelligenceProfile && (
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+          </div>
         )}
       </div>
 

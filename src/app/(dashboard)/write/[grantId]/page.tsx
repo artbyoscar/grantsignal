@@ -12,6 +12,7 @@ import { MemorySearch } from '@/components/writing/memory-search';
 import { GrantEditor } from '@/components/writer/grant-editor';
 import { AIToolbar } from '@/components/writer/ai-toolbar';
 import { OutlinePanel } from '@/components/writer/outline-panel';
+import { ComplianceMonitor } from '@/components/writing/compliance-monitor';
 import { STANDARD_SECTIONS, calculateWordCount } from '@/lib/writer/sections';
 
 interface RFPSection {
@@ -84,6 +85,36 @@ export default function WriterPage({ params }: PageProps) {
 
   // Save status tracking
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+
+  // Compliance monitoring state
+  const [complianceResult, setComplianceResult] = useState<any>(null);
+  const checkComplianceMutation = api.writing.checkCompliance.useMutation({
+    onSuccess: (data) => {
+      setComplianceResult(data);
+      if (data.summary.overallStatus === 'critical') {
+        toast.error(data.summary.message);
+      } else if (data.summary.overallStatus === 'warning') {
+        toast.warning(data.summary.message);
+      } else {
+        toast.success(data.summary.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Compliance check failed: ${error.message}`);
+    },
+  });
+
+  const handleComplianceCheck = () => {
+    if (!editorContent || editorContent.trim().length < 50) {
+      toast.error('Write at least 50 characters before running a compliance check.');
+      return;
+    }
+    checkComplianceMutation.mutate({
+      grantId,
+      content: editorContent,
+      sectionName: activeSection || 'unknown',
+    });
+  };
 
   // Save draft mutation
   const saveDraft = api.grants.saveDraft.useMutation({
@@ -508,6 +539,17 @@ export default function WriterPage({ params }: PageProps) {
             onChange={handleEditorChange}
             activeSection={activeSection || undefined}
             highlightedText={highlightedText}
+          />
+        </div>
+
+        {/* Compliance Monitor */}
+        <div className="px-4 md:px-6 hidden md:block">
+          <ComplianceMonitor
+            grantId={grantId}
+            sectionName={activeSection || 'unknown'}
+            result={complianceResult}
+            isChecking={checkComplianceMutation.isPending}
+            onCheck={handleComplianceCheck}
           />
         </div>
 
