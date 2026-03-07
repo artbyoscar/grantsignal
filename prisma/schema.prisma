@@ -198,6 +198,7 @@ model Organization {
   notifications    Notification[]
   activityLogs     ActivityLog[]
   calendarEvents   CalendarEvent[]
+  funderAlerts     FunderAlert[]
 }
 
 model OrganizationUser {
@@ -266,6 +267,7 @@ model Funder {
   pastGrantees        PastGrantee[]
   grants              Grant[]
   requirements        FunderRequirement[]
+  alerts              FunderAlert[]
 }
 
 model PastGrantee {
@@ -762,4 +764,34 @@ model WebhookDelivery {
   @@index([status])
   @@index([eventType])
   @@index([scheduledFor])
+}
+
+// ============================================================================
+// FUNDER ALERTS - Track which funders an organization is watching
+// ============================================================================
+
+model FunderAlert {
+  id              String   @id @default(cuid())
+  organizationId  String
+  funderId        String
+  createdByUserId String   // Clerk user ID of who set the alert
+
+  // Alert preferences
+  alertOnNewOpportunity Boolean @default(true)
+  alertOnDeadline       Boolean @default(true)
+  alertOn990Update      Boolean @default(true)
+
+  // Optional notes
+  notes           String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  funder          Funder       @relation(fields: [funderId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, funderId])
+  @@index([organizationId])
+  @@index([funderId])
 }

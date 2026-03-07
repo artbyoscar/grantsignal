@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/trpc/client';
-import { Loader2, ArrowLeft, Check, Cloud } from 'lucide-react';
+import {
+  Loader2, ArrowLeft, ArrowRight, Check, Cloud,
+  Sparkles, ChevronLeft, ChevronRight, Wand2,
+  CheckCircle, AlertTriangle, AlertCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { RFPRequirements } from '@/components/writer/rfp-requirements';
@@ -13,6 +17,7 @@ import { GrantEditor } from '@/components/writer/grant-editor';
 import { AIToolbar } from '@/components/writer/ai-toolbar';
 import { OutlinePanel } from '@/components/writer/outline-panel';
 import { ComplianceMonitor } from '@/components/writing/compliance-monitor';
+import { AIGenerationPanel, Source as AISource } from '@/components/writing/ai-generation-panel';
 import { STANDARD_SECTIONS, calculateWordCount } from '@/lib/writer/sections';
 
 interface RFPSection {
@@ -60,6 +65,13 @@ export default function WriterPage({ params }: PageProps) {
   const [highlightedText, setHighlightedText] = useState<{ start: number; end: number; color: string } | undefined>();
   // Mobile tab state
   const [mobileTab, setMobileTab] = useState<'assist' | 'editor' | 'outline'>('editor');
+  // AI Generation Panel state
+  const [showGenerationPanel, setShowGenerationPanel] = useState(false);
+  // Guided mode state
+  const [guidedMode, setGuidedMode] = useState(false);
+  // Source attribution for last AI generation
+  const [lastAISources, setLastAISources] = useState<AISource[]>([]);
+  const [lastConfidence, setLastConfidence] = useState<number | null>(null);
 
   // Fetch grant data
   const { data: rawGrant, isLoading: isLoadingGrant } = api.grants.byId.useQuery({
@@ -79,7 +91,7 @@ export default function WriterPage({ params }: PageProps) {
       funderId: grant?.funderId || '',
     },
     {
-      enabled: !!grant?.funderId, // Only fetch if we have a funderId
+      enabled: !!grant?.funderId,
     }
   );
 
@@ -121,10 +133,32 @@ export default function WriterPage({ params }: PageProps) {
     onSuccess: () => {
       setSaveStatus('saved');
     },
-    onError: (error) => {
-      console.error('Failed to save draft:', error);
+    onError: () => {
       toast.error('Failed to save draft');
       setSaveStatus('unsaved');
+    },
+  });
+
+  // Real AI generation mutation for toolbar actions
+  const generateDraftMutation = api.writing.generateDraft.useMutation({
+    onSuccess: (data) => {
+      setIsStreaming(false);
+      if (data.shouldGenerate && data.content) {
+        setAiSuggestion(data.content);
+        setLastAISources(data.sources);
+        setLastConfidence(data.confidence);
+        toast.success(`Generated with ${data.confidence}% confidence from ${data.sources.length} sources`);
+      } else {
+        setAiSuggestion(data.message || 'Confidence too low to generate. Try adding more documents.');
+        setLastAISources(data.sources);
+        setLastConfidence(data.confidence);
+        toast.warning(`Low confidence (${data.confidence}%). Review available sources.`);
+      }
+    },
+    onError: (error) => {
+      setIsStreaming(false);
+      setAiSuggestion(undefined);
+      toast.error(`AI generation failed: ${error.message}`);
     },
   });
 
@@ -161,7 +195,6 @@ export default function WriterPage({ params }: PageProps) {
         isLoading: isLoadingFunder,
       }
     : {
-        // Fallback data when funder intelligence is loading or not available
         funderId: grant?.funderId || '',
         funderName: grant?.funder?.name || 'Unknown Funder',
         funderType: grant?.funder?.type || 'OTHER',
@@ -178,23 +211,49 @@ export default function WriterPage({ params }: PageProps) {
   function parseGeographicFocus(geoFocus: any): string[] | null {
     if (!geoFocus) return null;
 
-    // If it's already an array of strings, return it
     if (Array.isArray(geoFocus)) {
       return geoFocus.filter(item => typeof item === 'string');
     }
 
-    // If it's an object with areas/regions/states properties, extract them
     if (typeof geoFocus === 'object') {
       const areas = geoFocus.areas || geoFocus.regions || geoFocus.states || geoFocus.locations;
       if (Array.isArray(areas)) {
         return areas.filter(item => typeof item === 'string');
       }
-      // If it's an object with key-value pairs, return the values
       return Object.values(geoFocus).filter(item => typeof item === 'string') as string[];
     }
 
     return null;
   }
+
+  // Guided mode: current section index and navigation
+  const activeSectionIndex = useMemo(() => {
+    if (!activeSection) return 0;
+    const idx = STANDARD_SECTIONS.findIndex(s => s.id === activeSection);
+    return idx >= 0 ? idx : 0;
+  }, [activeSection]);
+
+  const canGoBack = activeSectionIndex > 0;
+  const canGoForward = activeSectionIndex < STANDARD_SECTIONS.length - 1;
+  const currentSectionDef = STANDARD_SECTIONS[activeSectionIndex];
+  const currentWordCount = calculateWordCount(editorContent);
+
+  const handleGuidedNext = () => {
+    if (!canGoForward) return;
+    // Save current before switching
+    if (activeSection) {
+      setSectionContents(prev => ({ ...prev, [activeSection]: editorContent }));
+    }
+    setActiveSection(STANDARD_SECTIONS[activeSectionIndex + 1].id);
+  };
+
+  const handleGuidedPrev = () => {
+    if (!canGoBack) return;
+    if (activeSection) {
+      setSectionContents(prev => ({ ...prev, [activeSection]: editorContent }));
+    }
+    setActiveSection(STANDARD_SECTIONS[activeSectionIndex - 1].id);
+  };
 
   // Initialize section contents from grant draftContent
   useEffect(() => {
@@ -235,7 +294,6 @@ export default function WriterPage({ params }: PageProps) {
   useEffect(() => {
     if (!activeSection) return;
 
-    // Mark as unsaved when content changes
     setSaveStatus('unsaved');
 
     const timeoutId = setTimeout(() => {
@@ -247,22 +305,17 @@ export default function WriterPage({ params }: PageProps) {
         content: editorContent || '',
         wordCount,
       });
-    }, 2000); // Save 2 seconds after user stops typing
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
   }, [editorContent, activeSection, grantId]);
 
   // Handlers
   const handleSectionClick = (sectionId: string) => {
-    // Find section by id
     const section = rfpSections.find(s => s.id === sectionId);
     if (section) {
-      // Save current section content before switching
       if (activeSection) {
-        setSectionContents(prev => ({
-          ...prev,
-          [activeSection]: editorContent,
-        }));
+        setSectionContents(prev => ({ ...prev, [activeSection]: editorContent }));
       }
       setActiveSection(section.name);
     }
@@ -270,12 +323,8 @@ export default function WriterPage({ params }: PageProps) {
 
   const handleEditorChange = (content: string) => {
     setEditorContent(content);
-    // Update section contents
     if (activeSection) {
-      setSectionContents(prev => ({
-        ...prev,
-        [activeSection]: content,
-      }));
+      setSectionContents(prev => ({ ...prev, [activeSection]: content }));
     }
   };
 
@@ -284,42 +333,33 @@ export default function WriterPage({ params }: PageProps) {
     const newContent = editorContent + insertText;
     setEditorContent(newContent);
 
-    // Update section contents
     if (activeSection) {
-      setSectionContents(prev => ({
-        ...prev,
-        [activeSection]: newContent,
-      }));
+      setSectionContents(prev => ({ ...prev, [activeSection]: newContent }));
     }
 
-    // Highlight the inserted text
     const start = editorContent.length;
     const end = newContent.length;
     setHighlightedText({ start, end, color: 'blue' });
 
-    // Clear highlight after 3 seconds
     setTimeout(() => {
       setHighlightedText(undefined);
     }, 3000);
   };
 
+  // REAL AI HANDLERS - wired to writing.generateDraft tRPC mutation
   const handleAskClaude = (prompt: string) => {
     if (!prompt.trim()) return;
 
+    const sectionName = currentSectionDef?.title || activeSection || 'General';
     setIsStreaming(true);
-    setAiSuggestion(`Processing: "${prompt}"`);
+    setAiSuggestion(`Retrieving org memory and generating response...`);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const mockResponse = 'Consider emphasizing the measurable impact and sustainability of your program. Include specific data points and timelines.';
-      setAiSuggestion(mockResponse);
-      setIsStreaming(false);
-
-      // Auto-clear suggestion after 10 seconds
-      setTimeout(() => {
-        setAiSuggestion(undefined);
-      }, 10000);
-    }, 2000);
+    generateDraftMutation.mutate({
+      grantId,
+      sectionName,
+      prompt,
+      mode: 'memory_assist',
+    });
   };
 
   const handleSuggestImprovements = () => {
@@ -328,13 +368,16 @@ export default function WriterPage({ params }: PageProps) {
       return;
     }
 
+    const sectionName = currentSectionDef?.title || activeSection || 'General';
     setIsStreaming(true);
-    setAiSuggestion('Analyzing your content for improvements...');
+    setAiSuggestion('Analyzing content for improvements...');
 
-    setTimeout(() => {
-      setAiSuggestion('Consider adding more specific metrics and concrete examples to strengthen your narrative.');
-      setIsStreaming(false);
-    }, 1500);
+    generateDraftMutation.mutate({
+      grantId,
+      sectionName,
+      prompt: `Review the following draft content and suggest specific improvements. Focus on strengthening the narrative, adding concrete metrics, and improving clarity:\n\n${editorContent.slice(0, 2000)}`,
+      mode: 'memory_assist',
+    });
   };
 
   const handleCheckTone = () => {
@@ -343,32 +386,82 @@ export default function WriterPage({ params }: PageProps) {
       return;
     }
 
+    const sectionName = currentSectionDef?.title || activeSection || 'General';
     setIsStreaming(true);
-    setAiSuggestion('Checking tone and consistency...');
+    setAiSuggestion('Analyzing tone and voice consistency...');
 
-    setTimeout(() => {
-      setAiSuggestion('Tone is professional and consistent. Consider varying sentence structure for better readability.');
-      setIsStreaming(false);
-    }, 1500);
+    generateDraftMutation.mutate({
+      grantId,
+      sectionName,
+      prompt: `Analyze the tone, voice, and consistency of this grant writing. Check if it matches our organizational voice and suggest any adjustments for professionalism, clarity, and funder alignment:\n\n${editorContent.slice(0, 2000)}`,
+      mode: 'memory_assist',
+    });
   };
 
   const handleFindStatistics = () => {
+    const sectionName = currentSectionDef?.title || activeSection || 'General';
     setIsStreaming(true);
-    setAiSuggestion('Searching for relevant statistics...');
+    setAiSuggestion('Searching organizational memory for relevant statistics...');
+
+    generateDraftMutation.mutate({
+      grantId,
+      sectionName,
+      prompt: `Search our organizational documents and memory for relevant statistics, data points, metrics, and evidence that would strengthen the "${sectionName}" section of this grant proposal. Return specific numbers, percentages, and outcomes from our past work.`,
+      mode: 'memory_assist',
+    });
+  };
+
+  // AI Generation Panel: accept generated content
+  const handleAcceptGenerated = (content: string, sources: AISource[]) => {
+    const sourceAttribution = sources.map(s => `[Source: ${s.documentName} (${s.score}% match)]`).join('\n');
+    const insertText = `\n\n${content}\n\n---\n${sourceAttribution}\n`;
+    const newContent = editorContent + insertText;
+    setEditorContent(newContent);
+
+    if (activeSection) {
+      setSectionContents(prev => ({ ...prev, [activeSection]: newContent }));
+    }
+
+    setLastAISources(sources);
+    setShowGenerationPanel(false);
+
+    const start = editorContent.length;
+    const end = newContent.length;
+    setHighlightedText({ start, end, color: 'blue' });
 
     setTimeout(() => {
-      setAiSuggestion('Found relevant statistics: "According to recent studies, programs like yours show 85% success rate in community engagement."');
-      setIsStreaming(false);
-    }, 1500);
+      setHighlightedText(undefined);
+    }, 5000);
+
+    toast.success('AI-generated content inserted with source attribution');
+  };
+
+  // Apply AI suggestion to editor
+  const handleApplySuggestion = () => {
+    if (!aiSuggestion || !lastConfidence || lastConfidence < 60) return;
+
+    const sourceAttribution = lastAISources.length > 0
+      ? `\n\n---\nSources: ${lastAISources.map(s => `${s.documentName} (${s.score}%)`).join(', ')}`
+      : '';
+
+    const insertText = `\n\n${aiSuggestion}${sourceAttribution}\n`;
+    const newContent = editorContent + insertText;
+    setEditorContent(newContent);
+
+    if (activeSection) {
+      setSectionContents(prev => ({ ...prev, [activeSection]: newContent }));
+    }
+
+    setAiSuggestion(undefined);
+    setLastAISources([]);
+    setLastConfidence(null);
+
+    toast.success('AI content applied to editor');
   };
 
   const handleSectionSelect = (sectionId: string) => {
-    // Save current section content before switching
     if (activeSection) {
-      setSectionContents(prev => ({
-        ...prev,
-        [activeSection]: editorContent,
-      }));
+      setSectionContents(prev => ({ ...prev, [activeSection]: editorContent }));
     }
     setActiveSection(sectionId);
   };
@@ -394,6 +487,16 @@ export default function WriterPage({ params }: PageProps) {
 
   return (
     <div className="flex h-screen bg-slate-900">
+      {/* AI Generation Panel Modal */}
+      {showGenerationPanel && (
+        <AIGenerationPanel
+          grantId={grantId}
+          sectionName={currentSectionDef?.title || activeSection || 'General'}
+          onAccept={handleAcceptGenerated}
+          onClose={() => setShowGenerationPanel(false)}
+        />
+      )}
+
       {/* Mobile Header with Back Button - Only visible on mobile */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-20 bg-slate-800 border-b border-slate-700 h-14 flex items-center px-2">
         <Button
@@ -509,7 +612,29 @@ export default function WriterPage({ params }: PageProps) {
                 {grant.funder?.name || 'Unknown Funder'}
               </p>
             </div>
-            <div className="hidden md:flex items-center gap-2 text-sm">
+            <div className="hidden md:flex items-center gap-3 text-sm">
+              {/* Guided Mode Toggle */}
+              <button
+                onClick={() => setGuidedMode(!guidedMode)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  guidedMode
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                {guidedMode ? 'Guided Mode' : 'Free Mode'}
+              </button>
+              {/* Generate Draft Button */}
+              <Button
+                size="sm"
+                onClick={() => setShowGenerationPanel(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Generate Draft
+              </Button>
+              {/* Save Status */}
               {saveStatus === 'saving' && (
                 <>
                   <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
@@ -530,7 +655,94 @@ export default function WriterPage({ params }: PageProps) {
               )}
             </div>
           </div>
+
+          {/* Guided Mode Section Navigator */}
+          {guidedMode && (
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={handleGuidedPrev}
+                disabled={!canGoBack}
+                className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-white">
+                    {currentSectionDef?.title}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    Section {activeSectionIndex + 1} of {STANDARD_SECTIONS.length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(100, (currentWordCount / (currentSectionDef?.targetWordCount || 500)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-400 whitespace-nowrap">
+                    {currentWordCount} / {currentSectionDef?.targetWordCount} words
+                  </span>
+                </div>
+                {currentSectionDef?.description && (
+                  <p className="text-xs text-slate-500 mt-1">{currentSectionDef.description}</p>
+                )}
+              </div>
+              <button
+                onClick={handleGuidedNext}
+                disabled={!canGoForward}
+                className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Confidence & Source Attribution Banner */}
+        {lastConfidence !== null && lastAISources.length > 0 && (
+          <div className={`px-4 md:px-6 py-2 border-b flex items-center gap-3 ${
+            lastConfidence >= 80 ? 'bg-green-900/20 border-green-800' :
+            lastConfidence >= 60 ? 'bg-amber-900/20 border-amber-800' :
+            'bg-red-900/20 border-red-800'
+          }`}>
+            {lastConfidence >= 80 ? (
+              <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+            ) : lastConfidence >= 60 ? (
+              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <span className={`text-xs font-medium ${
+                lastConfidence >= 80 ? 'text-green-400' :
+                lastConfidence >= 60 ? 'text-amber-400' : 'text-red-400'
+              }`}>
+                {lastConfidence}% confidence
+              </span>
+              <span className="text-xs text-slate-400 ml-2">
+                from {lastAISources.length} source{lastAISources.length !== 1 ? 's' : ''}:
+                {' '}{lastAISources.slice(0, 3).map(s => s.documentName).join(', ')}
+                {lastAISources.length > 3 ? ` +${lastAISources.length - 3} more` : ''}
+              </span>
+            </div>
+            {lastConfidence >= 60 && aiSuggestion && (
+              <Button size="sm" variant="outline" onClick={handleApplySuggestion} className="text-xs shrink-0">
+                Apply to Editor
+              </Button>
+            )}
+            <button
+              onClick={() => { setLastAISources([]); setLastConfidence(null); }}
+              className="text-slate-500 hover:text-slate-300 text-xs shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Editor Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-32 md:pb-6">
@@ -552,6 +764,63 @@ export default function WriterPage({ params }: PageProps) {
             onCheck={handleComplianceCheck}
           />
         </div>
+
+        {/* Guided Mode Footer Navigation */}
+        {guidedMode && (
+          <div className="hidden md:flex px-6 py-3 border-t border-slate-800 bg-slate-850 items-center justify-between">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGuidedPrev}
+              disabled={!canGoBack}
+              className="gap-1"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous Section
+            </Button>
+            <div className="flex items-center gap-1.5">
+              {STANDARD_SECTIONS.map((section, idx) => {
+                const sContent = sectionContents[section.id] || '';
+                const words = calculateWordCount(sContent);
+                const pct = Math.min(100, (words / section.targetWordCount) * 100);
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => handleSectionSelect(section.id)}
+                    title={`${section.title} (${Math.round(pct)}%)`}
+                    className={`w-6 h-1.5 rounded-full transition-colors ${
+                      idx === activeSectionIndex
+                        ? 'bg-blue-500'
+                        : pct >= 90
+                          ? 'bg-green-500'
+                          : pct > 0
+                            ? 'bg-amber-500'
+                            : 'bg-slate-700'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+            <Button
+              variant={canGoForward ? 'default' : 'outline'}
+              size="sm"
+              onClick={canGoForward ? handleGuidedNext : () => toast.success('All sections complete. Review your proposal.')}
+              className="gap-1"
+            >
+              {canGoForward ? (
+                <>
+                  Next Section
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Finish
+                </>
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* AI Toolbar - Floating on mobile */}
         <div className="md:relative fixed bottom-14 left-0 right-0 md:bottom-auto md:left-auto md:right-auto z-30">

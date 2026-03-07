@@ -1,8 +1,9 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { api } from '@/lib/trpc/client'
+import { toast } from 'sonner'
 import {
   Building2,
   TrendingUp,
@@ -19,10 +20,12 @@ import {
   Calendar,
   AlertCircle,
   Bell,
+  BellOff,
   Plus,
   ChevronLeft,
   ChevronRight,
   StickyNote,
+  Check,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +36,7 @@ type Tab = 'overview' | 'giving-history' | 'past-grantees' | 'application' | 'yo
 
 export default function FunderProfilePage() {
   const params = useParams()
+  const router = useRouter()
   const funderId = params.id as string
   const [activeTab, setActiveTab] = useState<Tab>('overview')
 
@@ -41,6 +45,61 @@ export default function FunderProfilePage() {
   const { data: givingHistory } = api.funders.getGivingHistory.useQuery({ funderId })
   const { data: peerIntel } = api.funders.getPeerIntelligence.useQuery({ funderId })
   const { data: intelligenceProfile } = api.funders.getIntelligenceProfile.useQuery({ funderId })
+
+  // Alert state
+  const { data: existingAlert, refetch: refetchAlert } = api.funders.getAlert.useQuery({ funderId })
+
+  const setAlertMutation = api.funders.setAlert.useMutation({
+    onSuccess: () => {
+      toast.success(`Alert set for ${funder?.name || 'this funder'}. You will be notified of new opportunities, deadlines, and 990 updates.`)
+      refetchAlert()
+    },
+    onError: (error) => {
+      toast.error(`Failed to set alert: ${error.message}`)
+    },
+  })
+
+  const removeAlertMutation = api.funders.removeAlert.useMutation({
+    onSuccess: () => {
+      toast.success('Alert removed')
+      refetchAlert()
+    },
+    onError: (error) => {
+      toast.error(`Failed to remove alert: ${error.message}`)
+    },
+  })
+
+  // Add to Pipeline mutation
+  const createGrantMutation = api.grants.create.useMutation({
+    onSuccess: (grant) => {
+      toast.success(`Added "${funder?.name || 'Funder'}" to pipeline as a prospect`)
+      router.push(`/pipeline`)
+    },
+    onError: (error) => {
+      toast.error(`Failed to add to pipeline: ${error.message}`)
+    },
+  })
+
+  const handleSetAlert = () => {
+    if (existingAlert) {
+      removeAlertMutation.mutate({ funderId })
+    } else {
+      setAlertMutation.mutate({
+        funderId,
+        alertOnNewOpportunity: true,
+        alertOnDeadline: true,
+        alertOn990Update: true,
+      })
+    }
+  }
+
+  const handleAddToPipeline = () => {
+    createGrantMutation.mutate({
+      funderId,
+      status: 'PROSPECT',
+      notes: `Added from funder profile: ${funder?.name || 'Unknown'}`,
+    })
+  }
 
   // Sync mutation
   const syncMutation = api.funders.sync990.useMutation({
@@ -294,19 +353,26 @@ export default function FunderProfilePage() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => {
-                  // TODO: Implement Set Alert functionality
-                  alert('Set Alert feature coming soon!')
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors"
+                onClick={handleSetAlert}
+                disabled={setAlertMutation.isPending || removeAlertMutation.isPending}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
+                  existingAlert
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'bg-slate-700 hover:bg-slate-600 text-white'
+                }`}
               >
-                <Bell className="w-4 h-4" />
-                Set Alert
+                {(setAlertMutation.isPending || removeAlertMutation.isPending) ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : existingAlert ? (
+                  <BellOff className="w-4 h-4" />
+                ) : (
+                  <Bell className="w-4 h-4" />
+                )}
+                {existingAlert ? 'Remove Alert' : 'Set Alert'}
               </button>
               {funder.opportunities && funder.opportunities.length > 0 && (
                 <button
                   onClick={() => {
-                    // Navigate to opportunities tab or list
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -316,13 +382,15 @@ export default function FunderProfilePage() {
                 </button>
               )}
               <button
-                onClick={() => {
-                  // TODO: Implement Add to Pipeline functionality
-                  alert('Add to Pipeline feature coming soon!')
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
+                onClick={handleAddToPipeline}
+                disabled={createGrantMutation.isPending}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50"
               >
-                <Plus className="w-4 h-4" />
+                {createGrantMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
                 Add to Pipeline
               </button>
             </div>

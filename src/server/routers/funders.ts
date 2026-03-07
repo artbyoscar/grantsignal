@@ -654,4 +654,158 @@ export const fundersRouter = router({
         recommendations,
       }
     }),
+
+  /**
+   * Set alert on a funder - subscribe to updates
+   * Creates a FunderAlert record for the org+funder combination
+   */
+  setAlert: orgProcedure
+    .input(
+      z.object({
+        funderId: z.string(),
+        alertOnNewOpportunity: z.boolean().default(true),
+        alertOnDeadline: z.boolean().default(true),
+        alertOn990Update: z.boolean().default(true),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify funder exists
+      const funder = await ctx.db.funder.findUnique({
+        where: { id: input.funderId },
+        select: { id: true, name: true },
+      })
+
+      if (!funder) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Funder not found',
+        })
+      }
+
+      // Upsert the alert (one per org+funder)
+      const alert = await ctx.db.funderAlert.upsert({
+        where: {
+          organizationId_funderId: {
+            organizationId: ctx.organizationId,
+            funderId: input.funderId,
+          },
+        },
+        create: {
+          organizationId: ctx.organizationId,
+          funderId: input.funderId,
+          createdByUserId: ctx.auth.userId,
+          alertOnNewOpportunity: input.alertOnNewOpportunity,
+          alertOnDeadline: input.alertOnDeadline,
+          alertOn990Update: input.alertOn990Update,
+          notes: input.notes,
+        },
+        update: {
+          alertOnNewOpportunity: input.alertOnNewOpportunity,
+          alertOnDeadline: input.alertOnDeadline,
+          alertOn990Update: input.alertOn990Update,
+          notes: input.notes,
+          updatedAt: new Date(),
+        },
+      })
+
+      // Log activity
+      logActivity({
+        organizationId: ctx.organizationId,
+        userId: ctx.auth.userId,
+        action: ActivityActions.DISCOVERY_SEARCH,
+        entityType: 'funder',
+        entityId: input.funderId,
+        description: `Set alert on funder "${funder.name}"`,
+        metadata: {
+          alertOnNewOpportunity: input.alertOnNewOpportunity,
+          alertOnDeadline: input.alertOnDeadline,
+          alertOn990Update: input.alertOn990Update,
+        },
+      })
+
+      // Create in-app notification confirming the alert
+      await ctx.db.notification.create({
+        data: {
+          organizationId: ctx.organizationId,
+          type: 'SYSTEM',
+          title: `Alert set for ${funder.name}`,
+          message: `You will be notified about new opportunities, deadlines, and 990 updates for ${funder.name}.`,
+          linkUrl: `/opportunities/funders/${input.funderId}`,
+        },
+      })
+
+      return alert
+    }),
+
+  /**
+   * Remove alert on a funder
+   */
+  removeAlert: orgProcedure
+    .input(z.object({ funderId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.funderAlert.findUnique({
+        where: {
+          organizationId_funderId: {
+            organizationId: ctx.organizationId,
+            funderId: input.funderId,
+          },
+        },
+      })
+
+      if (!existing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'No alert found for this funder',
+        })
+      }
+
+      await ctx.db.funderAlert.delete({
+        where: { id: existing.id },
+      })
+
+      return { success: true }
+    }),
+
+  /**
+   * Get alert status for a specific funder
+   */
+  getAlert: orgProcedure
+    .input(z.object({ funderId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const alert = await ctx.db.funderAlert.findUnique({
+        where: {
+          organizationId_funderId: {
+            organizationId: ctx.organizationId,
+            funderId: input.funderId,
+          },
+        },
+      })
+
+      return alert
+    }),
+
+  /**
+   * List all funder alerts for the organization
+   */
+  listAlerts: orgProcedure
+    .query(async ({ ctx }) => {
+      const alerts = await ctx.db.funderAlert.findMany({
+        where: { organizationId: ctx.organizationId },
+        include: {
+          funder: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              totalGiving: true,
+              programAreas: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+
+      return alerts
+    }),
 })
